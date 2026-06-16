@@ -22,6 +22,12 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;
       allow write: if false; // Server Actions only.
+
+      // Personal (un-split) expenses — readable only by their owner.
+      match /ownExpenses/{expenseId} {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow write: if false;
+      }
     }
 
     match /groups/{groupId} {
@@ -46,6 +52,17 @@ service cloud.firestore {
 
     match /templates/{templateId} {
       allow read: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Recurring-expense definitions. Readable by the owner, or — for shared
+    // ones — any member of the target group. Generated only by the scheduled
+    // job (Admin SDK); never written by the client.
+    match /recurring/{recurringId} {
+      allow read: if signedIn() && (
+        resource.data.ownerUid == request.auth.uid
+        || (resource.data.scope == 'shared' && isMember(resource.data.groupId))
+      );
       allow write: if false;
     }
 

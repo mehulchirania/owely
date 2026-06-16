@@ -1,26 +1,103 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Owely design system — dark, playful, UPI-native.
+ * Space Grotesk (display + amounts) × Plus Jakarta Sans (UI body).
+ * Violet primary + teal secondary on deep cool-black surfaces, with
+ * mint = you're owed / coral = you owe. Tokens drive every surface so the
+ * palette lives in one place (see Owely.dc.html handoff).
+ */
+@theme {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+
+  /* Surfaces — deep cool near-black, layered lightest-on-top. */
+  --color-ink: #0b0a0e;
+  --color-surface: #100f15;
+  --color-card: #17151f;
+  --color-elevated: #1d1b26;
+  --color-segment: #262333;
+
+  /* Text — descending emphasis. */
+  --color-hi: #f4f2fa;
+  --color-strong: #d9d6e4;
+  --color-muted: #a7a3b8;
+  --color-dim: #807c92;
+  --color-faint: #56536a;
+
+  /* Brand + semantic. */
+  --color-accent: #8b7bff;
+  --color-accent2: #45e0c8;
+  --color-mint: #54e0a0;
+  --color-mint-soft: #7fcfa6;
+  --color-coral: #ff7a8a;
+  --color-coral-soft: #e09aa2;
+
+  /* Color-forward category tints. */
+  --color-cat-pink: #ff6fb5;
+  --color-cat-cyan: #45d0e0;
+  --color-cat-yellow: #ffc24b;
+  --color-cat-orange: #ff8a5b;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-ink);
+  color: var(--color-hi);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hide scrollbars to match the app-like prototype, keep scrolling. */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+@keyframes owGlow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes owToast {
+  from {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.ow-glow {
+  animation: owGlow 5s ease-in-out infinite;
+}
+
+.ow-toast {
+  animation: owToast 0.5s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

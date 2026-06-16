@@ -1,7 +1,6 @@
 # Owely — Current State
 
-India-first, free expense-splitting app (a Splitwise alternative). No feature
-gating, no paywalls. Android + Web.
+India-first freemium expense-splitting app. Android + Web.
 
 _Last updated: 2026-06-16_
 
@@ -18,20 +17,32 @@ _Last updated: 2026-06-16_
 
 ```
 src/
-  types/            All domain types (single source of truth)
-    index.ts        User, Group, Expense, Settlement, MemberDetail, enums
-  lib/              Pure utilities (no React, no Firebase)
-    money.ts        Paise math: format/parse, splitEqual, splitByWeights, asserts
-    money.test.ts
-    simplify-debts.ts   Net balances + greedy min-cashflow engine
-    simplify-debts.test.ts
-    firebase/
-      client.ts     Browser SDK: Auth + Firestore (offline persistent cache)
-      admin.ts      Server-only Admin SDK: privileged writes + session verify
-      collections.ts  Collection names + typed path builders
-  app/              Next.js routes (scaffold default only so far)
-docs/
-  STATE.md          ← this file
+  types/index.ts    All domain types (single source of truth)
+  lib/
+    money.ts (+test)         Paise math: format/parse, splitEqual, splitByWeights
+    simplify-debts.ts(+test) Net balances + greedy min-cashflow; simplifyFromNet,
+                             netWithSettlements, netPositionFromSettlements
+    upi.ts (+test)           UPI deep-link builder (paise→rupees at boundary)
+    result.ts                ActionResult<T> success/failure
+    validation.ts            Zod schemas + parseInput/parseActionData
+    session.ts               requireSession / authorizeUser / authorizeMember
+    session-cookie.ts        Cookie constants (import-safe for the edge proxy)
+    read-model.ts            Admin reads + Timestamp→millis conversion
+    recompute.ts             Shared simplified-debt recompute (server-only)
+    firebase/{client,admin,collections,auth-errors}.ts
+  actions/          The only write path (Server Actions)
+    auth.ts  groups.ts  expenses.ts  settlements.ts
+  components/       LoginForm, SignOutButton, CreateGroupForm, InviteMemberForm,
+                    GroupMenu, ExpenseForm, ExpenseFeed, SettlePanel, ProfileForm
+  app/
+    page.tsx                       marketing landing
+    (auth)/login                   Google + Phone OTP
+    (app)/                         server-guarded shell
+      groups, groups/[groupId], .../expenses/new, .../expenses/[id]/edit,
+      .../settle, settings
+    api/auth/session/route.ts      set/clear session cookie
+  proxy.ts          Route gate (Next 16 Middleware → Proxy)
+docs/STATE.md       ← this file
 .env.example        Template; copy to .env.local
 ```
 
@@ -93,15 +104,38 @@ pure function so it can run inside a Server Action and in tests identically.
 - [x] Firestore security rules (deny client writes, scope reads)
 - [x] Firebase App Hosting config (`apphosting.yaml`, `.firebaserc`, `firebase.json`)
 - [x] Docs: `AGENTS.md` (← `CLAUDE.md`), `PROJECT_HANDOFF.md`, `README.md`
-- [ ] Paste `apiKey` + `appId` into `.env.local` + `apphosting.yaml` (console)
-- [ ] Service-account key → `FIREBASE_SERVICE_ACCOUNT_KEY` for Server Actions
+- [x] Architecture reviewed + 5 decisions confirmed (`docs/ARCHITECTURE.md`)
+- [x] Phased build plan documented (`docs/PHASES.md`, Phases 0–7)
+- [x] Settlement model updated for payment-ref capture (Decision 4)
+
+**Console setup (one-time, blocks deploy):**
+- [ ] Paste `apiKey` + `appId` into `.env.local` + `apphosting.yaml`
+- [ ] Service-account key → `FIREBASE_SERVICE_ACCOUNT_KEY`
 - [ ] Create App Hosting backend + connect GitHub repo → live URL
-- [ ] Auth flow UI (Google + Phone OTP) + session cookie
-- [ ] Server Actions layer (`/actions`)
-- [ ] Group CRUD + invite by phone
-- [ ] Add-expense UI (equal / unequal / percentage)
-- [ ] Settlement flow + UPI deep-link
-- [ ] Templates, recurring, OCR, PDF export
+
+**Build phases (see `docs/PHASES.md` for deliverables):**
+- [x] Phase 1 — Server plumbing (result, validation, session, route, **proxy**)
+- [x] Phase 2 — Auth UI + app shell (Google + Phone OTP)
+- [x] Phase 3 — Groups (actions + invite by phone)
+- [x] Phase 4 — Expenses (add/edit, split types, simplify recompute)
+- [x] Phase 5 — Settlements + UPI deep-link + payment-ref capture
+- [x] `Owely.dc.html` design handoff applied to core app surfaces
+- [x] Login redesigned to match the post-login web dashboard feel
+- ◧ Phase 6 — Templates · recurring · OCR · PDF
+  - [x] Recurring expenses (backend): `recurring/{id}` defs + `generateDueRecurring`
+        + `/api/cron/recurring` (Cloud Scheduler hits it daily). Idempotent.
+  - [x] Own (personal, un-split) expenses (backend): `users/{uid}/ownExpenses`
+        + actions. The "two sections per profile" — own vs shared tracking.
+  - [x] Contacts member-add (backend): `findRegisteredUsers` + `addMembersByPhone`.
+  - [x] Offline-safe writes (backend): `clientId` idempotency on expense creation.
+  - [ ] Templates · OCR · PDF · the UI for all of the above (no UI built yet).
+- [ ] Phase 7 — PWA + polish
+
+Phases 1-5 ship the full core loop. The dark Owely prototype styling now covers
+landing/auth, the dashboard-style login screen, app shell, groups, expenses,
+settlement, settings, forms, menus, and error states. Note: Next 16 renamed Middleware ->
+**Proxy** (`src/proxy.ts`); settlement record/mark collapsed into one payer
+`settleUp` action; no `AuthProvider` (server session cookie is source of truth).
 
 ## Commands
 

@@ -11,8 +11,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Project identity
 
-Free, **India-first** expense-splitting app — a Splitwise alternative with **no
-feature gating and no paywalls**. Targets Android + Web.
+**India-first** freemium expense-splitting app. Targets Android + Web.
+Provides free (100 expenses/mo) and paid (unlimited) tiers. Multi-currency supported.
 Firebase project: **`owely-c6c51`** (project number `167116474777`).
 Developer: Mehul Chirania (`mehulchirania@gmail.com`), Bengaluru.
 
@@ -22,6 +22,37 @@ Next.js 16 (App Router, Server Components, Server Actions) · React 19 ·
 TypeScript 5 (strict, no `any`) · Tailwind CSS v4 · Firebase Auth (Google +
 Phone OTP) · Firestore (offline persistence) · Vitest. Deploy target:
 **Firebase App Hosting** (SSR).
+
+## Agent behavior
+
+### Token efficiency
+No conversational filler. No restating the question. No "Great question!" openers. Lead with the answer or the action. If a response would be pure acknowledgement, skip it.
+
+### Verify before asserting
+Never claim a function, file, component, Firestore path, or type exists without reading it first. Memory of what was written earlier is not the same as what is on disk. Read → reason → act. This applies equally to money utils, debt engine logic, and UI component assumptions.
+
+### Response formatting
+Use prose over bullet points for explanations and reasoning. Bullets are for reference material, checklists, and schema definitions — not for thinking out loud. No excessive bolding inside prose. Never use bullets when declining or redirecting. Tables are for comparisons, not for things a sentence would cover.
+
+### File creation strategy
+- **Under 100 lines:** write the complete file in one pass.
+- **Over 100 lines:** outline the structure first, build section by section, review, then finalize. Never dump an unreviewed 400-line file in one block.
+- **File vs inline:** a component, hook, action, or util is a file. An explanation or short snippet stays inline.
+
+### Complexity calibration
+- **Simple bug or style fix:** direct edit, no preamble.
+- **New feature under 3 files:** implement with brief rationale.
+- **New feature touching money model, debt engine, or auth:** state the plan and get confirmation before writing code.
+- **Architectural change:** start with "Here's what I'd actually do", state the exact decision, name the hidden friction, close with what the top teams do differently.
+
+### Decision making
+- Prioritize long-term maintainability over clever shortcuts.
+- When two approaches are equally valid, pick the one that produces less code.
+- Handle edge cases at the boundary (auth, group membership checks, paise arithmetic) — not inside business logic.
+- Never leave a TODO without a linked decision — either implement it or open a tracked issue.
+- When something is unclear, ask one question. If it would block progress, state the assumption and proceed — flag it so the user can redirect.
+
+---
 
 ## Workflow rules (non-negotiable)
 
@@ -54,6 +85,57 @@ and in tests. Net balance (paid − owed) → greedy largest-debtor/largest-cred
 matching → ≤ n−1 transfers. Money conserved exactly; transfer count is a
 near-minimal heuristic (true minimum is NP-hard). **Recompute on every expense
 add/edit/delete** and store on `group.simplifiedDebts`.
+
+## UI / UX standards
+
+### Design principles
+- Every screen must work at 375px (iPhone SE) without horizontal scroll. Owely targets Android — test at small viewport first.
+- Touch targets minimum 44×44px — no exceptions for icons, split-type selectors, or member chips.
+- Interactive elements must have a visible focus state. Don't remove outlines without replacing them.
+- Motion: respect `prefers-reduced-motion`. Wrap any animated transitions in a check before applying.
+- Color contrast minimum AA: 4.5:1 for body text, 3:1 for large text and UI components.
+
+### Component discipline
+- One component, one responsibility. If a component needs a comment explaining what it does, split it.
+- Props are typed explicitly — no `any`, no spreading unknown objects into DOM elements.
+- Loading and error states are not optional. Every async operation has three UI states: loading, success, error.
+- Money display: always render via `formatPaise` at the edge. Never format paise inline inside a component — the conversion belongs in one place.
+
+### State and data flow
+- Firestore-derived state is the source of truth. Never duplicate it into local state that can drift.
+- Local UI state (modals, toggles, form fields) lives in `useState` / `useReducer`.
+- Optimistic updates for expense add/edit actions — the app must feel instant on poor connectivity.
+- Destructive actions (delete expense, leave group) require a confirmation step. No undo = must confirm.
+
+### UX patterns
+- Empty states are designed, not blank. An empty group tells the user to add an expense, not just shows nothing.
+- Paise input: accept rupee decimals from the user (`rupeesToPaise` at form submission boundary), never expose raw paise in input fields.
+- Split validation errors are inline and immediate — show reconciliation mismatch before submit, not after.
+- UPI deep links open in a new context; don't navigate away from the settlement screen until the user confirms the payment was made.
+
+---
+
+## Backend / Firestore discipline
+
+### Data model
+- Prefer flat collections over deeply nested subcollections. Current schema is the reference — don't add nesting without a clear reason.
+- Denormalize deliberately. If a field is read in a list view, it belongs on the list document — don't require a secondary fetch.
+- Document IDs are auto-generated or deterministic slugs. Never use phone number, email, or UID as a document ID in group or expense collections.
+- Timestamps use `serverTimestamp()` — never `new Date()` on the client.
+- When adding a new collection: write the Firestore security rule for it in the same change. Never leave a collection unprotected.
+
+### Error handling
+- All Firestore and Admin SDK calls are wrapped in try/catch at the call site. Errors are typed, not swallowed.
+- Firebase Auth errors are mapped to user-readable messages before surfacing — never expose raw error codes to the UI.
+- Server actions return a typed result. Never throw unstructured errors from an action.
+- Money-critical paths (expense create/edit, settlement record) must validate `assertExactSplit` before writing. A partial write with a reconciliation error is worse than a failed write.
+
+### Security
+- Every Server Action verifies the session and checks group membership itself — Admin SDK bypasses Firestore rules.
+- `firestore.rules` denies all client writes. This is a feature, not a limitation — don't add client write rules to work around a missing action.
+- Never write Firestore directly from the client.
+
+---
 
 ## Architecture & conventions
 
@@ -103,8 +185,6 @@ See `.env.example`. Still TODO from the console: `NEXT_PUBLIC_FIREBASE_API_KEY`,
 (generate a service-account key).
 
 ## What NOT to build
-
-- Multi-currency UI (model supports it; UI stays INR-only).
 - Friend graph outside groups.
 - Bilateral IOU tracking (different product).
 

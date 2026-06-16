@@ -29,13 +29,16 @@ const firebaseConfig = {
 };
 
 function assertConfig(): void {
+  // Treat empty AND unreplaced "TODO…" placeholders as missing, so a half-filled
+  // .env.local fails with a clear setup error instead of a cryptic auth/* code.
   const missing = Object.entries(firebaseConfig)
-    .filter(([, v]) => !v)
+    .filter(([, v]) => !v || String(v).startsWith("TODO"))
     .map(([k]) => k);
   if (missing.length > 0) {
     throw new Error(
-      `Firebase client config incomplete. Missing: ${missing.join(", ")}. ` +
-        `Set the corresponding NEXT_PUBLIC_FIREBASE_* vars in .env.local.`,
+      `Firebase client config incomplete. Missing/placeholder: ${missing.join(", ")}. ` +
+        `Fill the real values in .env.local (Firebase console → Project settings → ` +
+        `Your apps), then restart \`npm run dev\`.`,
     );
   }
 }

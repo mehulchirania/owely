@@ -1,10 +1,19 @@
 # Owely 🦉
 
-Free, **India-first** expense-splitting app — a Splitwise alternative with **no
-feature gating and no paywalls**. Split bills with friends and flatmates, then
-settle up over **UPI** in one tap. Android + Web.
+**India-first** freemium expense-splitting app. Split bills with friends and flatmates, then
+settle up over **UPI** in one tap. Built for fairness and transparency. Android + Web.
 
 Firebase project: `owely-c6c51`.
+
+## Why Owely? (Us vs The Competition)
+
+| Feature | Owely | Others |
+|---|---|---|
+| **Core Splitting** | Free for most personal use cases | Often paywalled or heavily restricted |
+| **Monetization** | Fair usage limits for heavy users (Freemium) | Gating basic usability (ads, charts) |
+| **Payment Integration**| Native one-tap UPI Deep-linking | Manual copy-pasting |
+| **User Experience** | Clean, dashboard-app feel, ad-free | Cluttered, heavy advertising |
+| **Multi-Currency** | Free Settings Toggle | Premium-only |
 
 ## Quick start
 
@@ -46,12 +55,15 @@ src/
   lib/
     money.ts                Paise math — splits always reconcile to the total
     simplify-debts.ts       Net-balance + greedy min-cashflow engine (pure)
-    *.test.ts               Vitest specs for the above
-    firebase/
-      client.ts             Browser SDK: Auth + offline-persistent Firestore reads
-      admin.ts              server-only Admin SDK: the only write path
-      collections.ts        Collection names + typed path builders
-  app/                      Next.js App Router (landing page so far)
+    upi.ts                  UPI deep-link builder (paise→rupees at the boundary)
+    result.ts validation.ts session.ts read-model.ts recompute.ts
+    *.test.ts               Vitest specs (money · debts · UPI)
+    firebase/               client (reads+Auth) · admin (writes) · collections
+  actions/                  Server Actions — the only write path
+    auth.ts groups.ts expenses.ts settlements.ts
+  components/               Login, groups, expense form/feed, settle panel, …
+  app/                      App Router: landing · (auth)/login · (app)/* shell
+  proxy.ts                  Route gate (Next 16 Middleware → Proxy)
 docs/STATE.md               Living status doc
 ```
 
@@ -73,9 +85,14 @@ in [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md).
 
 ## Status
 
-Foundation complete: scaffold, types, money + debt engines (18 tests passing),
-Firebase SDK layer, deployable landing page, security rules, hosting config.
-Next: auth flow, Server Actions, group CRUD, add-expense UI, UPI settlement. See
+Core app complete end-to-end (Phases 1-5): Google + Phone OTP sign-in, groups
+with phone invites, expenses with equal/unequal/percentage splits, live debt
+simplification, and UPI settle-up with payment-reference capture + dispute. The
+`Owely.dc.html` design handoff has been applied to the remaining app surfaces,
+including forms, menus, settings, errors, settle-up, and a login screen styled
+like the post-login dashboard. Still console-blocked for a live deploy (API key,
+App ID, service-account key; see env above). Deferred: Phase 6 (templates,
+recurring, OCR, PDF) and Phase 7 (PWA + a11y sweep). See
 [`docs/STATE.md`](./docs/STATE.md) and [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md).
 
 ## What's intentionally not built

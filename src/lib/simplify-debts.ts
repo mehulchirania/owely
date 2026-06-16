@@ -46,8 +46,21 @@ export function simplifyDebts(
   idFactory: () => string,
   now: number = Date.now(),
 ): Settlement[] {
-  const net = computeNetBalances(expenses, members);
+  return simplifyFromNet(computeNetBalances(expenses, members), groupId, idFactory, now);
+}
 
+/**
+ * Same greedy settlement as `simplifyDebts`, but driven by a precomputed net
+ * balance map. The action layer uses this to fold *completed settlements* into
+ * the net (a payment from→to credits the debtor) before simplifying, so a debt
+ * that's already been paid doesn't reappear on the next recompute.
+ */
+export function simplifyFromNet(
+  net: Record<Uid, number>,
+  groupId: string,
+  idFactory: () => string,
+  now: number = Date.now(),
+): Settlement[] {
   // Partition into creditors (owed money) and debtors (owe money).
   const creditors: Array<{ uid: Uid; amount: number }> = [];
   const debtors: Array<{ uid: Uid; amount: number }> = [];
@@ -87,4 +100,42 @@ export function simplifyDebts(
   }
 
   return settlements.sort((a, b) => b.amount - a.amount);
+}
+
+/**
+ * Net balances from expenses, adjusted for already-completed settlements. A
+ * completed payment `from → to` credits the debtor (`from`) and debits the
+ * creditor (`to`), so paid-off debts don't reappear when the group is
+ * re-simplified. Disputed/pending settlements are intentionally NOT folded in —
+ * only money that actually moved.
+ */
+export function netWithSettlements(
+  expenses: Expense[],
+  members: Uid[],
+  completedSettlements: Settlement[],
+): Record<Uid, number> {
+  const net = computeNetBalances(expenses, members);
+  for (const s of completedSettlements) {
+    if (s.from in net) net[s.from] += s.amount;
+    if (s.to in net) net[s.to] -= s.amount;
+  }
+  return net;
+}
+
+/**
+ * A member's net position from a set of (simplified) transfers, in paise.
+ * Positive ⇒ they are owed money (net creditor); negative ⇒ they owe.
+ * Used for the at-a-glance "you are owed / you owe" summary, which reads off
+ * the already-stored `group.simplifiedDebts` rather than recomputing.
+ */
+export function netPositionFromSettlements(
+  settlements: Settlement[],
+  uid: Uid,
+): number {
+  let net = 0;
+  for (const s of settlements) {
+    if (s.to === uid) net += s.amount;
+    if (s.from === uid) net -= s.amount;
+  }
+  return net;
 }
