@@ -1,0 +1,38 @@
+/**
+ * Canonical Firestore collection names. Import these instead of writing string
+ * literals at call sites, so a rename is a one-line change and typos are caught.
+ *
+ * Layout (flat top-level collections; expenses/settlements are subcollections
+ * of their group so a group read never fans out across the whole database):
+ *
+ *   users/{uid}
+ *   groups/{groupId}
+ *   groups/{groupId}/expenses/{expenseId}
+ *   groups/{groupId}/settlements/{settlementId}
+ *   invites/{inviteId}          (phone-based group invites)
+ *   templates/{templateId}      (saved split templates, scoped by ownerUid)
+ */
+export const Collections = {
+  users: "users",
+  groups: "groups",
+  expenses: "expenses",
+  settlements: "settlements",
+  invites: "invites",
+  templates: "templates",
+} as const;
+
+export type CollectionName =
+  (typeof Collections)[keyof typeof Collections];
+
+export const paths = {
+  user: (uid: string) => `${Collections.users}/${uid}`,
+  group: (groupId: string) => `${Collections.groups}/${groupId}`,
+  expenses: (groupId: string) =>
+    `${Collections.groups}/${groupId}/${Collections.expenses}`,
+  expense: (groupId: string, expenseId: string) =>
+    `${Collections.groups}/${groupId}/${Collections.expenses}/${expenseId}`,
+  settlements: (groupId: string) =>
+    `${Collections.groups}/${groupId}/${Collections.settlements}`,
+  settlement: (groupId: string, settlementId: string) =>
+    `${Collections.groups}/${groupId}/${Collections.settlements}/${settlementId}`,
+} as const;

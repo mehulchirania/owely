@@ -1,0 +1,57 @@
+rules_version = '2';
+
+// Owely Firestore rules — the client-SDK defense layer.
+//
+// All WRITES go through Server Actions using the Admin SDK, which BYPASSES
+// these rules. So writes are denied to the client SDK entirely here; primary
+// authorization lives in the action layer. Reads are scoped to the signed-in
+// user: you can read your own user doc and any group you're a member of
+// (including that group's expenses and settlements).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isMember(groupId) {
+      return signedIn()
+        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false; // Server Actions only.
+    }
+
+    match /groups/{groupId} {
+      allow read: if isMember(groupId);
+      allow write: if false; // Server Actions only.
+
+      match /expenses/{expenseId} {
+        allow read: if isMember(groupId);
+        allow write: if false;
+      }
+
+      match /settlements/{settlementId} {
+        allow read: if isMember(groupId);
+        allow write: if false;
+      }
+    }
+
+    // Phone invites + templates are read/written exclusively via Server Actions.
+    match /invites/{inviteId} {
+      allow read, write: if false;
+    }
+
+    match /templates/{templateId} {
+      allow read: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Default deny.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
