@@ -15,10 +15,12 @@ interface Expense {
   createdAt: number;
 }
 
+import type { Settlement } from "@/types";
+
 interface Props {
   members: Member[];
   expenses: Expense[];
-  simplifiedDebts: any[];
+  simplifiedDebts: Settlement[];
 }
 
 export function FairnessInsights({ members, expenses, simplifiedDebts }: Props) {

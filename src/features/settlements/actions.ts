@@ -14,12 +14,13 @@ import { FieldValue } from "firebase-admin/firestore";
 import { revalidatePath } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { paths } from "@/lib/firebase/collections";
-import { fetchUser, fetchGroup } from "@/lib/read-model";
+import { fetchUser } from "@/features/auth/queries";
+import { fetchGroup } from "@/features/groups/queries";
 import {
   recomputeSimplified,
   recomputeMutations,
 } from "@/lib/recompute";
-import { authorizeMember } from "@/lib/session";
+import { authorizeMember } from "@/features/auth/session";
 import { logActionError } from "@/lib/log";
 import { rupeesToPaise } from "@/lib/money";
 import { cookies } from "next/headers";
@@ -31,7 +32,7 @@ import {
   GuestSettleUpSchema,
 } from "@/lib/validation";
 import type { Group } from "@/types";
-import { isMonthClosed } from "@/actions/closures";
+import { isMonthClosed } from "@/features/groups/closures";
 
 function outstandingDebtAmount(group: Group, from: string, to: string): number {
   return group.simplifiedDebts.find((debt) => debt.from === from && debt.to === to)?.amount ?? 0;

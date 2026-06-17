@@ -21,7 +21,7 @@ import { getFirebaseDb } from "@/lib/firebase/client";
 import { paths } from "@/lib/firebase/collections";
 import { formatPaise } from "@/lib/money";
 import { categoryStyle } from "@/lib/categories";
-import { deleteExpense } from "@/actions/expenses";
+import { deleteExpense } from "@/features/expenses/actions";
 import type { Expense } from "@/types";
 
 interface Props {

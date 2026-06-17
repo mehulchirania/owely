@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/session";
-import { fetchGroup, fetchUser } from "@/lib/read-model";
+import { fetchGroup } from "@/features/groups/queries";
+import { fetchUser } from "@/features/auth/queries";
 import { ExpenseForm } from "@/components/ExpenseForm";
 
 export default async function NewExpensePage({

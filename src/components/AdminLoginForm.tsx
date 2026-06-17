@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { loginAdmin } from "@/actions/admin";
+import { loginAdmin } from "@/features/admin/actions";
 
 export function AdminLoginForm() {
   const [username, setUsername] = useState("");
@@ -74,7 +74,7 @@ export function AdminLoginForm() {
           <button
             type="submit"
             disabled={pending}
-            className="flex h-12 items-center justify-center rounded-xl bg-accent font-semibold text-white shadow-[0_12px_26px_-10px_var(--color-accent)] transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60"
+            className="flex h-12 items-center justify-center rounded-xl bg-accent font-semibold text-ink shadow-[0_12px_26px_-10px_var(--color-accent)] transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60"
           >
             {pending ? "Signing in..." : "Sign in"}
           </button>

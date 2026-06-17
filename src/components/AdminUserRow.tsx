@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateUserAdmin } from "@/actions/admin";
+import { updateUserAdmin } from "@/features/admin/actions";
 
 interface UserRowProps {
   user: {
@@ -89,7 +89,7 @@ export function AdminUserRow({ user }: UserRowProps) {
             <button
               onClick={handleSave}
               disabled={pending}
-              className="rounded-lg bg-accent px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-accent/80 disabled:opacity-50"
+              className="rounded-lg bg-accent px-3 py-1 text-xs font-semibold text-ink transition-colors hover:bg-accent/80 disabled:opacity-50"
             >
               {pending ? "Saving..." : "Save"}
             </button>

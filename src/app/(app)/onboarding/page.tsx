@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { requireSession } from "@/lib/session";
-import { fetchUser } from "@/lib/read-model";
+import { fetchUser } from "@/features/auth/queries";
 import { OnboardingForm } from "@/components/OnboardingForm";
 
 export const metadata: Metadata = {

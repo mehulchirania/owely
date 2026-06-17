@@ -72,7 +72,7 @@ export default function Pricing() {
           <div aria-hidden className="pointer-events-none absolute -right-[30px] -top-[70px] h-[200px] w-[200px] rounded-full bg-accent opacity-20 blur-[80px]" />
           <div className="relative mb-[6px] flex items-center gap-[10px]">
             <span className="font-display text-[18px] font-semibold">Pro</span>
-            <span className="rounded-[20px] bg-accent px-[10px] py-1 text-[11px] font-semibold text-white">Most popular</span>
+            <span className="rounded-[20px] bg-accent px-[10px] py-1 text-[11px] font-semibold text-ink">Most popular</span>
           </div>
           <div className="relative mb-1 mt-[10px] flex items-baseline gap-1">
             <span className="font-display text-[46px] font-bold tracking-[-0.02em]">₹99</span>
@@ -87,7 +87,7 @@ export default function Pricing() {
           <Link
             href="/?login=true"
             data-magnet
-            className="ow-glowbtn relative mt-auto flex h-[50px] items-center justify-center rounded-[15px] bg-accent text-[14.5px] font-semibold text-white no-underline"
+            className="ow-glowbtn relative mt-auto flex h-[50px] items-center justify-center rounded-[15px] bg-accent text-[14.5px] font-semibold text-ink no-underline"
             style={{ boxShadow: "0 14px 32px -10px var(--color-accent)" }}
           >
             Go Pro

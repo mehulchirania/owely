@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { addBatchExpenses } from "@/actions/expenses";
+import { addBatchExpenses } from "@/features/expenses/actions";
 import type { ExpenseCategory } from "@/types";
 
 interface Member {

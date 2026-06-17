@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requirePaidFeature } from "@/lib/entitlements";
 import { logActionError } from "@/lib/log";
 import { extractReceiptHints } from "@/lib/receipt-ocr";
-import { fetchGroup } from "@/lib/read-model";
+import { fetchGroup } from "@/features/groups/queries";
 import { getSessionUser } from "@/lib/session";
 import { detectReceiptText } from "@/lib/vision-ocr";
 

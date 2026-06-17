@@ -1,7 +1,9 @@
 import PDFDocument from "pdfkit";
 import { NextResponse } from "next/server";
 import { requirePaidFeature } from "@/lib/entitlements";
-import { fetchExpenses, fetchGroup, fetchSettlements } from "@/lib/read-model";
+import { fetchExpenses } from "@/features/expenses/queries";
+import { fetchGroup } from "@/features/groups/queries";
+import { fetchSettlements } from "@/features/settlements/queries";
 import { getSessionUser } from "@/lib/session";
 
 export const runtime = "nodejs";

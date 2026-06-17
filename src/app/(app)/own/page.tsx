@@ -1,19 +1,15 @@
 import type { Metadata } from "next";
 import { requireSession } from "@/lib/session";
-import { fetchOwnExpenses, fetchUser } from "@/lib/read-model";
+import { fetchOwnExpenses } from "@/features/personal-ledger/queries";
+
 import { OwnExpenseManager } from "@/components/OwnExpenseManager";
 
 export const metadata: Metadata = { title: "Personal Ledger — Owely" };
 
 export default async function OwnPage() {
   const session = await requireSession();
-  const [ownExpenses, user] = await Promise.all([
-    fetchOwnExpenses(session.uid),
-    fetchUser(session.uid),
-  ]);
 
-  const currency = user?.currency ?? "INR";
-  const userTier = user?.tier ?? "free";
+  const ownExpenses = await fetchOwnExpenses(session.uid);
 
   return (
     <div className="flex flex-col gap-6">
@@ -29,8 +25,6 @@ export default async function OwnPage() {
 
       <OwnExpenseManager
         initialExpenses={ownExpenses}
-        userTier={userTier}
-        currency={currency}
       />
     </div>
   );

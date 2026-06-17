@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { setGroupCategory } from "@/actions/categories";
+import { setGroupCategory } from "@/features/groups/categories";
 import { PREDEFINED_RELATIONSHIP_CATEGORIES } from "@/lib/relationship-categories";
 import type { RelationshipCategory } from "@/types";
 
 interface Props {
   groupId: string;
   currentCategoryId?: string;
-  currentCategoryName?: string;
+
   scope: "group" | "direct";
   customCategories: RelationshipCategory[];
 }
@@ -16,7 +16,7 @@ interface Props {
 export function CategoryPicker({
   groupId,
   currentCategoryId,
-  currentCategoryName,
+
   scope,
   customCategories,
 }: Props) {

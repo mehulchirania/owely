@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createCategory, updateCategory, deleteCategory } from "@/actions/categories";
+import { createCategory, updateCategory, deleteCategory } from "@/features/groups/categories";
 import { PREDEFINED_RELATIONSHIP_CATEGORIES } from "@/lib/relationship-categories";
 import type { RelationshipCategory, RelationshipCategoryScope } from "@/types";
 
@@ -68,7 +68,7 @@ export function CustomCategoriesManager({ initialCategories }: Props) {
   function handleStartEdit(cat: RelationshipCategory) {
     setEditingId(cat.id);
     setName(cat.name);
-    setColor(cat.color as any);
+    setColor(cat.color as typeof COLORS[number]);
     setIcon(cat.icon);
     setAppliesTo(cat.appliesTo);
   }
@@ -177,7 +177,7 @@ export function CustomCategoriesManager({ initialCategories }: Props) {
           <button
             type="submit"
             disabled={pending}
-            className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent/80 disabled:opacity-50"
+            className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-accent/80 disabled:opacity-50"
           >
             {pending ? "Saving..." : editingId ? "Save Changes" : "Create"}
           </button>

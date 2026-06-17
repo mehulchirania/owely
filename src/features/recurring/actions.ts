@@ -17,7 +17,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
 import { computeSplits } from "@/lib/expense-splits";
 import { requirePaidFeature } from "@/lib/entitlements";
-import { authorizeMember, authorizeUser } from "@/lib/session";
+import { authorizeMember, authorizeUser } from "@/features/auth/session";
 import { logActionError } from "@/lib/log";
 import { rupeesToPaise } from "@/lib/money";
 import { failure, success, type ActionResult } from "@/lib/result";

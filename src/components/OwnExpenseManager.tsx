@@ -2,15 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { addOwnExpense, editOwnExpense, deleteOwnExpense } from "@/actions/own-expenses";
+import { addOwnExpense, editOwnExpense, deleteOwnExpense } from "@/features/personal-ledger/actions";
 import { formatPaise } from "@/lib/money";
 import { categoryStyle } from "@/lib/categories";
 import type { OwnExpense, ExpenseCategory } from "@/types";
 
 interface Props {
   initialExpenses: OwnExpense[];
-  userTier: string;
-  currency: string;
 }
 
 const CATEGORIES: ExpenseCategory[] = [
@@ -18,7 +16,7 @@ const CATEGORIES: ExpenseCategory[] = [
   "entertainment", "travel", "shopping", "health", "other",
 ];
 
-export function OwnExpenseManager({ initialExpenses, userTier, currency }: Props) {
+export function OwnExpenseManager({ initialExpenses }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -163,7 +161,7 @@ export function OwnExpenseManager({ initialExpenses, userTier, currency }: Props
           <button
             type="submit"
             disabled={pending}
-            className="rounded-lg bg-accent text-sm font-semibold text-white py-2 transition-colors hover:bg-accent/80 disabled:opacity-50"
+            className="rounded-lg bg-accent text-sm font-semibold text-ink py-2 transition-colors hover:bg-accent/80 disabled:opacity-50"
           >
             {pending ? "Adding..." : "Add"}
           </button>
@@ -220,7 +218,7 @@ export function OwnExpenseManager({ initialExpenses, userTier, currency }: Props
                         <button
                           type="submit"
                           disabled={pending}
-                          className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent/80 disabled:opacity-50"
+                          className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-accent/80 disabled:opacity-50"
                         >
                           Save
                         </button>

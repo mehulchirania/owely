@@ -2,14 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/session";
 import { headers } from "next/headers";
-import {
-  fetchExpenses,
-  fetchGroup,
-  fetchGroupRecurring,
-  fetchRelationshipCategories,
-  fetchSettlements,
-  fetchUser,
-} from "@/lib/read-model";
+import { fetchExpenses } from "@/features/expenses/queries";
+import { fetchGroup } from "@/features/groups/queries";
+import { fetchGroupRecurring } from "@/features/recurring/queries";
+import { fetchRelationshipCategories } from "@/features/groups/category-queries";
+import { fetchSettlements } from "@/features/settlements/queries";
+import { fetchUser } from "@/features/auth/queries";
 import { formatPaise } from "@/lib/money";
 import { netPositionFromSettlements } from "@/lib/simplify-debts";
 import { GroupMenu } from "@/components/GroupMenu";
@@ -21,7 +19,7 @@ import { SettlePanel, type SettleDebt, type SettlementRow } from "@/components/S
 import { RecurringPanel } from "@/components/RecurringPanel";
 import { CategoryPicker } from "@/components/CategoryPicker";
 import type { Group } from "@/types";
-import { fetchClosures } from "@/actions/closures";
+import { fetchClosures } from "@/features/groups/closures";
 import { MonthlyClosePanel } from "@/components/MonthlyClosePanel";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections } from "@/lib/firebase/collections";
@@ -164,7 +162,6 @@ export default async function GroupPage({
             <CategoryPicker
               groupId={group.id}
               currentCategoryId={group.categoryId}
-              currentCategoryName={group.categoryName}
               scope={isDirect ? "direct" : "group"}
               customCategories={customCategories}
             />

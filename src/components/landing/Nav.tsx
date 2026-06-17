@@ -35,7 +35,7 @@ export default function Nav() {
         <Link
           href="/?login=true"
           data-magnet
-          className="ow-glowbtn flex h-[42px] items-center gap-2 rounded-[13px] bg-accent px-5 text-sm font-semibold text-white no-underline"
+          className="ow-glowbtn flex h-[42px] items-center gap-2 rounded-[13px] bg-accent px-5 text-sm font-semibold text-ink no-underline"
           style={{ boxShadow: "0 10px 24px -10px var(--color-accent)" }}
         >
           Login

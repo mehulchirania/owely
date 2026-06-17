@@ -28,7 +28,7 @@ import {
 } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { paths } from "@/lib/firebase/collections";
-import { mapExpense, mapSettlement } from "@/lib/read-model";
+import { mapExpense, mapSettlement } from "@/lib/firebase/mapping";
 import { netWithSettlements, simplifyFromNet } from "@/lib/simplify-debts";
 import type { Settlement } from "@/types";
 

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/session";
-import { fetchGroup, fetchSettlements, fetchUser } from "@/lib/read-model";
+import { fetchGroup } from "@/features/groups/queries";
+import { fetchSettlements } from "@/features/settlements/queries";
+import { fetchUser } from "@/features/auth/queries";
 import { SettlePanel, type SettleDebt, type SettlementRow } from "@/components/SettlePanel";
 
 export default async function SettlePage({

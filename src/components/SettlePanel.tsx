@@ -9,7 +9,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatPaise } from "@/lib/money";
 import { memberAvatar } from "@/lib/avatar";
-import { disputeSettlement, settleUp } from "@/actions/settlements";
+import { disputeSettlement, settleUp } from "@/features/settlements/actions";
 import type { SettlementMethod, SettlementStatus } from "@/types";
 
 export interface SettleDebt {
@@ -201,7 +201,7 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
                 type="button"
                 onClick={() => setMethod(option)}
                 disabled={pending}
-                className={`flex h-11 items-center justify-center rounded-xl text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${active ? "bg-accent text-white" : "text-muted hover:bg-card hover:text-strong"}`}
+                className={`flex h-11 items-center justify-center rounded-xl text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${active ? "bg-accent text-ink" : "text-muted hover:bg-card hover:text-strong"}`}
               >
                 {option === "upi" ? "UPI" : "Cash"}
               </button>
@@ -271,7 +271,7 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
                 type="button"
                 onClick={confirmPaid}
                 disabled={pending || !isValid || amountTooHigh}
-                className="flex h-11 flex-1 items-center justify-center rounded-xl bg-accent px-4 font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60"
+                className="flex h-11 flex-1 items-center justify-center rounded-xl bg-accent px-4 font-semibold text-ink transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60"
               >
                 {pending ? "Saving..." : "Confirm paid"}
               </button>

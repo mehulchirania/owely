@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import { formatPaise, rupeesToPaise, splitEqual } from "@/lib/money";
 import { categoryStyle } from "@/lib/categories";
 import { memberAvatar } from "@/lib/avatar";
-import { addExpense, editExpense } from "@/actions/expenses";
+import { addExpense, editExpense } from "@/features/expenses/actions";
 import type { ExpenseCategory, SplitType } from "@/types";
 
 interface Member {
@@ -350,7 +350,7 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial }:
                 aria-pressed={on}
                 className={`flex items-center gap-1.5 rounded-full py-1.5 pr-3 pl-1.5 text-[13px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   on
-                    ? "border-[1.5px] border-accent bg-accent/15 font-semibold text-hi"
+                    ? "border-[1.5px] border-accent bg-accent/15 font-semibold text-ink"
                     : "border border-white/6 bg-card text-muted"
                 }`}
               >
@@ -377,7 +377,7 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial }:
               disabled={pending}
               className={`h-9 flex-1 rounded-xl text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                 splitType === tab.value
-                  ? "bg-accent text-white"
+                  ? "bg-accent text-ink"
                   : "text-dim hover:text-muted"
               }`}
             >
@@ -477,7 +477,7 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial }:
           <button
             type="submit"
             disabled={pending || !reconcile.ok || title.trim() === ""}
-            className="flex h-14 flex-1 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-white shadow-[0_14px_32px_-10px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
+            className="flex h-14 flex-1 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-ink shadow-[0_14px_32px_-10px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
           >
             {pending ? "Saving…" : initial ? "Save changes" : "Add expense"}
           </button>

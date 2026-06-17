@@ -18,7 +18,7 @@ import {
 } from "firebase/auth";
 import { getFirebaseAuth, googleAuthProvider } from "@/lib/firebase/client";
 import { authErrorMessage } from "@/lib/firebase/auth-errors";
-import { ensureUser } from "@/actions/auth";
+import { ensureUser } from "@/features/auth/actions";
 
 /** Best-effort client-side E.164 for India. The server re-validates strictly. */
 function toE164(raw: string): string {
@@ -193,7 +193,7 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={busy}
-            className="flex h-13 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-white shadow-[0_16px_42px_-16px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
+            className="flex h-13 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-ink shadow-[0_16px_42px_-16px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
           >
             {pending === "phone" ? "Sending…" : "Continue with phone number"}
           </button>
@@ -219,7 +219,7 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={busy || code.length < 6}
-            className="flex h-13 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-white shadow-[0_16px_42px_-16px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
+            className="flex h-13 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-ink shadow-[0_16px_42px_-16px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
           >
             {pending === "phone" ? status : "Verify & continue"}
           </button>

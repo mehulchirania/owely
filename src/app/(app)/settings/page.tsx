@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { requireSession } from "@/lib/session";
-import { fetchUser, fetchRelationshipCategories } from "@/lib/read-model";
+import { fetchUser } from "@/features/auth/queries";
+import { fetchRelationshipCategories } from "@/features/groups/category-queries";
 import { currencyLabel } from "@/lib/currency";
 import { ProfileForm } from "@/components/ProfileForm";
 import { CustomCategoriesManager } from "@/components/CustomCategoriesManager";

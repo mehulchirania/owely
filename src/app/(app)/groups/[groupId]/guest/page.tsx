@@ -1,8 +1,10 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { fetchGroup, fetchExpenses, fetchSettlements, fetchUser } from "@/lib/read-model";
-import { formatPaise } from "@/lib/money";
-import { memberAvatar } from "@/lib/avatar";
+import { fetchGroup } from "@/features/groups/queries";
+import { fetchExpenses } from "@/features/expenses/queries";
+import { fetchSettlements } from "@/features/settlements/queries";
+import { fetchUser } from "@/features/auth/queries";
+
 import { GuestSettlePanel, type GuestSettleDebt, type GuestSettlementRow } from "@/components/GuestSettlePanel";
 import { ExpenseFeed } from "@/components/ExpenseFeed";
 
@@ -102,7 +104,6 @@ export default async function GuestGroupPage(props: {
       <GuestSettlePanel
         groupId={groupId}
         groupName={group.name}
-        guestUid={guestUid}
         myDebts={myDebts}
         history={history}
       />

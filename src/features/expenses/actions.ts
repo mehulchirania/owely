@@ -11,8 +11,8 @@ import {
 import { computeSplits } from "@/lib/expense-splits";
 import { logActionError } from "@/lib/log";
 import { checkFreemiumLimit, incrementCounterInTx } from "@/lib/freemium";
-import { fetchUser } from "@/lib/read-model";
-import { authorizeMember } from "@/lib/session";
+import { fetchUser } from "@/features/auth/queries";
+import { authorizeMember } from "@/features/auth/session";
 import { failure, success, type ActionResult } from "@/lib/result";
 import {
   AddExpenseSchema,
@@ -21,7 +21,8 @@ import {
   EditExpenseSchema,
   parseInput,
 } from "@/lib/validation";
-import { isMonthClosed } from "@/actions/closures";
+import { isMonthClosed } from "@/features/groups/closures";
+import type { Expense } from "@/types";
 
 export async function addExpense(input: unknown): Promise<ActionResult<{ expenseId: string }>> {
   const parsed = parseInput(AddExpenseSchema, input);
@@ -189,7 +190,11 @@ export async function addBatchExpenses(
   const { expenses } = parsed.data;
   const db = getAdminDb();
 
-  const computedExpenses: Array<{ id: string; data: any }> = [];
+  type ExpenseWrite = Omit<Expense, "id" | "createdAt" | "updatedAt"> & {
+    createdAt: FieldValue;
+    updatedAt: FieldValue;
+  };
+  const computedExpenses: Array<{ id: string; data: ExpenseWrite }> = [];
   const col = db.collection(paths.expenses(groupId));
 
   for (const exp of expenses) {

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/session";
-import { fetchGroup, fetchUser } from "@/lib/read-model";
+import { fetchGroup } from "@/features/groups/queries";
+import { fetchUser } from "@/features/auth/queries";
 import { BatchExpenseForm } from "@/components/BatchExpenseForm";
 
 export default async function BatchExpensePage({
@@ -11,7 +12,7 @@ export default async function BatchExpensePage({
 }) {
   const { groupId } = await params;
   const user = await requireSession();
-  const [group, profile] = await Promise.all([
+  const [group] = await Promise.all([
     fetchGroup(groupId),
     fetchUser(user.uid),
   ]);

@@ -2,9 +2,9 @@
 
 import { cookies } from "next/headers";
 import { getAdminDb } from "@/lib/firebase/admin";
-import { Collections } from "@/lib/firebase/collections";
 import { revalidatePath } from "next/cache";
 import { failure, success, type ActionResult } from "@/lib/result";
+import { logActionError } from "@/lib/log";
 
 const ADMIN_COOKIE = "owely_admin_session";
 
@@ -13,8 +13,10 @@ export async function isAdminAuthenticated(): Promise<boolean> {
   return cookieStore.get(ADMIN_COOKIE)?.value === "true";
 }
 
-export async function loginAdmin(input: any): Promise<ActionResult<boolean>> {
-  const { username, password } = input || {};
+export async function loginAdmin(input: unknown): Promise<ActionResult<boolean>> {
+  const credentials = input as Partial<{ username: unknown; password: unknown }> | null;
+  const username = typeof credentials?.username === "string" ? credentials.username : "";
+  const password = typeof credentials?.password === "string" ? credentials.password : "";
   if (username === "admin" && password === "admin") {
     const cookieStore = await cookies();
     cookieStore.set(ADMIN_COOKIE, "true", {
@@ -54,8 +56,8 @@ export async function updateUserAdmin(input: {
     revalidatePath("/", "layout");
     return success(null);
   } catch (error) {
+    logActionError("updateUserAdmin", error);
     return failure("Could not update user details.");
   }
 }
-
 

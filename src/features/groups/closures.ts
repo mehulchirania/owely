@@ -4,11 +4,13 @@ import { FieldPath, FieldValue } from "firebase-admin/firestore";
 import { revalidatePath } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { paths } from "@/lib/firebase/collections";
-import { fetchExpenses, fetchSettlements } from "@/lib/read-model";
-import { authorizeMember } from "@/lib/session";
+import { fetchExpenses } from "@/features/expenses/queries";
+import { fetchSettlements } from "@/features/settlements/queries";
+import { authorizeMember } from "@/features/auth/session";
 import { netWithSettlements } from "@/lib/simplify-debts";
 import { failure, success, type ActionResult } from "@/lib/result";
 import { CloseMonthSchema, parseInput } from "@/lib/validation";
+import type { MonthlyClosure } from "@/types";
 
 /**
  * Check if the given date falls in a closed month/year for a group.
@@ -42,8 +44,6 @@ export async function closeMonth(input: unknown): Promise<ActionResult<{ closure
   if (!auth.ok) return auth;
 
   // The next month starts at month/year.
-  // JS Date uses 0-indexed month, so to get the start of the next month, we construct:
-  // e.g. closing 2026-06 (June) -> next month is July (index 6).
   const nextMonthStart = new Date(year, month, 1);
   const cutoffTime = nextMonthStart.getTime();
 
@@ -98,11 +98,11 @@ export async function closeMonth(input: unknown): Promise<ActionResult<{ closure
   }
 }
 
-export async function fetchClosures(groupId: string) {
+export async function fetchClosures(groupId: string): Promise<MonthlyClosure[]> {
   try {
     const db = getAdminDb();
     const snap = await db.collection(paths.closures(groupId)).get();
-    return snap.docs.map((doc) => doc.data());
+    return snap.docs.map((doc) => doc.data() as MonthlyClosure);
   } catch (error) {
     console.error("fetchClosures failed:", error);
     return [];

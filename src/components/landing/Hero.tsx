@@ -70,7 +70,7 @@ export default function Hero() {
                       <div className="text-[11px] text-dim">Goa Trip 🌴</div>
                       <div className="font-display text-[16px] font-bold">Balances</div>
                     </div>
-                    <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-accent font-display text-[13px] font-semibold text-white">A</span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-accent font-display text-[13px] font-semibold text-ink">A</span>
                   </div>
                   <div className="mb-[11px] rounded-[18px] border border-accent/20 bg-card p-[15px]">
                     <div className="text-[11px] text-muted">You&apos;re owed</div>
@@ -78,7 +78,7 @@ export default function Hero() {
                   </div>
                   <OwedRow bg="#45d0e0" name="Rohan owes you" amount="₹820">R</OwedRow>
                   <OwedRow bg="#ffc24b" name="Meera owes you" amount="₹420">M</OwedRow>
-                  <div className="mt-[11px] flex h-[44px] items-center justify-center rounded-[13px] bg-accent text-[13.5px] font-semibold text-white">
+                  <div className="mt-[11px] flex h-[44px] items-center justify-center rounded-[13px] bg-accent text-[13.5px] font-semibold text-ink">
                     Settle up
                   </div>
                 </div>
@@ -109,7 +109,7 @@ export default function Hero() {
 
             <div data-float="30" className="absolute -right-[70px] top-[188px] z-[1] transition-transform duration-300">
               <div data-floatloop="C" className="rounded-[14px] bg-accent px-[14px] py-[10px]" style={{ boxShadow: "0 24px 50px -16px var(--color-accent)", transform: "rotate(-3deg)" }}>
-                <div className="font-display text-[15px] font-bold text-white">8 → 3</div>
+                <div className="font-display text-[15px] font-bold text-ink">8 → 3</div>
                 <div className="text-[10px]" style={{ color: "rgba(255,255,255,.85)" }}>debts simplified</div>
               </div>
             </div>

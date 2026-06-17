@@ -13,10 +13,10 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
-import { fetchUser } from "@/lib/read-model";
+import { fetchUser } from "./queries";
 import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { authorizeUser } from "@/lib/session";
+import { authorizeUser } from "./session";
 import { logActionError } from "@/lib/log";
 import { failure, success, type ActionResult } from "@/lib/result";
 import { parseInput, UpdateProfileSchema } from "@/lib/validation";
@@ -118,7 +118,6 @@ async function linkPendingInvites(
       }
       linked++;
     } catch (error) {
-      // One bad invite shouldn't block the rest of sign-in.
       logActionError(`linkInvite:${inviteDoc.id}`, error);
     }
   }
@@ -148,8 +147,6 @@ export async function ensureUser(): Promise<ActionResult<User>> {
       email: session.email,
       phone: session.phone,
       photoURL: session.picture,
-      // Initialise tier + currency only for new users so an existing user's
-      // plan/currency is never reset on a routine re-sign-in.
       ...(existing
         ? {}
         : {

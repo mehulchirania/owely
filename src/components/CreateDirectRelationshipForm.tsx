@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createDirectRelationship } from "@/actions/groups";
+import { createDirectRelationship } from "@/features/groups/actions";
 
 export function CreateDirectRelationshipForm() {
   const router = useRouter();
@@ -44,7 +44,7 @@ export function CreateDirectRelationshipForm() {
           setOpen(true);
           setNotice(null);
         }}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-6 font-semibold text-white shadow-[0_12px_26px_-10px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-6 font-semibold text-ink shadow-[0_12px_26px_-10px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
           <path d="M12 5v14M5 12h14" />
@@ -88,7 +88,7 @@ export function CreateDirectRelationshipForm() {
         <button
           type="submit"
           disabled={pending || name.trim().length === 0 || phone.trim().length === 0}
-          className="flex h-11 flex-1 items-center justify-center rounded-xl bg-accent px-4 font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60"
+          className="flex h-11 flex-1 items-center justify-center rounded-xl bg-accent px-4 font-semibold text-ink transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60"
         >
           {pending ? "Adding..." : "Add"}
         </button>

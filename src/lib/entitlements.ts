@@ -1,6 +1,6 @@
 import "server-only";
 
-import { fetchUser } from "@/lib/read-model";
+import { fetchUser } from "@/features/auth/queries";
 import { failure, success, type ActionResult } from "@/lib/result";
 
 export type PaidFeature =

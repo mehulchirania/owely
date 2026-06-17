@@ -15,10 +15,10 @@ import { createHash, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
-import { fetchUser } from "@/lib/read-model";
+import { fetchUser } from "@/features/auth/queries";
 import { recomputeSimplified } from "@/lib/recompute";
 import { directPairKey } from "@/lib/relationship-categories";
-import { authorizeMember, authorizeUser } from "@/lib/session";
+import { authorizeMember, authorizeUser } from "@/features/auth/session";
 import { logActionError } from "@/lib/log";
 import { failure, success, type ActionResult } from "@/lib/result";
 import {
@@ -34,6 +34,16 @@ import {
   RenameGroupSchema,
 } from "@/lib/validation";
 import type { Group, MemberDetail } from "@/types";
+
+type GuestMergeExpensePatch = Partial<{
+  paidBy: string;
+  splits: Record<string, number>;
+}>;
+
+type GuestMergeSettlementPatch = Partial<{
+  from: string;
+  to: string;
+}>;
 
 async function memberDetailFor(uid: string): Promise<MemberDetail> {
   const user = await fetchUser(uid);
@@ -268,7 +278,6 @@ export async function leaveGroup(input: unknown): Promise<ActionResult<null>> {
       await ref.update({
         members: FieldValue.arrayRemove(user.uid),
         [`memberDetails.${user.uid}`]: FieldValue.delete(),
-        // Hand the group to another member if the creator leaves.
         ...(group.createdBy === user.uid ? { createdBy: remaining[0] } : {}),
         updatedAt: FieldValue.serverTimestamp(),
       });
@@ -283,13 +292,6 @@ export async function leaveGroup(input: unknown): Promise<ActionResult<null>> {
 
 type LinkResult = "linked" | "invited" | "already-member";
 
-/**
- * Add one person to a group by name + phone. If a user with that phone already
- * exists they're added immediately (`linked`); otherwise a pending
- * `invites/{id}` is left for them to claim on first sign-in (`invited`). Shared
- * by `inviteByPhone` (one) and `addMembersByPhone` (batch). No revalidate /
- * try-catch here — the caller owns those.
- */
 async function linkOrInvite(
   db: Firestore,
   group: Group,
@@ -323,7 +325,6 @@ async function linkOrInvite(
     return "linked";
   }
 
-  // Skip if a pending invite for this phone+group already exists (no spam).
   const priorInvites = await db
     .collection(Collections.invites)
     .where("phone", "==", phone)
@@ -340,7 +341,6 @@ async function linkOrInvite(
       photoURL: null,
     };
 
-    // Add guest user immediately to the group
     await db.doc(paths.group(group.id)).update({
       members: FieldValue.arrayUnion(guestUid),
       [`memberDetails.${guestUid}`]: detail,
@@ -386,11 +386,6 @@ export async function inviteByPhone(
   }
 }
 
-/**
- * Batch-add people (e.g. picked from the device contacts) by name + phone.
- * Registered users join immediately; everyone else gets a pending invite.
- * Returns how many were added vs invited vs already present.
- */
 export async function addMembersByPhone(
   input: unknown,
 ): Promise<ActionResult<{ added: number; invited: number; skipped: number }>> {
@@ -406,7 +401,7 @@ export async function addMembersByPhone(
   let skipped = 0;
   try {
     for (const person of parsed.data.people) {
-      if (seen.has(person.phone)) continue; // dedup within the batch
+      if (seen.has(person.phone)) continue;
       seen.add(person.phone);
       const r = await linkOrInvite(db, auth.data.group, auth.data.user.uid, person.name, person.phone);
       if (r === "linked") added++;
@@ -421,11 +416,6 @@ export async function addMembersByPhone(
   }
 }
 
-/**
- * Given raw phone numbers (e.g. from the contact picker), return which already
- * have an Owely account — so the client can show "already on Owely" and add
- * them seamlessly. Phones are normalised to E.164; invalid ones are ignored.
- */
 export async function findRegisteredUsers(
   input: unknown,
 ): Promise<ActionResult<Array<{ phone: string; uid: string; name: string; photoURL: string | null }>>> {
@@ -445,7 +435,6 @@ export async function findRegisteredUsers(
   try {
     const db = getAdminDb();
     const out: Array<{ phone: string; uid: string; name: string; photoURL: string | null }> = [];
-    // Firestore `in` allows up to 30 values per query.
     for (let i = 0; i < phones.length; i += 30) {
       const chunk = phones.slice(i, i + 30);
       const snap = await db.collection(Collections.users).where("phone", "in", chunk).get();
@@ -523,7 +512,6 @@ export async function acceptInvite(input: unknown): Promise<ActionResult<{ group
       });
     }
 
-    // Recompute simplified debts after member/expense merge
     const groupSnap = await db.doc(paths.group(groupId)).get();
     const freshMembers = (groupSnap.get("members") as string[]) ?? [];
     await recomputeSimplified(groupId, freshMembers);
@@ -584,7 +572,7 @@ async function mergeGuestToUser(
   for (const doc of expensesSnap.docs) {
     const data = doc.data();
     let changed = false;
-    const updatePayload: any = {};
+    const updatePayload: GuestMergeExpensePatch = {};
 
     if (data.paidBy === guestUid) {
       updatePayload.paidBy = actualUid;
@@ -610,7 +598,7 @@ async function mergeGuestToUser(
   for (const doc of settlementsSnap.docs) {
     const data = doc.data();
     let changed = false;
-    const updatePayload: any = {};
+    const updatePayload: GuestMergeSettlementPatch = {};
 
     if (data.from === guestUid) {
       updatePayload.from = actualUid;

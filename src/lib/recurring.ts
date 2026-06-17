@@ -15,7 +15,7 @@ import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
-import { fetchGroup } from "@/lib/read-model";
+import { fetchGroup } from "@/features/groups/queries";
 import { recomputeSimplified } from "@/lib/recompute";
 import { logActionError } from "@/lib/log";
 

@@ -1,33 +1,20 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { requireSession } from "@/lib/session";
-import { fetchStandardGroups, fetchDirectGroups, fetchUserActivity, fetchRelationshipCategories } from "@/lib/read-model";
+import { fetchStandardGroups, fetchDirectGroups, fetchUserActivity } from "@/features/groups/queries";
+import { fetchRelationshipCategories } from "@/features/groups/category-queries";
 import { formatPaise } from "@/lib/money";
 import { netPositionFromSettlements } from "@/lib/simplify-debts";
 import { CreateGroupForm } from "@/components/CreateGroupForm";
 import { CreateDirectRelationshipForm } from "@/components/CreateDirectRelationshipForm";
 import { DashboardTabs } from "@/components/DashboardTabs";
-import { memberAvatar } from "@/lib/avatar";
+
 import { FilteredGroupsList } from "@/components/FilteredGroupsList";
 import { FilteredPeopleList } from "@/components/FilteredPeopleList";
 
 export const metadata: Metadata = { title: "Dashboard — Owely" };
 
-/** Deterministic color-forward tile per group (emoji + tint), keyed by id. */
-const GROUP_TILES = [
-  { emoji: "🌴", tile: "bg-mint/15" },
-  { emoji: "🏠", tile: "bg-accent/15" },
-  { emoji: "🍱", tile: "bg-cat-yellow/15" },
-  { emoji: "🎉", tile: "bg-cat-pink/15" },
-  { emoji: "🧾", tile: "bg-cat-cyan/15" },
-  { emoji: "✈️", tile: "bg-accent2/15" },
-] as const;
 
-function tileFor(id: string) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return GROUP_TILES[h % GROUP_TILES.length];
-}
 
 function relativeTime(ms: number): string {
   if (!ms) return "";
@@ -247,30 +234,6 @@ export default async function GroupsPage({
         )}
       </div>
     </div>
-  );
-}
-
-function NetPill({ net }: { net: number }) {
-  if (net === 0) {
-    return (
-      <span className="flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-mint">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M5 12.5l4.5 4.5L19 7" />
-        </svg>
-        settled
-      </span>
-    );
-  }
-  const owed = net > 0;
-  return (
-    <span className="shrink-0 text-right">
-      <span className={`block text-[11px] ${owed ? "text-mint-soft" : "text-coral-soft"}`}>
-        {owed ? "you're owed" : "you owe"}
-      </span>
-      <span className={`font-display text-[15px] font-semibold ${owed ? "text-mint" : "text-coral"}`}>
-        {formatPaise(Math.abs(net))}
-      </span>
-    </span>
   );
 }
 

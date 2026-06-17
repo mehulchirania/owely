@@ -1,18 +1,10 @@
 "use server";
 
-/**
- * Relationship-category actions — the write path the rest of the category
- * feature was missing (the read side, rule, predefined constants, and
- * `Group.category*` fields already existed). Custom categories are owner-scoped
- * docs in `categories/{id}`; predefined ones live in code. `setGroupCategory`
- * tags a group or 1:1 relationship with either kind (or clears it).
- */
-
 import { FieldValue } from "firebase-admin/firestore";
 import { revalidatePath } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
-import { authorizeMember, authorizeUser } from "@/lib/session";
+import { authorizeMember, authorizeUser } from "@/features/auth/session";
 import { logActionError } from "@/lib/log";
 import { predefinedRelationshipCategory } from "@/lib/relationship-categories";
 import { failure, success, type ActionResult } from "@/lib/result";
@@ -105,12 +97,6 @@ export async function deleteCategory(input: unknown): Promise<ActionResult<null>
   }
 }
 
-/**
- * Tag a group / 1:1 relationship with a category, or clear it (`categoryId:
- * null`). Accepts a predefined id (resolved from code) or a custom category the
- * caller owns. The category name + kind are denormalised onto the group for
- * list rendering without a secondary read.
- */
 export async function setGroupCategory(input: unknown): Promise<ActionResult<null>> {
   const parsed = parseInput(SetGroupCategorySchema, input);
   if (!parsed.success) return failure(parsed.message, { fieldErrors: parsed.fieldErrors });
@@ -135,7 +121,6 @@ export async function setGroupCategory(input: unknown): Promise<ActionResult<nul
       return success(null);
     }
 
-    // Predefined (in code) takes precedence; otherwise a custom doc the user owns.
     const predefined = predefinedRelationshipCategory(categoryId);
     let name: string;
     let kind: "predefined" | "custom";

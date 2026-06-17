@@ -6,7 +6,7 @@
 
 import Link from "next/link";
 import { requireSession } from "@/lib/session";
-import { fetchUser } from "@/lib/read-model";
+import { fetchUser } from "@/features/auth/queries";
 import { SignOutButton } from "@/components/SignOutButton";
 
 export default async function AppLayout({

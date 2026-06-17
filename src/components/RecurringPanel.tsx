@@ -7,7 +7,7 @@ import {
   createSharedRecurring,
   deleteRecurring,
   updateRecurring,
-} from "@/actions/recurring";
+} from "@/features/recurring/actions";
 import { formatPaise } from "@/lib/money";
 import { memberAvatar } from "@/lib/avatar";
 import type { ExpenseCategory, RecurringExpense } from "@/types";
@@ -263,7 +263,7 @@ export function RecurringPanel({
                     aria-pressed={active}
                     className={`flex min-h-11 items-center gap-2 rounded-full border px-2.5 py-1.5 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60 ${
                       active
-                        ? "border-accent bg-accent/15 font-semibold text-hi"
+                        ? "border-accent bg-accent/15 font-semibold text-ink"
                         : "border-white/8 bg-surface text-muted"
                     }`}
                   >
@@ -286,7 +286,7 @@ export function RecurringPanel({
           <button
             type="submit"
             disabled={pending || !isPaid || title.trim() === "" || amountRupees.trim() === ""}
-            className="flex h-12 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-white shadow-[0_14px_32px_-10px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
+            className="flex h-12 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-ink shadow-[0_14px_32px_-10px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
           >
             {pending ? "Saving..." : "Create monthly expense"}
           </button>

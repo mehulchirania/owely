@@ -12,7 +12,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { revalidatePath } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { paths } from "@/lib/firebase/collections";
-import { authorizeUser } from "@/lib/session";
+import { authorizeUser } from "@/features/auth/session";
 import { logActionError } from "@/lib/log";
 import { rupeesToPaise } from "@/lib/money";
 import { failure, success, type ActionResult } from "@/lib/result";

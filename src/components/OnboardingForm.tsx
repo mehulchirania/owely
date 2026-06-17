@@ -8,7 +8,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateProfile } from "@/actions/auth";
+import { updateProfile } from "@/features/auth/actions";
 
 export function OnboardingForm({ next }: { next: string }) {
   const router = useRouter();
@@ -63,7 +63,7 @@ export function OnboardingForm({ next }: { next: string }) {
       <button
         type="submit"
         disabled={isPending || !name.trim()}
-        className="flex h-13 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-white shadow-[0_16px_42px_-16px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
+        className="flex h-13 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-ink shadow-[0_16px_42px_-16px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
       >
         {isPending ? "Saving…" : "Get started →"}
       </button>

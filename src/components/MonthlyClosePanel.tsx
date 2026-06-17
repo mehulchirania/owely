@@ -1,27 +1,19 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { closeMonth } from "@/actions/closures";
+import { closeMonth } from "@/features/groups/closures";
 import { formatPaise } from "@/lib/money";
+import type { MonthlyClosure } from "@/types";
 
 interface Member {
   uid: string;
   name: string;
 }
 
-interface ClosureData {
-  id: string;
-  month: number;
-  year: number;
-  carryForward: Record<string, number>;
-  closedBy: string;
-  closedAt: number;
-}
-
 interface Props {
   groupId: string;
   members: Member[];
-  initialClosures: any[];
+  initialClosures: MonthlyClosure[];
 }
 
 const MONTHS = [
@@ -34,7 +26,7 @@ export function MonthlyClosePanel({ groupId, members, initialClosures }: Props) 
   const [error, setError] = useState<string | null>(null);
 
   // Cast initialClosures to typed data
-  const closures = (initialClosures as ClosureData[]).sort((a, b) => {
+  const closures = [...initialClosures].sort((a, b) => {
     if (a.year !== b.year) return b.year - a.year;
     return b.month - a.month;
   });

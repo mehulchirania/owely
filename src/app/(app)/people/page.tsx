@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { requireSession } from "@/lib/session";
-import { fetchDirectGroups } from "@/lib/read-model";
+import { fetchDirectGroups } from "@/features/groups/queries";
 import { formatPaise } from "@/lib/money";
 import { netPositionFromSettlements } from "@/lib/simplify-debts";
 import { memberAvatar } from "@/lib/avatar";

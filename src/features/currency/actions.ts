@@ -7,7 +7,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { paths } from "@/lib/firebase/collections";
 import { logActionError } from "@/lib/log";
 import { failure, success, type ActionResult } from "@/lib/result";
-import { authorizeMember, authorizeUser } from "@/lib/session";
+import { authorizeMember, authorizeUser } from "@/features/auth/session";
 import {
   parseInput,
   SetGroupBaseCurrencySchema,

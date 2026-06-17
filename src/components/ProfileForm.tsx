@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateProfile } from "@/actions/auth";
+import { updateProfile } from "@/features/auth/actions";
 
 interface Props {
   displayName: string;
@@ -64,7 +64,7 @@ export function ProfileForm({ displayName, upiId }: Props) {
       <button
         type="submit"
         disabled={pending}
-        className="flex h-12 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-white shadow-[0_12px_26px_-10px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
+        className="flex h-12 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-ink shadow-[0_12px_26px_-10px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
       >
         {pending ? "Saving..." : "Save profile"}
       </button>

@@ -12,7 +12,7 @@ import { revalidatePath } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
 import { requirePaidFeature } from "@/lib/entitlements";
-import { authorizeMember, authorizeUser } from "@/lib/session";
+import { authorizeMember, authorizeUser } from "@/features/auth/session";
 import { logActionError } from "@/lib/log";
 import { failure, success, type ActionResult } from "@/lib/result";
 import {

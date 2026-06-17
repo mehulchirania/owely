@@ -1,6 +1,6 @@
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections } from "@/lib/firebase/collections";
-import { isAdminAuthenticated, logoutAdmin } from "@/actions/admin";
+import { isAdminAuthenticated, logoutAdmin } from "@/features/admin/actions";
 import { AdminLoginForm } from "@/components/AdminLoginForm";
 import { AdminUserRow } from "@/components/AdminUserRow";
 

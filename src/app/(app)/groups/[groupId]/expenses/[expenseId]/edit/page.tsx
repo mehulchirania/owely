@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/session";
-import { fetchExpense, fetchGroup } from "@/lib/read-model";
+import { fetchExpense } from "@/features/expenses/queries";
+import { fetchGroup } from "@/features/groups/queries";
 import { ExpenseForm, type ExpenseFormInitial } from "@/components/ExpenseForm";
 
 /** Paise to a plain rupee string for prefilling inputs (no symbol, no grouping). */

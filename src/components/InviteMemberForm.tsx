@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { inviteByPhone } from "@/actions/groups";
+import { inviteByPhone } from "@/features/groups/actions";
 
 export function InviteMemberForm({ groupId }: { groupId: string }) {
   const router = useRouter();
@@ -85,7 +85,7 @@ export function InviteMemberForm({ groupId }: { groupId: string }) {
         <button
           type="submit"
           disabled={pending || name.trim() === "" || phone.trim() === ""}
-          className="flex h-11 flex-1 items-center justify-center rounded-xl bg-accent px-4 font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60"
+          className="flex h-11 flex-1 items-center justify-center rounded-xl bg-accent px-4 font-semibold text-ink transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60"
         >
           {pending ? "Inviting..." : "Send invite"}
         </button>

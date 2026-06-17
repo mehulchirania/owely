@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatPaise } from "@/lib/money";
 import { memberAvatar } from "@/lib/avatar";
-import { guestSettleUp } from "@/actions/settlements";
+import { guestSettleUp } from "@/features/settlements/actions";
 import type { SettlementMethod, SettlementStatus } from "@/types";
 
 export interface GuestSettleDebt {
@@ -31,7 +31,7 @@ export interface GuestSettlementRow {
 interface Props {
   groupId: string;
   groupName: string;
-  guestUid: string;
+
   myDebts: GuestSettleDebt[];
   history: GuestSettlementRow[];
 }
@@ -41,7 +41,7 @@ function cleanPhone(phone: string): string {
   return digits.length > 10 ? digits.slice(-10) : digits;
 }
 
-export function GuestSettlePanel({ groupId, groupName, guestUid, myDebts, history }: Props) {
+export function GuestSettlePanel({ groupId, groupName, myDebts, history }: Props) {
   return (
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-4">
@@ -148,7 +148,7 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
           {!marking ? (
             <button
               onClick={() => setMarking(true)}
-              className="mt-4 flex h-10 items-center justify-center rounded-xl bg-accent px-4 text-xs font-semibold text-white transition-all hover:brightness-110 active:scale-95"
+              className="mt-4 flex h-10 items-center justify-center rounded-xl bg-accent px-4 text-xs font-semibold text-ink transition-all hover:brightness-110 active:scale-95"
             >
               Settle dues
             </button>
@@ -268,7 +268,7 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
                 <button
                   onClick={confirmPaid}
                   disabled={pending}
-                  className="flex-1 h-10 rounded-xl bg-accent text-xs font-semibold text-white hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 h-10 rounded-xl bg-accent text-xs font-semibold text-ink hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {pending ? "Saving..." : "Confirm paid"}
                 </button>

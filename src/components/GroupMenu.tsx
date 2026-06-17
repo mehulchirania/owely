@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { deleteGroup, leaveGroup, renameGroup } from "@/actions/groups";
+import { deleteGroup, leaveGroup, renameGroup } from "@/features/groups/actions";
 
 interface Props {
   groupId: string;
@@ -77,7 +77,7 @@ export function GroupMenu({ groupId, groupName, isCreator }: Props) {
                 className="h-11 rounded-xl border border-white/8 bg-card px-3 text-hi outline-none focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
               />
               <div className="flex gap-2">
-                <button type="submit" disabled={pending} className="h-10 flex-1 rounded-xl bg-accent text-sm font-semibold text-white disabled:opacity-60">Save</button>
+                <button type="submit" disabled={pending} className="h-10 flex-1 rounded-xl bg-accent text-sm font-semibold text-ink disabled:opacity-60">Save</button>
                 <button type="button" onClick={() => setRenaming(false)} className="h-10 rounded-xl border border-white/8 px-3 text-sm font-semibold text-strong">Cancel</button>
               </div>
             </form>

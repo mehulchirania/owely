@@ -51,7 +51,7 @@ export default function Features() {
         {/* Spends analytics — accent fill */}
         <div data-reveal data-delay="200" className="relative overflow-hidden rounded-3xl bg-accent p-7 md:col-span-2">
           <div className="mb-4 flex h-[46px] w-[46px] items-center justify-center rounded-[13px] text-[23px]" style={{ background: "rgba(255,255,255,.18)" }}>📊</div>
-          <h3 className="mb-2 font-display text-[19px] font-semibold text-white">Spends analytics</h3>
+          <h3 className="mb-2 font-display text-[19px] font-semibold text-ink">Spends analytics</h3>
           <p className="text-[14px] leading-[1.6]" style={{ color: "rgba(255,255,255,.88)" }}>
             See exactly where your money goes — by category, person and group. Free on every plan.
           </p>

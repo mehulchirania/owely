@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { formatPaise } from "@/lib/money";
 import { netPositionFromSettlements } from "@/lib/simplify-debts";
-import { memberAvatar } from "@/lib/avatar";
+
 import { PREDEFINED_RELATIONSHIP_CATEGORIES } from "@/lib/relationship-categories";
 import type { Group, RelationshipCategory } from "@/types";
 
@@ -69,7 +69,7 @@ export function FilteredGroupsList({ groups, userId, customCategories }: Props) 
             type="button"
             onClick={() => setSelectedCatId("all")}
             className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-              selectedCatId === "all" ? "bg-accent text-white" : "border border-white/8 bg-card text-muted hover:text-hi"
+              selectedCatId === "all" ? "bg-accent text-ink" : "border border-white/8 bg-card text-muted hover:text-ink"
             }`}
           >
             All
@@ -80,7 +80,7 @@ export function FilteredGroupsList({ groups, userId, customCategories }: Props) 
               type="button"
               onClick={() => setSelectedCatId(c.id)}
               className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                selectedCatId === c.id ? "bg-accent text-white" : "border border-white/8 bg-card text-muted hover:text-hi"
+                selectedCatId === c.id ? "bg-accent text-ink" : "border border-white/8 bg-card text-muted hover:text-ink"
               }`}
             >
               <span>{c.icon}</span>
@@ -93,7 +93,7 @@ export function FilteredGroupsList({ groups, userId, customCategories }: Props) 
               type="button"
               onClick={() => setSelectedCatId(c.id)}
               className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                selectedCatId === c.id ? "bg-accent text-white" : "border border-white/8 bg-card text-muted hover:text-hi"
+                selectedCatId === c.id ? "bg-accent text-ink" : "border border-white/8 bg-card text-muted hover:text-ink"
               }`}
             >
               <span>{c.icon}</span>

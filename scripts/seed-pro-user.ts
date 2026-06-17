@@ -101,11 +101,21 @@ async function getOrCreateUser(phone: string, displayName: string, tier: "free" 
   return uid;
 }
 
+interface SeedSettlement {
+  id: string;
+  groupId: string;
+  from: string;
+  to: string;
+  amount: number;
+  status: "pending" | "completed";
+  createdAt: number;
+}
+
 // Simple greedy debt simplifier for the script
 function simplifyNetBalances(
   net: Record<string, number>,
   groupId: string,
-): any[] {
+): SeedSettlement[] {
   const creditors: Array<{ uid: string; amount: number }> = [];
   const debtors: Array<{ uid: string; amount: number }> = [];
   for (const [uid, balance] of Object.entries(net)) {
@@ -119,7 +129,7 @@ function simplifyNetBalances(
   creditors.sort((a, b) => b.amount - a.amount);
   debtors.sort((a, b) => b.amount - a.amount);
 
-  const settlements: any[] = [];
+  const settlements: SeedSettlement[] = [];
   let ci = 0;
   let di = 0;
   while (ci < creditors.length && di < debtors.length) {
