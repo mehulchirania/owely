@@ -23,6 +23,9 @@ export function proxy(request: NextRequest): NextResponse {
   );
 
   if (isProtected && !hasSession) {
+    if (request.method !== "GET") {
+      return NextResponse.next();
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.searchParams.set("login", "true");
@@ -33,6 +36,9 @@ export function proxy(request: NextRequest): NextResponse {
   const isLoginModal = pathname === "/" && request.nextUrl.searchParams.get("login") === "true";
   
   if (isLoginModal && hasSession) {
+    if (request.method !== "GET") {
+      return NextResponse.next();
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/groups";
     url.search = "";

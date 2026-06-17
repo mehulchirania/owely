@@ -11,6 +11,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { getAdminAuth } from "@/lib/firebase/admin";
 import { SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/session";
 
@@ -40,19 +41,20 @@ export async function POST(request: Request): Promise<NextResponse> {
     const sessionCookie = await auth.createSessionCookie(idToken, {
       expiresIn: SESSION_MAX_AGE * 1000,
     });
-    const res = NextResponse.json({ ok: true });
-    res.cookies.set(SESSION_COOKIE, sessionCookie, {
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE, sessionCookie, {
       ...cookieOptions,
       maxAge: SESSION_MAX_AGE,
     });
-    return res;
-  } catch {
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Session creation error:", error);
     return NextResponse.json({ error: "Could not create a session." }, { status: 401 });
   }
 }
 
 export async function DELETE(): Promise<NextResponse> {
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set(SESSION_COOKIE, "", { ...cookieOptions, maxAge: 0 });
-  return res;
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE, "", { ...cookieOptions, maxAge: 0 });
+  return NextResponse.json({ ok: true });
 }

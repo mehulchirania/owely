@@ -57,7 +57,7 @@ export default function Pricing() {
           <p className="mb-[22px] text-[13.5px] text-dim">Everything you need to split with your group.</p>
           <div className="mb-[26px] flex flex-col gap-[13px]">
             {FREE.map(([b, r]) => (
-              <Feature key={b} bold={b} rest={r} />
+              <Feature key={b + r} bold={b} rest={r} />
             ))}
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function Pricing() {
           <p className="relative mb-[22px] text-[13.5px] text-muted">Everything in Free, plus no limits.</p>
           <div className="relative mb-[26px] flex flex-col gap-[13px]">
             {PRO.map(([b, r]) => (
-              <Feature key={b} bold={b} rest={r} pro />
+              <Feature key={b + r} bold={b} rest={r} pro />
             ))}
           </div>
           <Link
