@@ -86,9 +86,10 @@ Server Actions.
   used inside Server Actions. Bypasses security rules → authorization must be
   enforced in the action layer (verify session, check group membership).
   Credentials via `FIREBASE_SERVICE_ACCOUNT_KEY` (raw JSON or base64).
-- **Two values still needed** from the console (register a Web app + generate a
-  service-account key): `NEXT_PUBLIC_FIREBASE_API_KEY`,
-  `NEXT_PUBLIC_FIREBASE_APP_ID`, and `FIREBASE_SERVICE_ACCOUNT_KEY`.
+- **Remote auth config:** `apphosting.yaml` includes the public Web `apiKey`
+  and `appId` for build-time inlining. The runtime
+  `FIREBASE_SERVICE_ACCOUNT_KEY` App Hosting secret exists in Firebase, and the
+  live `*.hosted.app` domain is authorized in Firebase Auth settings.
 - Paid receipt OCR also requires the Google Cloud Vision API to be enabled for
   the Firebase project/service account.
 
@@ -124,8 +125,9 @@ pure function so it can run inside a Server Action and in tests identically.
 - [x] Settlement model updated for payment-ref capture (Decision 4)
 
 **Console setup (one-time, blocks deploy):**
-- [ ] Paste `apiKey` + `appId` into `.env.local` + `apphosting.yaml`
-- [ ] Service-account key → `FIREBASE_SERVICE_ACCOUNT_KEY`
+- [x] Paste `apiKey` + `appId` into `.env.local` + `apphosting.yaml`
+- [x] Add live `*.hosted.app` URL to Firebase Auth authorized domains
+- [x] Service-account key → `FIREBASE_SERVICE_ACCOUNT_KEY`
 - [ ] Create App Hosting backend + connect GitHub repo → live URL
 
 **Build phases (see `docs/PHASES.md` for deliverables):**

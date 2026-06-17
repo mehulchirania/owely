@@ -36,25 +36,24 @@ env:
       - BUILD
       - RUNTIME
 
-  # Fill these after registering a Web app in the Firebase console.
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: TODO_FROM_CONSOLE
+    value: AIzaSyCIsMxBa1ANxgZZ5lryRRWnekn9ECyEs7E
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: TODO_FROM_CONSOLE
+    value: 1:167116474777:web:443bc30ceef6d4442c2b08
     availability:
       - BUILD
       - RUNTIME
 
-  # Secrets (do NOT inline). Create them once, then uncomment:
+  # Secrets (do NOT inline). Create them once before deploying:
   #   firebase apphosting:secrets:set FIREBASE_SERVICE_ACCOUNT_KEY
   #   firebase apphosting:secrets:set CRON_SECRET
-  # - variable: FIREBASE_SERVICE_ACCOUNT_KEY
-  #   secret: FIREBASE_SERVICE_ACCOUNT_KEY
-  #   availability:
-  #     - RUNTIME
+  - variable: FIREBASE_SERVICE_ACCOUNT_KEY
+    secret: FIREBASE_SERVICE_ACCOUNT_KEY
+    availability:
+      - RUNTIME
   # - variable: CRON_SECRET
   #   secret: CRON_SECRET
   #   availability:

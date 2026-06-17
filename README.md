@@ -92,6 +92,12 @@ an App Hosting backend; every push builds and deploys to a
 `<backend>--owely-c6c51.<region>.hosted.app` URL. Full one-time setup steps are
 in [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md).
 
+Remote auth needs three Firebase-side settings to match the repo config:
+`NEXT_PUBLIC_FIREBASE_API_KEY` and `NEXT_PUBLIC_FIREBASE_APP_ID` are inlined from
+`apphosting.yaml` at build time, `FIREBASE_SERVICE_ACCOUNT_KEY` must exist as an
+App Hosting runtime secret, and the deployed `*.hosted.app` host must be listed
+under Firebase Auth authorized domains.
+
 ## Status
 
 Core app complete end-to-end (Phases 1-5): Google + Phone OTP sign-in, groups
@@ -119,8 +125,8 @@ Phase B differentiators are fully implemented:
 **Landing Page UI Polish**:
 - Removed the "Start for free" and "See how it works" buttons to streamline onboarding, and renamed the navigation link from "Open app" to "Login".
 
-Still console-blocked for a live deploy (API key, App ID, service-account key;
-see env above). Deferred: billing-provider selection and final TWA container packaging.
+Remote auth is configured for the live App Hosting domain. Deferred:
+billing-provider selection and final TWA container packaging.
 See [`docs/STATE.md`](./docs/STATE.md) and [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md).
 
 ## What's intentionally not built

@@ -4,6 +4,26 @@ Prepend a new dated entry at the top after every change. Newest first.
 
 ---
 
+## 2026-06-17 — Fix Firebase App Hosting auth environment
+
+Remote sign-in was failing while local sign-in worked because the deployed App
+Hosting config still inlined placeholder Firebase Web values and did not inject
+the Admin SDK service-account secret at runtime. Updated `apphosting.yaml` with
+the public Firebase Web `apiKey` and `appId`, and enabled the
+`FIREBASE_SERVICE_ACCOUNT_KEY` runtime secret binding.
+
+Before the next live deploy, create the App Hosting secret with
+`firebase apphosting:secrets:set FIREBASE_SERVICE_ACCOUNT_KEY` and add the live
+`<backend>--owely-c6c51.<region>.hosted.app` host to Firebase Authentication >
+Settings > Authorized domains. Without the secret, `/api/auth/session` cannot
+mint the server session cookie after Firebase client sign-in.
+
+Completed in Firebase: created `FIREBASE_SERVICE_ACCOUNT_KEY` secret version 1,
+granted App Hosting access, and added
+`owely--owely-c6c51.us-east4.hosted.app` to Firebase Auth authorized domains.
+
+---
+
 ## 2026-06-17 — Implemented Phase B — Differentiators (Smart Modes, Guest Links, Batch Add, & Closures)
 
 Completed implementation and verification of Phase B deliverables:
