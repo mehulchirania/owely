@@ -11,15 +11,19 @@
  */
 
 import { FieldValue, type Firestore } from "firebase-admin/firestore";
+import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
 import { fetchUser } from "@/lib/read-model";
+import { directPairKey } from "@/lib/relationship-categories";
 import { authorizeMember, authorizeUser } from "@/lib/session";
+import { logActionError } from "@/lib/log";
 import { failure, success, type ActionResult } from "@/lib/result";
 import {
   AcceptInviteSchema,
   AddMembersSchema,
+  CreateDirectRelationshipSchema,
   CreateGroupSchema,
   FindUsersSchema,
   GroupIdSchema,
@@ -39,6 +43,75 @@ async function memberDetailFor(uid: string): Promise<MemberDetail> {
   };
 }
 
+function directGroupIdForPair(pairKey: string): string {
+  return `direct_${createHash("sha256").update(pairKey).digest("hex").slice(0, 32)}`;
+}
+
+function directGroupName(a: MemberDetail, b: MemberDetail): string {
+  return `${a.name} + ${b.name}`;
+}
+
+async function userByPhone(
+  db: Firestore,
+  phone: string,
+): Promise<{ uid: string; detail: MemberDetail } | null> {
+  const snap = await db
+    .collection(Collections.users)
+    .where("phone", "==", phone)
+    .limit(1)
+    .get();
+  if (snap.empty) return null;
+  const doc = snap.docs[0];
+  return {
+    uid: doc.id,
+    detail: {
+      name: doc.get("displayName") ?? "Owely user",
+      phone: doc.get("phone") ?? phone,
+      photoURL: doc.get("photoURL") ?? null,
+    },
+  };
+}
+
+async function ensureDirectGroup(
+  db: Firestore,
+  uidA: string,
+  detailA: MemberDetail,
+  uidB: string,
+  detailB: MemberDetail,
+): Promise<{ groupId: string; existing: boolean }> {
+  const pairKey = directPairKey(uidA, uidB);
+  const ref = db.doc(paths.group(directGroupIdForPair(pairKey)));
+  let existing = false;
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (snap.exists) {
+      existing = true;
+      return;
+    }
+    tx.set(ref, {
+      type: "direct",
+      name: directGroupName(detailA, detailB),
+      createdBy: uidA,
+      members: [uidA, uidB],
+      memberDetails: {
+        [uidA]: detailA,
+        [uidB]: detailB,
+      },
+      directPairKey: pairKey,
+      directPeerUids: {
+        [uidA]: uidB,
+        [uidB]: uidA,
+      },
+      simplifiedDebts: [],
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+
+  return { groupId: ref.id, existing };
+}
+
 export async function createGroup(input: unknown): Promise<ActionResult<{ groupId: string }>> {
   const auth = await authorizeUser();
   if (!auth.ok) return auth;
@@ -50,6 +123,7 @@ export async function createGroup(input: unknown): Promise<ActionResult<{ groupI
     const ref = db.collection(Collections.groups).doc();
     const detail = await memberDetailFor(auth.data.uid);
     await ref.set({
+      type: "group",
       name: parsed.data.name,
       createdBy: auth.data.uid,
       members: [auth.data.uid],
@@ -60,8 +134,74 @@ export async function createGroup(input: unknown): Promise<ActionResult<{ groupI
     });
     revalidatePath("/groups");
     return success({ groupId: ref.id });
-  } catch {
+  } catch (error) {
+    logActionError("createGroup", error);
     return failure("Could not create the group. Please try again.");
+  }
+}
+
+export async function createDirectRelationship(
+  input: unknown,
+): Promise<ActionResult<{ groupId?: string; linked: boolean; invited: boolean; existing: boolean }>> {
+  const auth = await authorizeUser();
+  if (!auth.ok) return auth;
+  const parsed = parseInput(CreateDirectRelationshipSchema, input);
+  if (!parsed.success) return failure(parsed.message, { fieldErrors: parsed.fieldErrors });
+
+  if (auth.data.phone === parsed.data.phone) {
+    return failure("You can't create a 1:1 relationship with yourself.");
+  }
+
+  try {
+    const db = getAdminDb();
+    const currentDetail = await memberDetailFor(auth.data.uid);
+    const existingUser = await userByPhone(db, parsed.data.phone);
+
+    if (existingUser) {
+      if (existingUser.uid === auth.data.uid) {
+        return failure("You can't create a 1:1 relationship with yourself.");
+      }
+      const direct = await ensureDirectGroup(
+        db,
+        auth.data.uid,
+        currentDetail,
+        existingUser.uid,
+        existingUser.detail,
+      );
+      revalidatePath("/groups");
+      return success({
+        groupId: direct.groupId,
+        linked: true,
+        invited: false,
+        existing: direct.existing,
+      });
+    }
+
+    const priorInvites = await db
+      .collection(Collections.invites)
+      .where("phone", "==", parsed.data.phone)
+      .where("status", "==", "pending")
+      .get();
+    const hasPending = priorInvites.docs.some(
+      (doc) => doc.get("kind") === "direct" && doc.get("invitedBy") === auth.data.uid,
+    );
+    if (!hasPending) {
+      await db.collection(Collections.invites).add({
+        kind: "direct",
+        phone: parsed.data.phone,
+        invitedName: parsed.data.name,
+        invitedBy: auth.data.uid,
+        inviterName: currentDetail.name,
+        inviterPhone: currentDetail.phone,
+        inviterPhotoURL: currentDetail.photoURL,
+        status: "pending",
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
+    return success({ linked: false, invited: true, existing: hasPending });
+  } catch (error) {
+    logActionError("createDirectRelationship", error);
+    return failure("Could not create the 1:1 relationship.");
   }
 }
 
@@ -79,7 +219,8 @@ export async function renameGroup(input: unknown): Promise<ActionResult<null>> {
     revalidatePath(`/groups/${parsed.data.groupId}`);
     revalidatePath("/groups");
     return success(null);
-  } catch {
+  } catch (error) {
+    logActionError("renameGroup", error);
     return failure("Could not rename the group.");
   }
 }
@@ -99,7 +240,8 @@ export async function deleteGroup(input: unknown): Promise<ActionResult<null>> {
     await db.recursiveDelete(ref); // removes expenses + settlements subcollections too
     revalidatePath("/groups");
     return success(null);
-  } catch {
+  } catch (error) {
+    logActionError("deleteGroup", error);
     return failure("Could not delete the group.");
   }
 }
@@ -129,7 +271,8 @@ export async function leaveGroup(input: unknown): Promise<ActionResult<null>> {
     }
     revalidatePath("/groups");
     return success(null);
-  } catch {
+  } catch (error) {
+    logActionError("leaveGroup", error);
     return failure("Could not leave the group.");
   }
 }
@@ -217,7 +360,8 @@ export async function inviteByPhone(
     if (result === "already-member") return failure("That number is already in this group.");
     revalidatePath(`/groups/${parsed.data.groupId}`);
     return success({ linked: result === "linked" });
-  } catch {
+  } catch (error) {
+    logActionError("inviteByPhone", error);
     return failure("Could not send the invite.");
   }
 }
@@ -251,7 +395,8 @@ export async function addMembersByPhone(
     }
     revalidatePath(`/groups/${parsed.data.groupId}`);
     return success({ added, invited, skipped });
-  } catch {
+  } catch (error) {
+    logActionError("addMembersByPhone", error);
     return failure("Couldn't add everyone — please try the rest again.");
   }
 }
@@ -294,7 +439,8 @@ export async function findRegisteredUsers(
       }
     }
     return success(out);
-  } catch {
+  } catch (error) {
+    logActionError("findRegisteredUsers", error);
     return failure("Could not check your contacts right now.");
   }
 }
@@ -314,6 +460,35 @@ export async function acceptInvite(input: unknown): Promise<ActionResult<{ group
       return failure("This invite was sent to a different number.", { code: "forbidden" });
     }
 
+    if (invite.get("kind") === "direct") {
+      const inviterUid = invite.get("invitedBy") as string | undefined;
+      if (!inviterUid || inviterUid === auth.data.uid) {
+        await inviteRef.update({ status: "accepted", acceptedBy: auth.data.uid });
+        return failure("That 1:1 invite is no longer valid.", { code: "not-found" });
+      }
+      const currentDetail = await memberDetailFor(auth.data.uid);
+      const inviterDetail: MemberDetail = {
+        name: invite.get("inviterName") ?? "Owely user",
+        phone: invite.get("inviterPhone") ?? null,
+        photoURL: invite.get("inviterPhotoURL") ?? null,
+      };
+      const direct = await ensureDirectGroup(
+        db,
+        inviterUid,
+        inviterDetail,
+        auth.data.uid,
+        currentDetail,
+      );
+      await inviteRef.update({
+        status: "accepted",
+        acceptedBy: auth.data.uid,
+        acceptedAt: FieldValue.serverTimestamp(),
+        groupId: direct.groupId,
+      });
+      revalidatePath("/groups");
+      return success({ groupId: direct.groupId });
+    }
+
     const groupId = invite.get("groupId") as string;
     const detail = await memberDetailFor(auth.data.uid);
     await db.doc(paths.group(groupId)).update({
@@ -328,7 +503,8 @@ export async function acceptInvite(input: unknown): Promise<ActionResult<{ group
     });
     revalidatePath("/groups");
     return success({ groupId });
-  } catch {
+  } catch (error) {
+    logActionError("acceptInvite", error);
     return failure("Could not accept the invite.");
   }
 }

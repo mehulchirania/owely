@@ -12,7 +12,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Project identity
 
 **India-first** freemium expense-splitting app. Targets Android + Web.
-Provides free (100 expenses/mo) and paid (unlimited) tiers. Multi-currency supported.
+Provides free (100 expenses/mo) and paid tiers. Paid unlocks unlimited expenses,
+multi-currency, OCR receipt capture, PDF export, and other advanced features.
+Core splitting supports both groups and 1:1/direct relationships through the
+same group expense/debt engine.
 Firebase project: **`owely-c6c51`** (project number `167116474777`).
 Developer: Mehul Chirania (`mehulchirania@gmail.com`), Bengaluru.
 
@@ -112,6 +115,8 @@ add/edit/delete** and store on `group.simplifiedDebts`.
 - Paise input: accept rupee decimals from the user (`rupeesToPaise` at form submission boundary), never expose raw paise in input fields.
 - Split validation errors are inline and immediate — show reconciliation mismatch before submit, not after.
 - UPI deep links open in a new context; don't navigate away from the settlement screen until the user confirms the payment was made.
+- Cash is the only non-UPI settlement method. Record it manually; do not add card,
+  wallet, payment-gateway, or payment-aggregator flows.
 
 ---
 
@@ -158,18 +163,27 @@ groups/{groupId}/expenses/{expenseId}
 groups/{groupId}/settlements/{settlementId}
 invites/{inviteId}        phone-based group invites
 templates/{templateId}    saved split templates (ownerUid-scoped)
+categories/{categoryId}   custom group/direct categories (ownerUid-scoped)
 ```
+
+`groups/{groupId}.type` is `"group"` or `"direct"`. A direct group is exactly
+two members and represents a 1:1 relationship while reusing the same expense,
+settlement, and debt simplification paths. Direct group IDs are deterministic
+opaque hashes of the sorted UID pair, with `directPairKey` stored for audits and
+dedupe. Categorization belongs to the relationship/group, not globally to the
+other user.
 
 `firestore.rules` is the **client-SDK defense layer only**: denies all client
 writes (writes go through Admin SDK) and scopes reads to the signed-in user /
 their groups. Primary authorization lives in the action layer.
 
-## Settlement / UPI
+## Settlement / UPI + Cash
 
 UPI deep link: `upi://pay?pa={upiId}&pn={name}&am={amount}&cu=INR`. `am` is in
-**rupees** (divide paise by 100, 2 decimals, at the link boundary). Owely never
-holds funds — it only opens the user's UPI app, deliberately avoiding
-payment-aggregator regulation.
+**rupees** (divide paise by 100, 2 decimals, at the link boundary). Cash
+settlements are manual records with the same payer-confirmed flow. Owely never
+holds funds — it only opens the user's UPI app or records cash, deliberately
+avoiding payment-aggregator regulation.
 
 ## Deployment (Firebase App Hosting)
 
@@ -185,7 +199,8 @@ See `.env.example`. Still TODO from the console: `NEXT_PUBLIC_FIREBASE_API_KEY`,
 (generate a service-account key).
 
 ## What NOT to build
-- Friend graph outside groups.
+- Payment aggregation, card payments, wallet payments, or in-app stored value.
+- Friend graph outside groups/direct relationships.
 - Bilateral IOU tracking (different product).
 
 ## Commands

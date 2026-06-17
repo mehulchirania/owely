@@ -4,6 +4,149 @@ Prepend a new dated entry at the top after every change. Newest first.
 
 ---
 
+## 2026-06-17 — New motion-rich marketing landing page (`/`)
+
+Replaced the old app-preview home (`src/app/page.tsx`) with the dark, playful,
+motion-rich marketing landing page from the Claude Design handoff bundle
+(`Owely Landing.dc.html`). `typecheck` + `lint` clean, `build` clean, `/`
+prerenders as static content.
+
+- **New `src/components/landing/`**: `LandingMotion.tsx` (the only client
+  component — a single `requestAnimationFrame` ambient-motion engine plus
+  IntersectionObserver scroll-reveals, count-ups, nav/progress scroll state,
+  hero mouse-parallax + spotlight, and magnetic buttons; all attach to `data-*`
+  hooks). Section components (server-rendered): `Nav`, `Hero`, `Marquee`,
+  `HowItWorks`, `Features` (bento), `Simplify` (before/after debt graphs),
+  `Compare` (7-row "Owely vs the rest" table), `Pricing` (Free ₹0 / Pro ₹99 —
+  **₹99 is a placeholder**), `ValueBand` (count-ups), `Cta`, `Footer`. Shared
+  SVGs in `icons.tsx`.
+- **Progressive enhancement / a11y**: content is always visible server-side;
+  motion only enhances. The engine fully no-ops under
+  `prefers-reduced-motion` (no rAF, parallax, or magnet listeners; reveals and
+  counters resolve to their final state instantly). Keyboard focus rings +
+  hover states live in scoped `#owely-landing` CSS in `globals.css`; added
+  `scroll-behavior:smooth` (reset to `auto` under reduced motion).
+- **No new tokens** — reused the existing design-system tokens
+  (`accent`/`accent2`/`mint`/`coral`/surfaces/text). All CTAs route to
+  `/login`; in-page nav uses hash anchors. Responsive headings use `clamp()`
+  and sections collapse to single-column so the page holds at 375px.
+
+---
+
+## 2026-06-17 — Completed the half-built category write path + user tier init
+
+Picked up two backend pieces that were left mid-flight by the
+direct-relationships / freemium work. `typecheck` + `lint` clean, **23 tests
+pass**, `build` clean.
+
+- **Categories had a read side but no write side.** The `categories/{id}`
+  collection, its rule, `mapRelationshipCategory` + `fetchUserCategories`, the
+  predefined constants, and `Group.category*` fields all existed — but nothing
+  could create or assign a category. Added `src/actions/categories.ts`:
+  `createCategory` / `updateCategory` / `deleteCategory` (owner-scoped) and
+  `setGroupCategory` (tags a group/1:1 with a predefined id or an owned custom
+  category, or clears it; denormalises name + kind onto the group). Added the
+  matching Zod schemas (`CreateCategorySchema`, `UpdateCategorySchema`,
+  `DeleteCategorySchema`, `SetGroupCategorySchema`) in `validation.ts`. Category
+  management UI is still the open Phase 6 item.
+- **`ensureUser` didn't persist the now-required `tier`/`currency`.** The `User`
+  type made these required and `mapUser` defaults them on read, but new user
+  docs were written without them. `ensureUser` now sets `tier:"free"` +
+  `currency:"INR"` for new users only (existing plans/currency untouched).
+- Cleared stale lint from the in-flight refactor (unescaped apostrophe in
+  `people/page.tsx`, an unused `eslint-disable` in `log.ts`, dead `gid` in
+  `deleteExpense`) so the build is lint-clean again.
+
+---
+
+## 2026-06-16 - Phase 6 UI: People page for 1:1 ledgers
+
+Added the first user-facing direct relationship UI.
+
+- New protected `/people` route lists `type: "direct"` groups only, with net
+  balance per person and an add-person form.
+- `CreateDirectRelationshipForm` calls `createDirectRelationship`; existing
+  users route straight into the deduped ledger, while unregistered numbers get a
+  pending invite message.
+- Added primary Groups/People navigation in the authenticated shell and protected
+  `/people` in `src/proxy.ts`.
+- Split read-model helpers into `fetchStandardGroups` and `fetchDirectGroups`;
+  `/groups` now excludes direct ledgers.
+- Existing `/groups/{groupId}` detail route now presents direct ledgers as 1:1
+  people, links back to `/people`, and hides group-only invite/menu controls.
+
+Docs updated in `README.md`, `docs/STATE.md`, `docs/ARCHITECTURE.md`, and
+`docs/PHASES.md`. Remaining Phase 6 work: category filters and category
+management UI.
+
+---
+
+## 2026-06-16 - Phase 6 backend: direct relationship actions
+
+Added the backend action path for 1:1/direct relationships while keeping direct
+expenses on the existing group expense/debt engine.
+
+- Added `createDirectRelationship` in `src/actions/groups.ts`.
+  - If the phone belongs to an existing Owely user, it creates or returns the
+    deduped direct group immediately.
+  - If the phone is unregistered, it creates a pending direct invite instead.
+- Direct group document IDs are deterministic opaque SHA-256 hashes of the
+  sorted UID pair, so repeated creation attempts resolve to the same ledger
+  without exposing UIDs/phones as document IDs.
+- Updated `acceptInvite` and first-sign-in invite linking in `src/actions/auth.ts`
+  so pending direct invites create a two-member direct group when claimed.
+- Corrected direct peer metadata from a single `directPeerUid` to
+  `directPeerUids` because each viewer has a different peer.
+- Updated `docs/STATE.md`, `docs/ARCHITECTURE.md`, `docs/PHASES.md`,
+  `README.md`, and `AGENTS.md`. People UI and category management UI remain the
+  next Phase 6 slice.
+
+---
+
+## 2026-06-16 - Phase 6 started: direct people + categories foundation
+
+Started the core 1:1/direct expense and organization phase. Direct expenses will
+be modeled as `type: "direct"` groups with exactly two members, so Owely keeps
+one expense, settlement, and debt simplification engine instead of introducing a
+parallel IOU model.
+
+Implemented the foundation:
+
+- `Group.type` (`group`/`direct`) plus optional `directPairKey`,
+  `directPeerUids`, and category metadata fields in `src/types/index.ts`.
+- `RelationshipCategory` type for owner-scoped custom categories.
+- `categories/{categoryId}` collection constant/path and owner-scoped read rule;
+  writes remain Server Action only.
+- Read-model mapping for new group/category fields and
+  `fetchRelationshipCategories`.
+- `src/lib/relationship-categories.ts` with predefined categories and
+  `directPairKey` helper.
+- New groups now persist `type: "group"` explicitly.
+- Landing metadata/copy and Firebase Admin comments now say Firebase App Hosting
+  and UPI/cash settlement consistently.
+
+Docs updated in `README.md`, `AGENTS.md`, `docs/STATE.md`,
+`docs/ARCHITECTURE.md`, and `docs/PHASES.md`. Remaining Phase 6 work: direct
+relationship actions, People UI, and category management UI.
+
+---
+
+## 2026-06-16 - Docs aligned: Firebase-only deploy, paid features, UPI/cash settlement
+
+Updated the shared docs to match the current product decisions:
+
+- Firebase App Hosting is the only deployment target. Removed stale alternate
+  host guidance.
+- Settlements are UPI or cash only. Do not add cards, wallets, payment gateways,
+  payment aggregation, or stored-value flows.
+- Multi-currency, OCR receipt capture, PDF export, templates, recurring UI, and
+  unlimited usage belong to the paid tier.
+
+Touched `README.md`, `AGENTS.md`, `docs/STATE.md`, `docs/ARCHITECTURE.md`, and
+`docs/PHASES.md`. No application code changed.
+
+---
+
 ## 2026-06-16 - Login redesign matched to post-login web app
 
 Redesigned `/login` from the earlier centered onboarding screen into a dark
@@ -102,7 +245,7 @@ generation won't run until a daily `POST /api/cron/recurring` with the
 ## 2026-06-16 — Phases 1–5 built: full app end-to-end
 
 The core product is now functional: sign in → create a group → invite by phone →
-add expenses (3 split types) → see simplified debts → settle over UPI. All gates
+add expenses (3 split types) → see simplified debts → settle over UPI/cash. All gates
 green: `typecheck` clean, **23 tests pass**, `build` clean, `lint` clean.
 
 **Phase 1 — server plumbing**
@@ -160,11 +303,12 @@ green: `typecheck` clean, **23 tests pass**, `build` clean, `lint` clean.
 
 **Notable deviations from the original plan**
 - `middleware.ts` → `proxy.ts` (Next 16 breaking change; confirmed in bundled docs).
-- Settlement `recordSettlement`/`markSettled` collapsed into one `settleUp`.
+- Settlement flow uses one payer-confirmed `settleUp` action.
 - No `AuthProvider` context (not needed with server-side session).
 - `/settings` profile page added (UPI ID is required for the settle deep link).
 
-**Deferred (not built):** Phase 6 (templates · recurring · OCR · PDF) and Phase 7
+**Deferred (not built):** direct people/categories UI, paid features (templates ·
+recurring UI · multi-currency · OCR · PDF), and PWA polish
 (PWA + a11y sweep). Console setup (API key, App ID, service-account key) still
 blocks a live deploy — see below.
 
@@ -172,11 +316,11 @@ blocks a live deploy — see below.
 
 ## 2026-06-16 — Phased build plan documented (no code)
 
-- Added **`docs/PHASES.md`** — the whole app broken into Phases 0–7 with
-  deliverables + acceptance per phase. Phase 0 (foundation) is done; Phases 1–7
+- Added **`docs/PHASES.md`** — the whole app broken into phases with
+  deliverables + acceptance per phase. Phase 0 (foundation) is done; later phases
   are planned and tracked. Build order and cross-phase invariants captured there.
 - Recorded the 5 reviewed architecture decisions as **confirmed** (see
-  `docs/ARCHITECTURE.md` §8 and `docs/PHASES.md` header).
+  `docs/ARCHITECTURE.md` and `docs/PHASES.md` header).
 - **Decision 4 changed the data model:** settlements now capture a payment
   reference. `Settlement` gained `paymentRef?`, `settledBy?`, `settledAt?`, and a
   `"disputed"` status (`src/types/index.ts`). Payer marks paid + pastes the UPI
@@ -231,7 +375,8 @@ blocks a live deploy — see below.
 
 **Decisions / notes**
 
-- Stack says Vercel; switched deploy target to **Firebase App Hosting** per
+- Original brief had another SSR host; switched deploy target to
+  **Firebase App Hosting** per
   request (SSR-capable, matches the existing FitSplit setup).
 - `create-next-app` installed **Next 16**, not the spec's 15. App Router APIs are
   unchanged; not pinned. Revisit if a Next-15-specific need arises.
@@ -244,4 +389,5 @@ blocks a live deploy — see below.
 
 Auth flow UI + session cookie · `src/actions/` Server Actions skeleton · Group
 CRUD + invite by phone · Add-expense UI (equal/unequal/percentage) · Settlement +
-UPI deep link · templates · recurring (Cloud Function) · receipt OCR · PDF export.
+UPI/cash settlement · paid templates · paid recurring UI · paid multi-currency ·
+paid receipt OCR · paid PDF export.

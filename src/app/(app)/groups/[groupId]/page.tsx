@@ -29,14 +29,21 @@ export default async function GroupPage({
   const myNet = balances[user.uid] ?? 0;
   const transfers = group.simplifiedDebts;
   const myTransfers = transfers.filter((t) => t.from === user.uid || t.to === user.uid);
+  const isDirect = group.type === "direct";
+  const peerUid = isDirect
+    ? group.directPeerUids?.[user.uid] ?? group.members.find((m) => m !== user.uid)
+    : undefined;
+  const title = peerUid ? nameOf(group, peerUid) : group.name;
+  const backHref = isDirect ? "/people" : "/groups";
+  const backLabel = isDirect ? "All people" : "All groups";
 
   return (
     <div className="flex flex-col gap-5">
       {/* group header */}
       <div className="flex items-center gap-3">
         <Link
-          href="/groups"
-          aria-label="All groups"
+          href={backHref}
+          aria-label={backLabel}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/8 bg-card text-strong transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -45,28 +52,32 @@ export default async function GroupPage({
         </Link>
         <div className="min-w-0 flex-1">
           <h1 className="truncate font-display text-xl font-bold tracking-tight text-hi">
-            {group.name}
+            {title}
           </h1>
           <div className="mt-1 flex items-center gap-2">
-            <div className="flex">
-              {group.members.slice(0, 4).map((uid, i) => {
-                const a = memberAvatar(uid);
-                return (
-                  <span
-                    key={uid}
-                    className={`flex h-[18px] w-[18px] items-center justify-center rounded-full border-[1.5px] border-surface font-display text-[9px] ${a.bg} ${a.fg} ${i > 0 ? "-ml-1.5" : ""}`}
-                  >
-                    {nameOf(group, uid).charAt(0).toUpperCase()}
-                  </span>
-                );
-              })}
-            </div>
+            {!isDirect && (
+              <div className="flex">
+                {group.members.slice(0, 4).map((uid, i) => {
+                  const a = memberAvatar(uid);
+                  return (
+                    <span
+                      key={uid}
+                      className={`flex h-[18px] w-[18px] items-center justify-center rounded-full border-[1.5px] border-surface font-display text-[9px] ${a.bg} ${a.fg} ${i > 0 ? "-ml-1.5" : ""}`}
+                    >
+                      {nameOf(group, uid).charAt(0).toUpperCase()}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
             <span className="text-xs text-dim">
-              {group.members.length} {group.members.length === 1 ? "member" : "members"}
+              {isDirect ? "1:1 ledger" : `${group.members.length} ${group.members.length === 1 ? "member" : "members"}`}
             </span>
           </div>
         </div>
-        <GroupMenu groupId={group.id} groupName={group.name} isCreator={group.createdBy === user.uid} />
+        {!isDirect && (
+          <GroupMenu groupId={group.id} groupName={group.name} isCreator={group.createdBy === user.uid} />
+        )}
       </div>
 
       {/* simplified balances hero */}
@@ -135,9 +146,9 @@ export default async function GroupPage({
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-dim">
-            Members ({group.members.length})
+            {isDirect ? "People" : `Members (${group.members.length})`}
           </h2>
-          <InviteMemberForm groupId={group.id} />
+          {!isDirect && <InviteMemberForm groupId={group.id} />}
         </div>
         <ul className="flex flex-wrap gap-2">
           {group.members.map((uid) => {

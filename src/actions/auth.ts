@@ -14,11 +14,22 @@ import { FieldValue } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
 import { fetchUser } from "@/lib/read-model";
+import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { authorizeUser } from "@/lib/session";
+import { logActionError } from "@/lib/log";
 import { failure, success, type ActionResult } from "@/lib/result";
 import { parseInput, UpdateProfileSchema } from "@/lib/validation";
+import { directPairKey } from "@/lib/relationship-categories";
 import type { MemberDetail, User } from "@/types";
+
+function directGroupIdForPair(pairKey: string): string {
+  return `direct_${createHash("sha256").update(pairKey).digest("hex").slice(0, 32)}`;
+}
+
+function directGroupName(a: MemberDetail, b: MemberDetail): string {
+  return `${a.name} + ${b.name}`;
+}
 
 /**
  * Add `uid` to every group it was invited to by phone, and mark those invites
@@ -39,29 +50,75 @@ async function linkPendingInvites(
 
   let linked = 0;
   for (const inviteDoc of pending.docs) {
-    const groupId = inviteDoc.get("groupId") as string;
-    const groupRef = db.doc(paths.group(groupId));
+    const kind = inviteDoc.get("kind") ?? "group";
     try {
-      await db.runTransaction(async (tx) => {
-        const groupSnap = await tx.get(groupRef);
-        if (!groupSnap.exists) {
-          tx.update(inviteDoc.ref, { status: "accepted", acceptedBy: uid });
-          return;
+      if (kind === "direct") {
+        const inviterUid = inviteDoc.get("invitedBy") as string | undefined;
+        if (!inviterUid || inviterUid === uid) {
+          await inviteDoc.ref.update({ status: "accepted", acceptedBy: uid });
+          continue;
         }
-        tx.update(groupRef, {
-          members: FieldValue.arrayUnion(uid),
-          [`memberDetails.${uid}`]: detail,
-          updatedAt: FieldValue.serverTimestamp(),
+        const inviterDetail: MemberDetail = {
+          name: inviteDoc.get("inviterName") ?? "Owely user",
+          phone: inviteDoc.get("inviterPhone") ?? null,
+          photoURL: inviteDoc.get("inviterPhotoURL") ?? null,
+        };
+        const pairKey = directPairKey(inviterUid, uid);
+        const groupRef = db.doc(paths.group(directGroupIdForPair(pairKey)));
+        await db.runTransaction(async (tx) => {
+          const groupSnap = await tx.get(groupRef);
+          if (!groupSnap.exists) {
+            tx.set(groupRef, {
+              type: "direct",
+              name: directGroupName(inviterDetail, detail),
+              createdBy: inviterUid,
+              members: [inviterUid, uid],
+              memberDetails: {
+                [inviterUid]: inviterDetail,
+                [uid]: detail,
+              },
+              directPairKey: pairKey,
+              directPeerUids: {
+                [inviterUid]: uid,
+                [uid]: inviterUid,
+              },
+              simplifiedDebts: [],
+              createdAt: FieldValue.serverTimestamp(),
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+          }
+          tx.update(inviteDoc.ref, {
+            status: "accepted",
+            acceptedBy: uid,
+            acceptedAt: FieldValue.serverTimestamp(),
+            groupId: groupRef.id,
+          });
         });
-        tx.update(inviteDoc.ref, {
-          status: "accepted",
-          acceptedBy: uid,
-          acceptedAt: FieldValue.serverTimestamp(),
+      } else {
+        const groupId = inviteDoc.get("groupId") as string;
+        const groupRef = db.doc(paths.group(groupId));
+        await db.runTransaction(async (tx) => {
+          const groupSnap = await tx.get(groupRef);
+          if (!groupSnap.exists) {
+            tx.update(inviteDoc.ref, { status: "accepted", acceptedBy: uid });
+            return;
+          }
+          tx.update(groupRef, {
+            members: FieldValue.arrayUnion(uid),
+            [`memberDetails.${uid}`]: detail,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          tx.update(inviteDoc.ref, {
+            status: "accepted",
+            acceptedBy: uid,
+            acceptedAt: FieldValue.serverTimestamp(),
+          });
         });
-      });
+      }
       linked++;
-    } catch {
+    } catch (error) {
       // One bad invite shouldn't block the rest of sign-in.
+      logActionError(`linkInvite:${inviteDoc.id}`, error);
     }
   }
   return linked;
@@ -90,7 +147,15 @@ export async function ensureUser(): Promise<ActionResult<User>> {
       email: session.email,
       phone: session.phone,
       photoURL: session.picture,
-      ...(existing ? {} : { createdAt: FieldValue.serverTimestamp() }),
+      // Initialise tier + currency only for new users so an existing user's
+      // plan/currency is never reset on a routine re-sign-in.
+      ...(existing
+        ? {}
+        : {
+            createdAt: FieldValue.serverTimestamp(),
+            tier: "free" as const,
+            currency: "INR" as const,
+          }),
     };
     await userRef.set(profile, { merge: true });
 
@@ -103,7 +168,8 @@ export async function ensureUser(): Promise<ActionResult<User>> {
     const saved = await fetchUser(session.uid);
     if (!saved) return failure("Could not load your profile.");
     return success(saved);
-  } catch {
+  } catch (error) {
+    logActionError("ensureUser", error);
     return failure("Could not set up your account. Please try again.");
   }
 }
@@ -132,7 +198,8 @@ export async function updateProfile(input: unknown): Promise<ActionResult<User>>
     const saved = await fetchUser(auth.data.uid);
     if (!saved) return failure("Could not load your profile.");
     return success(saved);
-  } catch {
+  } catch (error) {
+    logActionError("updateProfile", error);
     return failure("Could not save your profile.");
   }
 }

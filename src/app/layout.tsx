@@ -15,9 +15,9 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Owely — Split expenses, settle over UPI",
+  title: "Owely — Split expenses, settle over UPI or cash",
   description:
-    "India-first expense splitting. Split bills with friends and flatmates, then settle up over UPI in one tap.",
+    "India-first expense splitting. Split group and 1:1 bills, then settle up over UPI or cash.",
 };
 
 export default function RootLayout({

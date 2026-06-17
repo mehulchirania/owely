@@ -4,18 +4,21 @@ The full app, broken into shippable phases. Each phase is independently
 verifiable (`npm run typecheck && npm test && npm run build` clean) and leaves
 the app in a working state. Build in order; later phases depend on earlier ones.
 
-**Confirmed decisions** (from review of `docs/ARCHITECTURE.md` §8):
+**Confirmed decisions** (from review of `docs/ARCHITECTURE.md`):
 1. Android = **PWA wrapped as a TWA** (one codebase).
 2. Read path = **hybrid** (Server Components for initial render, client
    subscriptions for the live group feed).
-3. Session = **Firebase `__session` cookie**, 14-day, verified in middleware +
+3. Session = **Firebase `__session` cookie**, 14-day, verified in `proxy.ts` +
    every action.
-4. Settlement confirmation = **payer marks paid and captures a payment reference
-   (UPI UTR) where available**; the reference is stored on the settlement so the
-   payee can verify. (Drove the `Settlement.paymentRef` / `settledBy` /
-   `settledAt` fields + a `"disputed"` status.)
+4. Settlement = **UPI or cash only**. Payer marks paid and captures a payment
+   reference where available; the payee can verify or dispute. No card, wallet,
+   gateway, aggregator, or stored-value flows.
 5. Group invites = **phone is the primary join key** (pending `invites/{id}`
    linked on first sign-in).
+6. 1:1 expenses = **direct groups** (`type: "direct"`) that reuse the same
+   expense, settlement, and debt engine.
+7. Categories = predefined + owner-scoped custom categories for both groups and
+   direct people.
 
 Legend: ☐ not started · ◧ in progress · ☑ done.
 
@@ -61,8 +64,8 @@ Notes / decisions
 
 Deliverables
 - `(auth)/login` — Google sign-in + Phone OTP (reCAPTCHA verifier) screens.
-- `AuthProvider` (client) — exposes auth state; posts the ID token to
-  `/api/auth/session` on sign-in, calls `DELETE` on sign-out.
+- `LoginForm` + `SignOutButton` — client auth flows post the ID token to
+  `/api/auth/session` on sign-in and call `DELETE` on sign-out.
 - `(app)/layout.tsx` — authenticated shell (nav, sign-out), server-guarded.
 - First-sign-in: create/merge `users/{uid}`; link any pending phone invites.
 
@@ -112,26 +115,63 @@ mismatch blocked at the UI.
 
 ---
 
-## Phase 5 — Settlements + UPI ☑
+## Phase 5 — Settlements + UPI + Cash ☑
 
 Deliverables
 - `src/lib/upi.ts` — deep-link builder `upi://pay?pa=&pn=&am=&cu=INR` (paise →
   rupees, 2 decimals, URL-encoded `pn`). Unit-tested.
-- `src/actions/settlements.ts` — `recordSettlement` (creates `pending`),
-  `markSettled(paymentRef?)` (payer confirms, stores ref + `settledBy`/
-  `settledAt` → `completed`), `disputeSettlement` (payee → `disputed`).
-- Settle-up UI: show simplified transfers; "Pay via UPI" opens the deep link;
-  on return, capture the payment reference and mark paid. Don't navigate away
-  until the user confirms.
+- `src/actions/settlements.ts` — `settleUp` records a payer-confirmed completed
+  UPI or cash settlement with optional reference; `disputeSettlement` lets the
+  payee mark a completed settlement disputed.
+- Settle-up UI: show simplified transfers; UPI opens the deep link; cash is
+  recorded manually. Don't navigate away until the user confirms.
 
 Acceptance: settle a debt end-to-end with a captured reference; disputed path
 works; settlement recompute reflects in balances.
 
 ---
 
-## Phase 6 — Templates · Recurring · OCR · PDF ◧ (backend partially done)
+## Phase 6 — Direct People + Categories ◧
+
+Core organization layer; not paid. This makes 1:1 expenses first-class without
+forking the money/debt model.
+
+Deliverables
+- `Group.type`: `"group"` or `"direct"`.
+- Direct relationship metadata: deterministic `directPairKey` and
+  `directPeerUids` for list views and dedupe.
+- Relationship categorization fields on `Group`: `categoryId`, `categoryName`,
+  and `categoryKind`.
+- Predefined group/direct categories in code.
+- Custom category collection: `categories/{id}` owner-scoped, action-only writes.
+- Direct relationship actions: create/link by registered user or phone invite,
+  enforce exactly two members, dedupe existing direct pair.
+- People page: list direct relationships, net balance per person, add-person
+  flow, and entry into the shared expense/settlement screens.
+- Category management UI: create/edit/delete custom categories, assign category
+  to group/direct relationship.
+
+Acceptance: 1:1 expenses use the same `Expense`, `Settlement`, and
+`simplifyDebts` paths as groups; direct groups can never have more than two
+members; categories are visible/filterable for both groups and people.
+
+Status
+- ☑ Domain foundation: group type, direct metadata, category fields, custom
+  collection/rule, read-model mapping, predefined categories.
+- ☑ Direct relationship actions and direct invite acceptance.
+- ☑ People UI: list direct relationships, add person, route to existing
+  expense/settle screens, hide group-only controls on direct ledgers.
+- ☑ Category write path: `actions/categories.ts` create/update/delete
+  (owner-scoped) + `setGroupCategory` (predefined or owned custom, or clear).
+  `ensureUser` initializes new users' `tier:"free"` + `currency:"INR"`.
+- ☐ Category management + filter UI (the only remaining Phase 6 piece).
+
+---
+
+## Phase 7 — Paid Features ◧ (backend partially done)
 
 Largest phase; each sub-feature is independent and can ship separately.
+Everything in this phase is paid-tier unless explicitly moved down later.
 
 Deliverables
 - **Templates** ☐ — `templates/{id}` (ownerUid-scoped) + rule; save participants +
@@ -152,6 +192,8 @@ Deliverables
 - **Offline writes** ☑ (backend) — `clientId` idempotency on `addExpense` /
   `addOwnExpense` so a client replay queue can't double-count. The queue itself
   is a future client task.
+- **Multi-currency** ☐ — group-level base currency, user display preference,
+  currency-specific formatting, and a clear no-FX/FX policy before launch.
 - **Receipt OCR** ☐ — Storage upload → Cloud Function calls Google Vision →
   prefill the expense form. `receiptURL` on expense.
 - **PDF export** ☐ — server route renders group history to a downloadable PDF.
@@ -161,7 +203,7 @@ client writes introduced.
 
 ---
 
-## Phase 7 — PWA + polish ☐
+## Phase 8 — PWA + polish ☐
 
 Deliverables
 - PWA manifest + service worker (installable; offline shell).
@@ -169,10 +211,59 @@ Deliverables
 - Pass over empty / loading / error states across all screens.
 - Accessibility sweep: 375px no-scroll, 44px touch targets, visible focus,
   `prefers-reduced-motion`, AA contrast.
-- **Freemium Limits**: Server actions enforce max 100 expenses/mo for free tier, unlimited for premium.
-- **Multi-Currency Settings**: Group-level base currency, user preference for display, dynamic UI handling.
+- **Freemium Limits**: Server actions enforce max 100 expenses/mo for free tier,
+  unlimited for paid.
 
 Acceptance: Lighthouse PWA installable; a11y checks pass; ready for a TWA build.
+
+---
+
+## Remaining roadmap (sequenced) — mostly UI on finished backends
+
+The money/debt engine, auth, groups, direct 1:1s, settlements, own expenses,
+recurring, contacts matching, categories, and freemium counting all exist as
+verified backend. What's left is largely the UI to drive them, plus launch ops.
+Sequenced by dependency and user value; each ships independently, gate-green.
+
+**R1 — Categories UI (finishes Phase 6).** Backend ✅. Category management screen
+(create/edit/delete custom), a picker on group/direct create + a "change
+category" control (→ `setGroupCategory`), category chip (icon+color tint) on
+list rows, and filter groups/people by category.
+
+**R2 — Own-expenses UI (the "two sections per profile").** Backend ✅
+(`actions/own-expenses.ts`, `users/{uid}/ownExpenses`). `/own` route: list +
+monthly total + add/edit/delete; a Shared ⇄ Own switch in the nav.
+
+**R3 — Recurring UI + scheduler.** Backend ✅ (`actions/recurring.ts`,
+`generateDueRecurring`, `/api/cron/recurring`). "Make this monthly" on the
+add-expense form; a manage screen to list/pause/reschedule/delete with next-run;
+**ops:** wire Cloud Scheduler to POST the cron daily with `CRON_SECRET`.
+
+**R4 — Contacts add UI.** Backend ✅ (`findRegisteredUsers`,
+`addMembersByPhone`). Contact Picker API (Android/TWA, secure context) with a
+manual name+number fallback; "on Owely" badges; batch add. Desktop = manual.
+
+**R5 — Offline replay queue (client).** Backend guarantee ✅ (`clientId`
+idempotency). IndexedDB queue for expense writes made offline; optimistic UI;
+replay on reconnect; visible sync status. Pairs with the existing offline reads.
+
+**R6 — Paid tier + multi-currency.** Backend: freemium counting ✅, `tier` field
+✅; needs the upgrade/paywall UX on the `freemium-limit` result, plan state, and
+multi-currency (group base currency + user display preference + per-currency
+formatting; decide the no-FX vs FX policy before launch).
+
+**R7 — Premium extras.** Templates (`templates/{id}` + reuse on add-expense),
+Receipt OCR (Storage upload → Vision Cloud Function → prefill), PDF export
+(server route → group history). Each independent.
+
+**R8 — PWA + polish (Phase 8).** Manifest + service worker (installable, offline
+shell), TWA packaging notes, a11y sweep (375px, 44px targets, focus,
+reduced-motion, AA contrast), empty/loading/error pass.
+
+**R9 — Deploy / ops.** Console: real `apiKey`/`appId` in `apphosting.yaml`,
+service-account runtime secret, App Hosting backend + GitHub, Cloud Scheduler
+(R3), any Firestore composite indexes, deploy `firestore.rules`. Then rotate the
+dev service-account key.
 
 ---
 

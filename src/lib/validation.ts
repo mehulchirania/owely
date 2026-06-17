@@ -122,6 +122,12 @@ export const InviteByPhoneSchema = z.object({
 });
 export type InviteByPhoneInput = z.infer<typeof InviteByPhoneSchema>;
 
+export const CreateDirectRelationshipSchema = z.object({
+  phone: PhoneSchema,
+  name: z.string().trim().min(1, "Give this person a name.").max(60),
+});
+export type CreateDirectRelationshipInput = z.infer<typeof CreateDirectRelationshipSchema>;
+
 export const AcceptInviteSchema = z.object({ inviteId: UidSchema });
 
 /** Raw phone strings (from a contact picker) to check for existing accounts.
@@ -236,6 +242,41 @@ export const UpdateRecurringSchema = z.object({
 export type UpdateRecurringInput = z.infer<typeof UpdateRecurringSchema>;
 
 export const DeleteRecurringSchema = z.object({ recurringId: UidSchema });
+
+// ── Relationship-category schemas ────────────────────────────────────────────
+
+/** Design-system color tokens a category may use (drive the tile tint). */
+const CATEGORY_COLORS = [
+  "accent", "accent2", "mint", "coral", "pink", "cyan", "yellow", "orange", "muted",
+] as const;
+
+const CategoryScopeSchema = z.enum(["group", "direct", "both"]);
+
+export const CreateCategorySchema = z.object({
+  name: z.string().trim().min(1, "Name the category.").max(40),
+  color: z.enum(CATEGORY_COLORS),
+  icon: z.string().trim().min(1).max(32),
+  appliesTo: CategoryScopeSchema,
+});
+export type CreateCategoryInput = z.infer<typeof CreateCategorySchema>;
+
+export const UpdateCategorySchema = z.object({
+  categoryId: UidSchema,
+  name: z.string().trim().min(1).max(40).optional(),
+  color: z.enum(CATEGORY_COLORS).optional(),
+  icon: z.string().trim().min(1).max(32).optional(),
+  appliesTo: CategoryScopeSchema.optional(),
+});
+export type UpdateCategoryInput = z.infer<typeof UpdateCategorySchema>;
+
+export const DeleteCategorySchema = z.object({ categoryId: UidSchema });
+
+/** Assign a category to a group/direct relationship, or clear it (`null`). */
+export const SetGroupCategorySchema = z.object({
+  groupId: UidSchema,
+  categoryId: z.string().trim().min(1).max(64).nullable(),
+});
+export type SetGroupCategoryInput = z.infer<typeof SetGroupCategorySchema>;
 
 // ── Settlement schemas ───────────────────────────────────────────────────────
 

@@ -37,12 +37,44 @@ export interface MemberDetail {
   photoURL: string | null;
 }
 
+export type GroupType = "group" | "direct";
+export type RelationshipCategoryScope = "group" | "direct" | "both";
+export type RelationshipCategoryKind = "predefined" | "custom";
+
+/**
+ * User-owned custom category for organizing groups and 1:1 relationships.
+ * Predefined categories live in code; custom categories live in Firestore.
+ */
+export interface RelationshipCategory {
+  id: string;
+  ownerUid: Uid;
+  name: string;
+  color: string;
+  icon: string;
+  appliesTo: RelationshipCategoryScope;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface Group {
   id: string;
+  /** `direct` is a 1:1 relationship backed by the same expense/debt engine. */
+  type: GroupType;
   name: string;
   createdBy: Uid;
   members: Uid[];
   memberDetails: Record<Uid, MemberDetail>;
+  /** Relationship/category metadata for organizing groups and 1:1 people. */
+  categoryId?: string;
+  categoryName?: string;
+  categoryKind?: RelationshipCategoryKind;
+  /**
+   * Deterministic sorted uid pair key for `direct` groups. Used to dedupe a
+   * 1:1 relationship without making either UID the Firestore document ID.
+   */
+  directPairKey?: string;
+  /** Viewer uid -> other member uid, denormalized for direct relationship lists. */
+  directPeerUids?: Record<Uid, Uid>;
   /** Minimal set of transfers that settles the group, recomputed on writes. */
   simplifiedDebts: Settlement[];
   /** Group base currency used for all expenses in the group. */

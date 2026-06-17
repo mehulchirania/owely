@@ -43,6 +43,11 @@ service cloud.firestore {
         allow read: if isMember(groupId);
         allow write: if false;
       }
+
+      match /counters/{monthKey} {
+        allow read: if isMember(groupId);
+        allow write: if false;
+      }
     }
 
     // Phone invites + templates are read/written exclusively via Server Actions.
@@ -51,6 +56,13 @@ service cloud.firestore {
     }
 
     match /templates/{templateId} {
+      allow read: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Custom categories for organizing groups and 1:1 relationships.
+    // Predefined categories are shipped in code. Writes stay action-only.
+    match /categories/{categoryId} {
       allow read: if signedIn() && resource.data.ownerUid == request.auth.uid;
       allow write: if false;
     }

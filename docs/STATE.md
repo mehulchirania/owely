@@ -2,7 +2,7 @@
 
 India-first freemium expense-splitting app. Android + Web.
 
-_Last updated: 2026-06-16_
+_Last updated: 2026-06-17_
 
 ## Stack (as scaffolded)
 
@@ -10,8 +10,8 @@ _Last updated: 2026-06-16_
   the spec said Next 15; `create-next-app` installed 16. App Router APIs are
   unchanged. Pin to 15 if there's a reason to.
 - React 19.2 · TypeScript 5 (strict) · Tailwind v4 · Vitest 4
-- Target deploy: Vercel
-- Planned: Firebase Auth (Google + Phone OTP), Firestore (offline persistence)
+- Target deploy: Firebase App Hosting
+- Firebase Auth (Google + Phone OTP), Firestore (offline persistence)
 
 ## Project layout
 
@@ -28,14 +28,20 @@ src/
     session.ts               requireSession / authorizeUser / authorizeMember
     session-cookie.ts        Cookie constants (import-safe for the edge proxy)
     read-model.ts            Admin reads + Timestamp→millis conversion
-    recompute.ts             Shared simplified-debt recompute (server-only)
+    recompute.ts             Shared simplified-debt recompute (server-only, transactional)
+    freemium.ts              Freemium limit enforcement (monthly counter per group)
+    log.ts                   Server-side error logging for action observability
+    relationship-categories.ts Predefined group/direct category metadata
     firebase/{client,admin,collections,auth-errors}.ts
   actions/          The only write path (Server Actions)
-    auth.ts  groups.ts  expenses.ts  settlements.ts
+    auth.ts groups.ts expenses.ts settlements.ts own-expenses.ts recurring.ts
   components/       LoginForm, SignOutButton, CreateGroupForm, InviteMemberForm,
                     GroupMenu, ExpenseForm, ExpenseFeed, SettlePanel, ProfileForm
+    landing/        Marketing landing: LandingMotion (client motion engine) +
+                    Nav, Hero, Marquee, HowItWorks, Features, Simplify, Compare,
+                    Pricing, ValueBand, Cta, Footer, icons
   app/
-    page.tsx                       marketing landing
+    page.tsx                       marketing landing (motion-rich, static)
     (auth)/login                   Google + Phone OTP
     (app)/                         server-guarded shell
       groups, groups/[groupId], .../expenses/new, .../expenses/[id]/edit,
@@ -118,24 +124,46 @@ pure function so it can run inside a Server Action and in tests identically.
 - [x] Phase 2 — Auth UI + app shell (Google + Phone OTP)
 - [x] Phase 3 — Groups (actions + invite by phone)
 - [x] Phase 4 — Expenses (add/edit, split types, simplify recompute)
-- [x] Phase 5 — Settlements + UPI deep-link + payment-ref capture
+- [x] Phase 5 — Settlements + UPI/cash + payment-ref capture
 - [x] `Owely.dc.html` design handoff applied to core app surfaces
 - [x] Login redesigned to match the post-login web dashboard feel
-- ◧ Phase 6 — Templates · recurring · OCR · PDF
+- ◧ Phase 6 — Direct people + categories
+  - [x] Domain foundation: `Group.type` (`group`/`direct`), direct pair metadata,
+        group/direct category fields, custom `categories/{id}` collection name,
+        owner-scoped rule, read-model mapping, and predefined category constants.
+  - [x] Direct relationship actions: create/link by registered phone, create
+        pending direct invite for unregistered phone, accept/auto-claim direct
+        invites into a deduped two-member direct group.
+  - [x] People UI: `/people` list, add-person form, mobile/desktop primary nav,
+        direct ledgers routed through existing expense/settle screens, and no
+        group invite controls on direct ledgers.
+  - [x] Category write path: `actions/categories.ts` —
+        create/update/delete (owner-scoped) + `setGroupCategory` (predefined or
+        owned custom, or clear). Completed the read-only half (collection, rule,
+        read-model, predefined constants already existed). `ensureUser` now
+        initializes `tier:"free"` + `currency:"INR"` for new users.
+  - [ ] Category management UI.
+- ◧ Phase 7 — Paid features: templates · recurring UI · multi-currency · OCR · PDF
   - [x] Recurring expenses (backend): `recurring/{id}` defs + `generateDueRecurring`
         + `/api/cron/recurring` (Cloud Scheduler hits it daily). Idempotent.
   - [x] Own (personal, un-split) expenses (backend): `users/{uid}/ownExpenses`
         + actions. The "two sections per profile" — own vs shared tracking.
   - [x] Contacts member-add (backend): `findRegisteredUsers` + `addMembersByPhone`.
   - [x] Offline-safe writes (backend): `clientId` idempotency on expense creation.
-  - [ ] Templates · OCR · PDF · the UI for all of the above (no UI built yet).
-- [ ] Phase 7 — PWA + polish
+  - [ ] Paid feature gating, templates, recurring UI, multi-currency, OCR, PDF,
+        and UI for own expenses/contact batch add (no UI built yet).
+- [ ] Phase 8 — PWA + polish
 
 Phases 1-5 ship the full core loop. The dark Owely prototype styling now covers
 landing/auth, the dashboard-style login screen, app shell, groups, expenses,
-settlement, settings, forms, menus, and error states. Note: Next 16 renamed Middleware ->
+settlement, settings, forms, menus, and error states. Settlements are UPI or cash
+only; no payment gateway/aggregator is planned. Note: Next 16 renamed Middleware ->
 **Proxy** (`src/proxy.ts`); settlement record/mark collapsed into one payer
 `settleUp` action; no `AuthProvider` (server session cookie is source of truth).
+Direct 1:1 expenses are being built as `type: "direct"` groups so the existing
+expense, settlement, and debt engine remains the single source of truth. Direct
+group backend creation and People screens are in place; category
+assignment/management remains.
 
 ## Commands
 

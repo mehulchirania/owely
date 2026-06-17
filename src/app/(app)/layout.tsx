@@ -55,6 +55,20 @@ export default async function AppLayout({
             <SignOutButton />
           </nav>
         </div>
+        <nav className="mx-auto flex w-full max-w-2xl gap-2 px-4 pb-3" aria-label="Primary">
+          <Link
+            href="/groups"
+            className="flex h-10 flex-1 items-center justify-center rounded-2xl border border-white/6 bg-card text-sm font-semibold text-strong transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            Groups
+          </Link>
+          <Link
+            href="/people"
+            className="flex h-10 flex-1 items-center justify-center rounded-2xl border border-white/6 bg-card text-sm font-semibold text-strong transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            People
+          </Link>
+        </nav>
       </header>
       <main className="relative mx-auto w-full max-w-2xl flex-1 px-4 py-6">
         {children}

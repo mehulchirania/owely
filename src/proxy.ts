@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/lib/session-cookie";
 
 /** Authenticated areas of the app. */
-const PROTECTED = ["/groups", "/settings"];
+const PROTECTED = ["/groups", "/people", "/settings"];
 
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
@@ -40,5 +40,5 @@ export function proxy(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ["/groups/:path*", "/settings/:path*", "/login"],
+  matcher: ["/groups/:path*", "/people/:path*", "/settings/:path*", "/login"],
 };

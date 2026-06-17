@@ -9,8 +9,10 @@
  *   groups/{groupId}
  *   groups/{groupId}/expenses/{expenseId}
  *   groups/{groupId}/settlements/{settlementId}
+ *   groups/{groupId}/counters/{YYYY-MM}  (monthly expense counters)
  *   invites/{inviteId}          (phone-based group invites)
  *   templates/{templateId}      (saved split templates, scoped by ownerUid)
+ *   categories/{categoryId}     (custom group/direct categories, ownerUid-scoped)
  */
 export const Collections = {
   users: "users",
@@ -19,6 +21,7 @@ export const Collections = {
   settlements: "settlements",
   invites: "invites",
   templates: "templates",
+  categories: "categories",
   /** Per-user personal (un-split) expenses: users/{uid}/ownExpenses/{id}. */
   ownExpenses: "ownExpenses",
   /** Recurring-expense definitions (shared + own), top-level: recurring/{id}. */
@@ -46,4 +49,9 @@ export const paths = {
   recurring: () => Collections.recurring,
   recurringDoc: (recurringId: string) =>
     `${Collections.recurring}/${recurringId}`,
+  category: (categoryId: string) =>
+    `${Collections.categories}/${categoryId}`,
+  /** Per-group monthly expense counter: groups/{groupId}/counters/{YYYY-MM}. */
+  groupCounter: (groupId: string, monthKey: string) =>
+    `${Collections.groups}/${groupId}/counters/${monthKey}`,
 } as const;

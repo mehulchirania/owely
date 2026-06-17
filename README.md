@@ -1,7 +1,8 @@
 # Owely 🦉
 
 **India-first** freemium expense-splitting app. Split bills with friends and flatmates, then
-settle up over **UPI** in one tap. Built for fairness and transparency. Android + Web.
+settle up over **UPI or cash**. Built for fairness and transparency. Android + Web.
+Supports both group expenses and 1:1/direct expenses through one shared ledger.
 
 Firebase project: `owely-c6c51`.
 
@@ -11,9 +12,9 @@ Firebase project: `owely-c6c51`.
 |---|---|---|
 | **Core Splitting** | Free for most personal use cases | Often paywalled or heavily restricted |
 | **Monetization** | Fair usage limits for heavy users (Freemium) | Gating basic usability (ads, charts) |
-| **Payment Integration**| Native one-tap UPI Deep-linking | Manual copy-pasting |
+| **Settlement** | UPI deep links + cash recording | Manual copy-pasting |
 | **User Experience** | Clean, dashboard-app feel, ad-free | Cluttered, heavy advertising |
-| **Multi-Currency** | Free Settings Toggle | Premium-only |
+| **Paid Features** | Unlimited expenses, multi-currency, OCR, PDF export | Often bundled awkwardly |
 
 ## Quick start
 
@@ -56,13 +57,15 @@ src/
     money.ts                Paise math — splits always reconcile to the total
     simplify-debts.ts       Net-balance + greedy min-cashflow engine (pure)
     upi.ts                  UPI deep-link builder (paise→rupees at the boundary)
+    relationship-categories.ts  Predefined group/direct categories
     result.ts validation.ts session.ts read-model.ts recompute.ts
     *.test.ts               Vitest specs (money · debts · UPI)
     firebase/               client (reads+Auth) · admin (writes) · collections
   actions/                  Server Actions — the only write path
     auth.ts groups.ts expenses.ts settlements.ts
   components/               Login, groups, expense form/feed, settle panel, …
-  app/                      App Router: landing · (auth)/login · (app)/* shell
+    landing/                Marketing landing page sections + motion engine
+  app/                      App Router: landing (/) · (auth)/login · (app)/* shell
   proxy.ts                  Route gate (Next 16 Middleware → Proxy)
 docs/STATE.md               Living status doc
 ```
@@ -87,14 +90,16 @@ in [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md).
 
 Core app complete end-to-end (Phases 1-5): Google + Phone OTP sign-in, groups
 with phone invites, expenses with equal/unequal/percentage splits, live debt
-simplification, and UPI settle-up with payment-reference capture + dispute. The
+simplification, and UPI/cash settle-up with payment-reference capture + dispute. The
 `Owely.dc.html` design handoff has been applied to the remaining app surfaces,
 including forms, menus, settings, errors, settle-up, and a login screen styled
-like the post-login dashboard. Still console-blocked for a live deploy (API key,
-App ID, service-account key; see env above). Deferred: Phase 6 (templates,
-recurring, OCR, PDF) and Phase 7 (PWA + a11y sweep). See
+like the post-login dashboard. Phase 6 has started with 1:1 People UI, direct
+relationship backend support, and predefined/custom category foundations.
+Still console-blocked for a live deploy (API key, App ID, service-account key;
+see env above). Deferred: category management UI, paid features (templates, recurring UI,
+multi-currency, OCR, PDF) and PWA/a11y sweep. See
 [`docs/STATE.md`](./docs/STATE.md) and [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md).
 
 ## What's intentionally not built
 
-Multi-currency UI · friend graph outside groups · bilateral IOU tracking.
+Payment aggregation · card/wallet payments · friend graph outside groups · bilateral IOU tracking.

@@ -46,6 +46,10 @@ body {
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--color-ink);
   color: var(--color-hi);
@@ -92,7 +96,57 @@ body {
   animation: owToast 0.5s ease;
 }
 
+/*
+ * Landing page (#owely-landing) — hover/focus helpers. The motion engine drives
+ * transforms/opacity inline; these classes own only color/border/background hover
+ * and keyboard focus rings, scoped so they never leak into the app shell.
+ */
+#owely-landing a:focus-visible,
+#owely-landing button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+
+#owely-landing .ow-link {
+  transition: color 0.2s ease;
+}
+#owely-landing .ow-hovcard {
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+#owely-landing .ow-hovborder {
+  transition: border-color 0.3s ease;
+}
+#owely-landing .ow-glowbtn {
+  transition: filter 0.25s ease, box-shadow 0.25s ease;
+}
+#owely-landing .ow-softbtn {
+  transition: background 0.25s ease;
+}
+
+@media (hover: hover) {
+  #owely-landing .ow-link:hover {
+    color: var(--color-hi);
+  }
+  #owely-landing .ow-hovcard:hover {
+    border-color: var(--ow-hov, rgba(139, 123, 255, 0.3));
+    background: #13121a;
+  }
+  #owely-landing .ow-hovborder:hover {
+    border-color: var(--ow-hov, rgba(139, 123, 255, 0.3));
+  }
+  #owely-landing .ow-glowbtn:hover {
+    filter: brightness(1.07);
+  }
+  #owely-landing .ow-softbtn:hover {
+    background: #211e2c;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   *,
   *::before,
   *::after {

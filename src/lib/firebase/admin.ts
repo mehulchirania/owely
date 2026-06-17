@@ -6,9 +6,9 @@
  * Firestore security rules, so authorization is enforced in our action layer
  * (verify the session, check membership) — never assume the rules will catch it.
  *
- * Credentials come from a service-account env var. On Vercel set
- * FIREBASE_SERVICE_ACCOUNT_KEY to the full JSON (or base64 of it). Locally, put
- * it in .env.local (never commit it).
+ * Credentials come from a service-account env var. In Firebase App Hosting,
+ * store FIREBASE_SERVICE_ACCOUNT_KEY as a runtime secret. Locally, put it in
+ * .env.local (never commit it).
  */
 
 import "server-only";

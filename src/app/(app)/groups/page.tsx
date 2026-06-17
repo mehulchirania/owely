@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { requireSession } from "@/lib/session";
-import { fetchUserGroups } from "@/lib/read-model";
+import { fetchStandardGroups } from "@/lib/read-model";
 import { formatPaise } from "@/lib/money";
 import { netPositionFromSettlements } from "@/lib/simplify-debts";
 import { CreateGroupForm } from "@/components/CreateGroupForm";
@@ -39,7 +39,7 @@ function relativeTime(ms: number): string {
 
 export default async function GroupsPage() {
   const user = await requireSession();
-  const groups = await fetchUserGroups(user.uid);
+  const groups = await fetchStandardGroups(user.uid);
 
   const nets = groups.map((g) => netPositionFromSettlements(g.simplifiedDebts, user.uid));
   const overall = nets.reduce((a, b) => a + b, 0);

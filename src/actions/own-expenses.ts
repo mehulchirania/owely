@@ -13,6 +13,7 @@ import { revalidatePath } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { paths } from "@/lib/firebase/collections";
 import { authorizeUser } from "@/lib/session";
+import { logActionError } from "@/lib/log";
 import { rupeesToPaise } from "@/lib/money";
 import { failure, success, type ActionResult } from "@/lib/result";
 import {
@@ -59,7 +60,8 @@ export async function addOwnExpense(
     });
     revalidatePath("/own");
     return success({ expenseId: ref.id });
-  } catch {
+  } catch (error) {
+    logActionError("addOwnExpense", error);
     return failure("Could not save the expense. Please try again.");
   }
 }
@@ -92,7 +94,8 @@ export async function editOwnExpense(input: unknown): Promise<ActionResult<null>
     });
     revalidatePath("/own");
     return success(null);
-  } catch {
+  } catch (error) {
+    logActionError("editOwnExpense", error);
     return failure("Could not update the expense.");
   }
 }
@@ -107,7 +110,8 @@ export async function deleteOwnExpense(input: unknown): Promise<ActionResult<nul
     await getAdminDb().doc(paths.ownExpense(auth.data.uid, parsed.data.expenseId)).delete();
     revalidatePath("/own");
     return success(null);
-  } catch {
+  } catch (error) {
+    logActionError("deleteOwnExpense", error);
     return failure("Could not delete the expense.");
   }
 }

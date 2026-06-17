@@ -17,6 +17,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
 import { computeSplits } from "@/lib/expense-splits";
 import { authorizeMember, authorizeUser } from "@/lib/session";
+import { logActionError } from "@/lib/log";
 import { rupeesToPaise } from "@/lib/money";
 import { failure, success, type ActionResult } from "@/lib/result";
 import {
@@ -58,7 +59,8 @@ export async function createSharedRecurring(
     });
     revalidatePath(`/groups/${parsed.data.groupId}`);
     return success({ recurringId: ref.id });
-  } catch {
+  } catch (error) {
+    logActionError("createSharedRecurring", error);
     return failure("Could not save the recurring expense.");
   }
 }
@@ -96,7 +98,8 @@ export async function createOwnRecurring(
     });
     revalidatePath("/own");
     return success({ recurringId: ref.id });
-  } catch {
+  } catch (error) {
+    logActionError("createOwnRecurring", error);
     return failure("Could not save the recurring expense.");
   }
 }
@@ -121,7 +124,8 @@ export async function updateRecurring(input: unknown): Promise<ActionResult<null
     if (parsed.data.dayOfMonth !== undefined) patch.dayOfMonth = parsed.data.dayOfMonth;
     await ref.update(patch);
     return success(null);
-  } catch {
+  } catch (error) {
+    logActionError("updateRecurring", error);
     return failure("Could not update the recurring expense.");
   }
 }
@@ -142,7 +146,8 @@ export async function deleteRecurring(input: unknown): Promise<ActionResult<null
     }
     await ref.delete();
     return success(null);
-  } catch {
+  } catch (error) {
+    logActionError("deleteRecurring", error);
     return failure("Could not delete the recurring expense.");
   }
 }

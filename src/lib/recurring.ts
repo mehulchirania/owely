@@ -17,6 +17,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
 import { fetchGroup } from "@/lib/read-model";
 import { recomputeSimplified } from "@/lib/recompute";
+import { logActionError } from "@/lib/log";
 
 /** `now` is injected for testability; defaults to the current time. */
 export async function generateDueRecurring(
@@ -83,8 +84,10 @@ export async function generateDueRecurring(
 
       await doc.ref.update({ lastRunMonth: monthKey, updatedAt: FieldValue.serverTimestamp() });
       generated++;
-    } catch {
-      // One bad definition shouldn't stop the rest of the run.
+    } catch (error) {
+      // One bad definition shouldn't stop the rest of the run — but log it so
+      // a silently broken recurring rule is discoverable, not invisible.
+      logActionError(`generateRecurring:${doc.id}`, error);
     }
   }
 

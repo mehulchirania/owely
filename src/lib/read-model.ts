@@ -16,7 +16,15 @@ import "server-only";
 import { Timestamp } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
-import type { Expense, Group, OwnExpense, RecurringExpense, Settlement, User } from "@/types";
+import type {
+  Expense,
+  Group,
+  OwnExpense,
+  RecurringExpense,
+  RelationshipCategory,
+  Settlement,
+  User,
+} from "@/types";
 
 /** Coerce a Firestore timestamp-ish value into epoch millis. */
 function toMillis(value: unknown): number {
@@ -44,10 +52,16 @@ function mapUser(uid: string, d: DocData): User {
 function mapGroup(id: string, d: DocData): Group {
   return {
     id,
+    type: d.type ?? "group",
     name: d.name ?? "",
     createdBy: d.createdBy,
     members: d.members ?? [],
     memberDetails: d.memberDetails ?? {},
+    categoryId: d.categoryId,
+    categoryName: d.categoryName,
+    categoryKind: d.categoryKind,
+    directPairKey: d.directPairKey,
+    directPeerUids: d.directPeerUids,
     // simplifiedDebts are stored as plain objects (numbers already), pass through.
     simplifiedDebts: (d.simplifiedDebts ?? []) as Settlement[],
     baseCurrency: d.baseCurrency,
@@ -57,7 +71,20 @@ function mapGroup(id: string, d: DocData): Group {
   };
 }
 
-function mapExpense(id: string, d: DocData): Expense {
+function mapRelationshipCategory(id: string, d: DocData): RelationshipCategory {
+  return {
+    id,
+    ownerUid: d.ownerUid,
+    name: d.name ?? "",
+    color: d.color ?? "accent",
+    icon: d.icon ?? "tag",
+    appliesTo: d.appliesTo ?? "both",
+    createdAt: toMillis(d.createdAt),
+    updatedAt: toMillis(d.updatedAt),
+  };
+}
+
+export function mapExpense(id: string, d: DocData): Expense {
   return {
     id,
     groupId: d.groupId,
@@ -114,7 +141,7 @@ function mapRecurring(id: string, d: DocData): RecurringExpense {
   };
 }
 
-function mapSettlement(id: string, d: DocData): Settlement {
+export function mapSettlement(id: string, d: DocData): Settlement {
   return {
     id,
     groupId: d.groupId,
@@ -149,6 +176,18 @@ export async function fetchUserGroups(uid: string): Promise<Group[]> {
   return snap.docs
     .map((doc) => mapGroup(doc.id, doc.data()))
     .sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+/** Non-direct groups the user belongs to, newest activity first. */
+export async function fetchStandardGroups(uid: string): Promise<Group[]> {
+  const groups = await fetchUserGroups(uid);
+  return groups.filter((group) => group.type !== "direct");
+}
+
+/** 1:1 direct relationships the user belongs to, newest activity first. */
+export async function fetchDirectGroups(uid: string): Promise<Group[]> {
+  const groups = await fetchUserGroups(uid);
+  return groups.filter((group) => group.type === "direct");
 }
 
 /** A single expense, or null if it doesn't exist. */
@@ -207,4 +246,17 @@ export async function fetchGroupRecurring(groupId: string): Promise<RecurringExp
   return snap.docs
     .map((doc) => mapRecurring(doc.id, doc.data()))
     .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/** Custom categories owned by a user for organizing groups/direct people. */
+export async function fetchRelationshipCategories(
+  uid: string,
+): Promise<RelationshipCategory[]> {
+  const snap = await getAdminDb()
+    .collection(Collections.categories)
+    .where("ownerUid", "==", uid)
+    .get();
+  return snap.docs
+    .map((doc) => mapRelationshipCategory(doc.id, doc.data()))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
