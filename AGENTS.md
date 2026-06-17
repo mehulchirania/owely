@@ -16,6 +16,8 @@ Provides free (100 expenses/mo) and paid tiers. Paid unlocks unlimited expenses,
 multi-currency, OCR receipt capture, PDF export, and other advanced features.
 Core splitting supports both groups and 1:1/direct relationships through the
 same group expense/debt engine.
+Paid-only Server Actions must call `requirePaidFeature` in
+`src/lib/entitlements.ts`; UI paywalls are not sufficient.
 Firebase project: **`owely-c6c51`** (project number `167116474777`).
 Developer: Mehul Chirania (`mehulchirania@gmail.com`), Bengaluru.
 

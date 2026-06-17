@@ -23,6 +23,7 @@ import type {
   RecurringExpense,
   RelationshipCategory,
   Settlement,
+  SplitTemplate,
   User,
 } from "@/types";
 
@@ -64,7 +65,7 @@ function mapGroup(id: string, d: DocData): Group {
     directPeerUids: d.directPeerUids,
     // simplifiedDebts are stored as plain objects (numbers already), pass through.
     simplifiedDebts: (d.simplifiedDebts ?? []) as Settlement[],
-    baseCurrency: d.baseCurrency,
+    baseCurrency: d.baseCurrency ?? "INR",
     expenseCount: d.expenseCount,
     createdAt: toMillis(d.createdAt),
     updatedAt: toMillis(d.updatedAt),
@@ -79,6 +80,21 @@ function mapRelationshipCategory(id: string, d: DocData): RelationshipCategory {
     color: d.color ?? "accent",
     icon: d.icon ?? "tag",
     appliesTo: d.appliesTo ?? "both",
+    createdAt: toMillis(d.createdAt),
+    updatedAt: toMillis(d.updatedAt),
+  };
+}
+
+function mapSplitTemplate(id: string, d: DocData): SplitTemplate {
+  return {
+    id,
+    ownerUid: d.ownerUid,
+    groupId: d.groupId,
+    name: d.name ?? "",
+    splitType: d.splitType ?? "equal",
+    participants: d.participants ?? [],
+    weights: d.weights,
+    category: d.category,
     createdAt: toMillis(d.createdAt),
     updatedAt: toMillis(d.updatedAt),
   };
@@ -258,5 +274,20 @@ export async function fetchRelationshipCategories(
     .get();
   return snap.docs
     .map((doc) => mapRelationshipCategory(doc.id, doc.data()))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Templates owned by a user for a specific group/direct relationship. */
+export async function fetchGroupTemplates(
+  uid: string,
+  groupId: string,
+): Promise<SplitTemplate[]> {
+  const snap = await getAdminDb()
+    .collection(Collections.templates)
+    .where("ownerUid", "==", uid)
+    .where("groupId", "==", groupId)
+    .get();
+  return snap.docs
+    .map((doc) => mapSplitTemplate(doc.id, doc.data()))
     .sort((a, b) => a.name.localeCompare(b.name));
 }

@@ -83,6 +83,7 @@ async function linkPendingInvites(
                 [uid]: inviterUid,
               },
               simplifiedDebts: [],
+              baseCurrency: "INR",
               createdAt: FieldValue.serverTimestamp(),
               updatedAt: FieldValue.serverTimestamp(),
             });

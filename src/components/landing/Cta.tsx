@@ -23,7 +23,7 @@ export default function Cta() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-[14px]">
             <Link
-              href="/login"
+              href="/?login=true"
               data-magnet
               className="ow-glowbtn flex h-14 items-center gap-[10px] rounded-2xl bg-accent px-[30px] text-[16px] font-semibold text-white no-underline"
               style={{ boxShadow: "0 16px 40px -12px var(--color-accent)" }}
@@ -31,7 +31,7 @@ export default function Cta() {
               Start for free
             </Link>
             <Link
-              href="/login"
+              href="/?login=true"
               data-magnet
               className="ow-softbtn flex h-14 items-center gap-[9px] rounded-2xl border border-white/12 bg-card px-[26px] text-[16px] font-semibold text-hi no-underline"
             >

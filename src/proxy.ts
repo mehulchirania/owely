@@ -2,7 +2,7 @@
  * Route gate (Next.js 16 `proxy` — formerly `middleware`).
  *
  * Routing concern ONLY: redirect unauthenticated requests for app routes to
- * `/login`, and bounce already-signed-in users away from `/login`. This checks
+ * `/?login=true`, and bounce already-signed-in users away from the login modal. This checks
  * cookie *presence*, not validity — it can't run the Admin SDK on the edge.
  * Real authorization (verifying the session cookie + membership) happens in
  * Server Components and Server Actions via `src/lib/session.ts`.
@@ -24,12 +24,15 @@ export function proxy(request: NextRequest): NextResponse {
 
   if (isProtected && !hasSession) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/";
+    url.searchParams.set("login", "true");
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  if (pathname === "/login" && hasSession) {
+  const isLoginModal = pathname === "/" && request.nextUrl.searchParams.get("login") === "true";
+  
+  if (isLoginModal && hasSession) {
     const url = request.nextUrl.clone();
     url.pathname = "/groups";
     url.search = "";
@@ -40,5 +43,5 @@ export function proxy(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ["/groups/:path*", "/people/:path*", "/settings/:path*", "/login"],
+  matcher: ["/groups/:path*", "/people/:path*", "/settings/:path*"],
 };

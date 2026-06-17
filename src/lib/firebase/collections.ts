@@ -51,6 +51,8 @@ export const paths = {
     `${Collections.recurring}/${recurringId}`,
   category: (categoryId: string) =>
     `${Collections.categories}/${categoryId}`,
+  template: (templateId: string) =>
+    `${Collections.templates}/${templateId}`,
   /** Per-group monthly expense counter: groups/{groupId}/counters/{YYYY-MM}. */
   groupCounter: (groupId: string, monthKey: string) =>
     `${Collections.groups}/${groupId}/counters/${monthKey}`,

@@ -61,7 +61,7 @@ export default function Pricing() {
             ))}
           </div>
           <Link
-            href="/login"
+            href="/?login=true"
             data-magnet
             className="ow-softbtn mt-auto flex h-[50px] items-center justify-center rounded-[15px] border border-white/10 bg-elevated text-[14.5px] font-semibold text-hi no-underline"
           >
@@ -92,7 +92,7 @@ export default function Pricing() {
             ))}
           </div>
           <Link
-            href="/login"
+            href="/?login=true"
             data-magnet
             className="ow-glowbtn relative mt-auto flex h-[50px] items-center justify-center rounded-[15px] bg-accent text-[14.5px] font-semibold text-white no-underline"
             style={{ boxShadow: "0 14px 32px -10px var(--color-accent)" }}

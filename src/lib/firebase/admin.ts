@@ -17,12 +17,18 @@ import {
   getApps,
   initializeApp,
   type App,
-  type ServiceAccount,
+type ServiceAccount,
 } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
 const APP_NAME = "owely-admin";
+
+export interface GoogleServiceAccountCredentials {
+  projectId: string;
+  clientEmail: string;
+  privateKey: string;
+}
 
 /** True when admin credentials are present. Lets us no-op gracefully in dev. */
 export function hasAdminConfig(): boolean {
@@ -50,6 +56,15 @@ function loadServiceAccount(): ServiceAccount {
     clientEmail: parsed.client_email,
     // Env vars collapse newlines to the literal "\n"; restore them.
     privateKey: parsed.private_key.replace(/\\n/g, "\n"),
+  };
+}
+
+export function getGoogleServiceAccountCredentials(): GoogleServiceAccountCredentials {
+  const account = loadServiceAccount() as GoogleServiceAccountCredentials;
+  return {
+    projectId: account.projectId,
+    clientEmail: account.clientEmail,
+    privateKey: account.privateKey,
   };
 }
 

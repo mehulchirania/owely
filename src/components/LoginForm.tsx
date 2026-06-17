@@ -54,7 +54,20 @@ export function LoginForm() {
     if (!res.ok) throw new Error("Could not start your session. Please try again.");
     const ensured = await ensureUser();
     if (!ensured.ok) throw new Error(ensured.error);
-    router.replace(next);
+
+    // First-time sign-in: display name is still the phone number or the default
+    // placeholder — send the user through onboarding to pick a real name.
+    const u = ensured.data;
+    const needsOnboarding =
+      !u.displayName ||
+      u.displayName === "Owely user" ||
+      u.displayName === u.phone;
+    if (needsOnboarding) {
+      const dest = next !== "/groups" ? `?next=${encodeURIComponent(next)}` : "";
+      router.replace(`/onboarding${dest}`);
+    } else {
+      router.replace(next);
+    }
     router.refresh();
   }
 

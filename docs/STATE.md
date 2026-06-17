@@ -23,6 +23,9 @@ src/
     simplify-debts.ts(+test) Net balances + greedy min-cashflow; simplifyFromNet,
                              netWithSettlements, netPositionFromSettlements
     upi.ts (+test)           UPI deep-link builder (paise→rupees at boundary)
+    currency.ts              Supported display/base currency metadata
+    receipt-ocr.ts (+test)   Receipt OCR hint extraction
+    vision-ocr.ts            Server-only Google Vision OCR client
     result.ts                ActionResult<T> success/failure
     validation.ts            Zod schemas + parseInput/parseActionData
     session.ts               requireSession / authorizeUser / authorizeMember
@@ -30,11 +33,13 @@ src/
     read-model.ts            Admin reads + Timestamp→millis conversion
     recompute.ts             Shared simplified-debt recompute (server-only, transactional)
     freemium.ts              Freemium limit enforcement (monthly counter per group)
+    entitlements.ts          Paid feature guards for Server Actions
     log.ts                   Server-side error logging for action observability
     relationship-categories.ts Predefined group/direct category metadata
     firebase/{client,admin,collections,auth-errors}.ts
   actions/          The only write path (Server Actions)
-    auth.ts groups.ts expenses.ts settlements.ts own-expenses.ts recurring.ts
+    auth.ts groups.ts expenses.ts settlements.ts categories.ts templates.ts
+    own-expenses.ts recurring.ts currency.ts
   components/       LoginForm, SignOutButton, CreateGroupForm, InviteMemberForm,
                     GroupMenu, ExpenseForm, ExpenseFeed, SettlePanel, ProfileForm
     landing/        Marketing landing: LandingMotion (client motion engine) +
@@ -47,6 +52,8 @@ src/
       groups, groups/[groupId], .../expenses/new, .../expenses/[id]/edit,
       .../settle, settings
     api/auth/session/route.ts      set/clear session cookie
+    api/receipts/ocr              paid receipt OCR prefill route
+    api/groups/[groupId]/export/pdf paid PDF export route
   proxy.ts          Route gate (Next 16 Middleware → Proxy)
 docs/STATE.md       ← this file
 .env.example        Template; copy to .env.local
@@ -82,6 +89,8 @@ Server Actions.
 - **Two values still needed** from the console (register a Web app + generate a
   service-account key): `NEXT_PUBLIC_FIREBASE_API_KEY`,
   `NEXT_PUBLIC_FIREBASE_APP_ID`, and `FIREBASE_SERVICE_ACCOUNT_KEY`.
+- Paid receipt OCR also requires the Google Cloud Vision API to be enabled for
+  the Firebase project/service account.
 
 ## Debt simplification
 
@@ -143,14 +152,32 @@ pure function so it can run inside a Server Action and in tests identically.
         read-model, predefined constants already existed). `ensureUser` now
         initializes `tier:"free"` + `currency:"INR"` for new users.
   - [ ] Category management UI.
-- ◧ Phase 7 — Paid features: templates · recurring UI · multi-currency · OCR · PDF
+- ◧ Phase 7 — Paid features: backend done for current scope; UI/ops pending
+  - [x] Paid feature guards (backend): `requirePaidFeature` enforces `tier:"paid"`
+        on paid-only Server Actions; wired into templates and recurring
+        create/update paths. Delete remains allowed for cleanup.
+  - [x] Templates (backend): `templates/{id}` owner-scoped saved split recipes
+        with participants + equal/percentage weights, rule already read-scoped,
+        `actions/templates.ts`, Zod schemas, and read-model fetch.
+  - [x] PDF export (backend): paid route
+        `/api/groups/{groupId}/export/pdf` renders group members, current
+        simplified debts, expenses, and settlement history as a downloadable PDF.
   - [x] Recurring expenses (backend): `recurring/{id}` defs + `generateDueRecurring`
         + `/api/cron/recurring` (Cloud Scheduler hits it daily). Idempotent.
   - [x] Own (personal, un-split) expenses (backend): `users/{uid}/ownExpenses`
         + actions. The "two sections per profile" — own vs shared tracking.
   - [x] Contacts member-add (backend): `findRegisteredUsers` + `addMembersByPhone`.
   - [x] Offline-safe writes (backend): `clientId` idempotency on expense creation.
-  - [ ] Paid feature gating, templates, recurring UI, multi-currency, OCR, PDF,
+  - [x] Multi-currency (backend metadata): paid `actions/currency.ts` writes user
+        display currency and creator-only group base currency from a supported
+        code list. New/read legacy groups default to `INR`. Expense arithmetic
+        still stays paise-only until the no-FX/FX policy is decided.
+  - [x] Receipt OCR (backend): paid `POST /api/receipts/ocr` accepts an image,
+        checks optional group membership, calls Google Vision, and returns raw
+        text plus amount/date/merchant/title hints. It does not write expenses;
+        the normal expense action remains the paise/debt boundary.
+  - [ ] Paid upgrade/paywall UI, templates UI, recurring UI, multi-currency
+        controls/formatting, OCR upload UI, PDF export UI,
         and UI for own expenses/contact batch add (no UI built yet).
 - [ ] Phase 8 — PWA + polish
 
@@ -162,8 +189,10 @@ only; no payment gateway/aggregator is planned. Note: Next 16 renamed Middleware
 `settleUp` action; no `AuthProvider` (server session cookie is source of truth).
 Direct 1:1 expenses are being built as `type: "direct"` groups so the existing
 expense, settlement, and debt engine remains the single source of truth. Direct
-group backend creation and People screens are in place; category
-assignment/management remains.
+group backend creation and People screens are in place; category UI remains.
+Paid backend surfaces for templates, recurring, own expenses, contacts,
+offline-idempotent writes, currency metadata, OCR, and PDF export are in place;
+the remaining paid work is UI, provider/plan-state choice, and console ops.
 
 ## Commands
 

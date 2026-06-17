@@ -57,15 +57,21 @@ src/
     money.ts                Paise math — splits always reconcile to the total
     simplify-debts.ts       Net-balance + greedy min-cashflow engine (pure)
     upi.ts                  UPI deep-link builder (paise→rupees at the boundary)
+    currency.ts             Supported paid display/base currency metadata
+    receipt-ocr.ts          Receipt OCR hint extraction (pure, tested)
+    vision-ocr.ts           Server-only Google Vision OCR client
+    entitlements.ts         Server-side paid feature guards
     relationship-categories.ts  Predefined group/direct categories
     result.ts validation.ts session.ts read-model.ts recompute.ts
     *.test.ts               Vitest specs (money · debts · UPI)
     firebase/               client (reads+Auth) · admin (writes) · collections
   actions/                  Server Actions — the only write path
-    auth.ts groups.ts expenses.ts settlements.ts
+    auth.ts groups.ts expenses.ts settlements.ts categories.ts templates.ts currency.ts
   components/               Login, groups, expense form/feed, settle panel, …
     landing/                Marketing landing page sections + motion engine
   app/                      App Router: landing (/) · (auth)/login · (app)/* shell
+    api/receipts/ocr        Paid receipt OCR prefill route
+    api/groups/[groupId]/export/pdf  Paid PDF export route
   proxy.ts                  Route gate (Next 16 Middleware → Proxy)
 docs/STATE.md               Living status doc
 ```
@@ -93,11 +99,13 @@ with phone invites, expenses with equal/unequal/percentage splits, live debt
 simplification, and UPI/cash settle-up with payment-reference capture + dispute. The
 `Owely.dc.html` design handoff has been applied to the remaining app surfaces,
 including forms, menus, settings, errors, settle-up, and a login screen styled
-like the post-login dashboard. Phase 6 has started with 1:1 People UI, direct
-relationship backend support, and predefined/custom category foundations.
+like the post-login dashboard. Phase 6 has 1:1 People UI, direct relationship
+backend support, and category write/read foundations. Paid backend surfaces are
+now in place for templates, recurring definitions, own expenses, contacts,
+offline idempotency, currency metadata, receipt OCR, and PDF export.
 Still console-blocked for a live deploy (API key, App ID, service-account key;
-see env above). Deferred: category management UI, paid features (templates, recurring UI,
-multi-currency, OCR, PDF) and PWA/a11y sweep. See
+see env above). Deferred: category management UI, paid feature UI (templates,
+recurring UI, multi-currency controls, OCR upload UI, PDF export button) and PWA/a11y sweep. See
 [`docs/STATE.md`](./docs/STATE.md) and [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md).
 
 ## What's intentionally not built

@@ -10,6 +10,7 @@
  */
 
 import { z } from "zod";
+import { SUPPORTED_CURRENCY_CODES } from "@/lib/currency";
 import type { ExpenseCategory, SplitType } from "@/types";
 
 /** Result of a parse attempt — never throws, mirrors `ActionResult` ergonomics. */
@@ -99,6 +100,8 @@ const CATEGORIES: readonly ExpenseCategory[] = [
 ];
 
 const SPLIT_TYPES: readonly SplitType[] = ["equal", "unequal", "percentage"];
+const TEMPLATE_SPLIT_TYPES = ["equal", "percentage"] as const;
+const CurrencyCodeSchema = z.enum(SUPPORTED_CURRENCY_CODES);
 
 // ── Group schemas ────────────────────────────────────────────────────────────
 
@@ -277,6 +280,47 @@ export const SetGroupCategorySchema = z.object({
   categoryId: z.string().trim().min(1).max(64).nullable(),
 });
 export type SetGroupCategoryInput = z.infer<typeof SetGroupCategorySchema>;
+
+// Currency preference schemas
+
+export const UpdateDisplayCurrencySchema = z.object({
+  currency: CurrencyCodeSchema,
+});
+export type UpdateDisplayCurrencyInput = z.infer<typeof UpdateDisplayCurrencySchema>;
+
+export const SetGroupBaseCurrencySchema = z.object({
+  groupId: UidSchema,
+  currency: CurrencyCodeSchema,
+});
+export type SetGroupBaseCurrencyInput = z.infer<typeof SetGroupBaseCurrencySchema>;
+
+// â”€â”€ Split-template schemas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+const BasisPointsSchema = z
+  .number({ message: "Enter a percentage." })
+  .int("Percentages must resolve to whole basis points.")
+  .min(0, "Percentages must be zero or more.")
+  .max(10000, "Percentages cannot exceed 100%.");
+
+export const TemplateInputSchema = z.object({
+  groupId: UidSchema,
+  name: z.string().trim().min(1, "Name the template.").max(60),
+  splitType: z.enum(TEMPLATE_SPLIT_TYPES),
+  participants: z.array(UidSchema).min(1, "Pick at least one person.").max(50),
+  weights: z.record(z.string(), BasisPointsSchema).optional(),
+  category: z.enum(CATEGORIES as [ExpenseCategory, ...ExpenseCategory[]]).optional(),
+});
+export type TemplateInput = z.infer<typeof TemplateInputSchema>;
+
+export const CreateTemplateSchema = TemplateInputSchema;
+export type CreateTemplateInput = z.infer<typeof CreateTemplateSchema>;
+
+export const UpdateTemplateSchema = TemplateInputSchema.extend({
+  templateId: UidSchema,
+});
+export type UpdateTemplateInput = z.infer<typeof UpdateTemplateSchema>;
+
+export const DeleteTemplateSchema = z.object({ templateId: UidSchema });
 
 // ── Settlement schemas ───────────────────────────────────────────────────────
 

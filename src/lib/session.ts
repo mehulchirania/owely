@@ -9,7 +9,7 @@
  *
  * Two flavours of guard:
  *  - `requireSession()` — for Server Components / route handlers; redirects to
- *    `/login` when unauthenticated.
+ *    `/?login=true` when unauthenticated.
  *  - `authorizeUser()` / `authorizeMember()` — for Server Actions; return an
  *    `ActionResult` failure instead of throwing, so actions never throw across
  *    the client boundary.
@@ -57,7 +57,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 /** Server Component / route-handler guard: redirect to login when signed out. */
 export async function requireSession(): Promise<SessionUser> {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/?login=true");
   return user;
 }
 

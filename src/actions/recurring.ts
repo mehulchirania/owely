@@ -16,6 +16,7 @@ import { revalidatePath } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
 import { computeSplits } from "@/lib/expense-splits";
+import { requirePaidFeature } from "@/lib/entitlements";
 import { authorizeMember, authorizeUser } from "@/lib/session";
 import { logActionError } from "@/lib/log";
 import { rupeesToPaise } from "@/lib/money";
@@ -35,6 +36,8 @@ export async function createSharedRecurring(
   if (!parsed.success) return failure(parsed.message, { fieldErrors: parsed.fieldErrors });
   const auth = await authorizeMember(parsed.data.groupId);
   if (!auth.ok) return auth;
+  const paid = await requirePaidFeature(auth.data.user.uid, "recurring");
+  if (!paid.ok) return paid;
 
   const split = computeSplits(parsed.data.expense, auth.data.group);
   if (!split.ok) return failure(split.error, { code: "reconciliation" });
@@ -70,6 +73,8 @@ export async function createOwnRecurring(
 ): Promise<ActionResult<{ recurringId: string }>> {
   const auth = await authorizeUser();
   if (!auth.ok) return auth;
+  const paid = await requirePaidFeature(auth.data.uid, "recurring");
+  if (!paid.ok) return paid;
   const parsed = parseInput(CreateOwnRecurringSchema, input);
   if (!parsed.success) return failure(parsed.message, { fieldErrors: parsed.fieldErrors });
 
@@ -108,6 +113,8 @@ export async function createOwnRecurring(
 export async function updateRecurring(input: unknown): Promise<ActionResult<null>> {
   const auth = await authorizeUser();
   if (!auth.ok) return auth;
+  const paid = await requirePaidFeature(auth.data.uid, "recurring");
+  if (!paid.ok) return paid;
   const parsed = parseInput(UpdateRecurringSchema, input);
   if (!parsed.success) return failure(parsed.message, { fieldErrors: parsed.fieldErrors });
 

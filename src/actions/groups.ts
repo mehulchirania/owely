@@ -104,6 +104,7 @@ async function ensureDirectGroup(
         [uidB]: uidA,
       },
       simplifiedDebts: [],
+      baseCurrency: "INR",
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
@@ -129,6 +130,7 @@ export async function createGroup(input: unknown): Promise<ActionResult<{ groupI
       members: [auth.data.uid],
       memberDetails: { [auth.data.uid]: detail },
       simplifiedDebts: [],
+      baseCurrency: "INR",
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });

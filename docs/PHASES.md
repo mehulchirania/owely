@@ -168,14 +168,18 @@ Status
 
 ---
 
-## Phase 7 — Paid Features ◧ (backend partially done)
+## Phase 7 — Paid Features ◧ (backend done for current scope; UI/ops pending)
 
 Largest phase; each sub-feature is independent and can ship separately.
 Everything in this phase is paid-tier unless explicitly moved down later.
 
 Deliverables
-- **Templates** ☐ — `templates/{id}` (ownerUid-scoped) + rule; save participants +
-  split ratio; reuse in one tap on the add-expense screen.
+- **Paid guards** ☑ (backend) — `requirePaidFeature` checks user tier inside
+  paid-only Server Actions. Wired into templates and recurring create/update.
+  Delete remains allowed so users can clean up old paid data after downgrading.
+- **Templates** ☑ (backend) — `templates/{id}` owner-scoped saved split recipes
+  with participants + equal/percentage weights, rule, read-model fetch, and
+  actions in `actions/templates.ts`. **No UI yet.**
 - **Recurring** ☑ (backend) — `recurring/{id}` definition collection (shared +
   own scope) + rule. `lib/recurring.ts` `generateDueRecurring` clones due defs
   into real expenses on `dayOfMonth` (1–28), once/month (idempotent via
@@ -192,11 +196,18 @@ Deliverables
 - **Offline writes** ☑ (backend) — `clientId` idempotency on `addExpense` /
   `addOwnExpense` so a client replay queue can't double-count. The queue itself
   is a future client task.
-- **Multi-currency** ☐ — group-level base currency, user display preference,
-  currency-specific formatting, and a clear no-FX/FX policy before launch.
-- **Receipt OCR** ☐ — Storage upload → Cloud Function calls Google Vision →
-  prefill the expense form. `receiptURL` on expense.
-- **PDF export** ☐ — server route renders group history to a downloadable PDF.
+- **Multi-currency** ☑ (backend metadata) — paid `actions/currency.ts` updates
+  user display currency and creator-only group base currency from a supported
+  code list. New/read legacy groups default to `INR`. Expense arithmetic remains
+  paise-only until the no-FX/FX policy is decided. **No UI/formatting yet.**
+- **Receipt OCR** ☑ (backend) — paid `POST /api/receipts/ocr` accepts receipt
+  images, checks optional group membership, calls Google Vision, and returns
+  raw text plus amount/date/merchant/title hints. It deliberately does not write
+  expenses; the existing expense action remains the paise/debt boundary.
+  **No upload UI/receipt storage yet.**
+- **PDF export** ☑ (backend) — paid route
+  `/api/groups/[groupId]/export/pdf` renders members, current simplified debts,
+  expenses, and settlements to a downloadable PDF. **No UI button yet.**
 
 Acceptance: each sub-feature demoable; new collections carry their rules; no
 client writes introduced.
@@ -221,8 +232,10 @@ Acceptance: Lighthouse PWA installable; a11y checks pass; ready for a TWA build.
 ## Remaining roadmap (sequenced) — mostly UI on finished backends
 
 The money/debt engine, auth, groups, direct 1:1s, settlements, own expenses,
-recurring, contacts matching, categories, and freemium counting all exist as
-verified backend. What's left is largely the UI to drive them, plus launch ops.
+recurring, contacts matching, categories, freemium counting, paid guards,
+currency metadata, OCR, and PDF export all exist as verified backend. What's
+left is largely the UI to drive them, plus launch ops and billing-provider
+choice.
 Sequenced by dependency and user value; each ships independently, gate-green.
 
 **R1 — Categories UI (finishes Phase 6).** Backend ✅. Category management screen
@@ -248,13 +261,15 @@ idempotency). IndexedDB queue for expense writes made offline; optimistic UI;
 replay on reconnect; visible sync status. Pairs with the existing offline reads.
 
 **R6 — Paid tier + multi-currency.** Backend: freemium counting ✅, `tier` field
-✅; needs the upgrade/paywall UX on the `freemium-limit` result, plan state, and
-multi-currency (group base currency + user display preference + per-currency
-formatting; decide the no-FX vs FX policy before launch).
+✅, paid action guards ✅, currency settings actions ✅; needs the
+upgrade/paywall UX on `freemium-limit` / `paid-required` results, plan state,
+multi-currency controls, per-currency formatting, and the no-FX vs FX policy
+before allowing non-INR expense creation.
 
-**R7 — Premium extras.** Templates (`templates/{id}` + reuse on add-expense),
-Receipt OCR (Storage upload → Vision Cloud Function → prefill), PDF export
-(server route → group history). Each independent.
+**R7 — Premium extras.** Template UI (backend ✅: `templates/{id}` + actions),
+Receipt OCR upload UI (backend ✅: `POST /api/receipts/ocr`), PDF export UI
+(backend ✅). Optional later: receipt image storage + `receiptURL` persistence.
+Each independent.
 
 **R8 — PWA + polish (Phase 8).** Manifest + service worker (installable, offline
 shell), TWA packaging notes, a11y sweep (375px, 44px targets, focus,

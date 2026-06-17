@@ -10,10 +10,19 @@ import Pricing from "@/components/landing/Pricing";
 import ValueBand from "@/components/landing/ValueBand";
 import Cta from "@/components/landing/Cta";
 import Footer from "@/components/landing/Footer";
+import { LoginModal } from "@/components/LoginModal";
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const showLogin = params?.login === "true";
+
   return (
     <LandingMotion>
+      {showLogin && <LoginModal />}
       {/* scroll progress */}
       <div className="fixed inset-x-0 top-0 z-[200] h-[3px] bg-transparent">
         <div

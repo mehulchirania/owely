@@ -86,6 +86,7 @@ export interface Group {
 }
 
 export type SplitType = "equal" | "unequal" | "percentage";
+export type TemplateSplitType = "equal" | "percentage";
 
 export type ExpenseCategory =
   | "general"
@@ -131,6 +132,24 @@ export interface Expense {
   updatedAt: number;
   isRecurring: boolean;
   recurrenceRule?: RecurrenceRule;
+}
+
+/**
+ * Saved split template for a specific group/direct relationship. Templates
+ * store participants and optional basis-point weights, never money amounts.
+ */
+export interface SplitTemplate {
+  id: string;
+  ownerUid: Uid;
+  groupId: string;
+  name: string;
+  splitType: TemplateSplitType;
+  participants: Uid[];
+  /** Basis points keyed by participant; required for percentage templates. */
+  weights?: Record<Uid, number>;
+  category?: ExpenseCategory;
+  createdAt: number;
+  updatedAt: number;
 }
 
 /**

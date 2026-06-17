@@ -4,6 +4,102 @@ Prepend a new dated entry at the top after every change. Newest first.
 
 ---
 
+## 2026-06-17 — Paid receipt OCR backend
+
+Added the backend prefill path for paid receipt OCR.
+
+- Installed `@google-cloud/vision`.
+- Added `src/lib/vision-ocr.ts` using the existing Firebase service-account
+  credentials to call Google Vision server-side.
+- Added `src/lib/receipt-ocr.ts` with pure extraction of amount/date/merchant
+  hints from OCR text, plus Vitest coverage.
+- Added `POST /api/receipts/ocr`: requires session + paid `ocr` entitlement,
+  accepts image uploads up to 8 MB, optionally checks `groupId` membership, and
+  returns raw text plus structured hints.
+- The route does not write an expense. Users must confirm through the existing
+  expense action so paise reconciliation and debt recompute stay centralized.
+
+Docs updated in `README.md`, `docs/STATE.md`, and `docs/PHASES.md`.
+Ops note: enable the Google Cloud Vision API for `owely-c6c51` before using the
+route in production. `apphosting.yaml` now also includes the commented
+`CRON_SECRET` runtime secret block for the recurring scheduler.
+
+---
+
+## 2026-06-17 — Paid multi-currency metadata backend
+
+Added the backend settings surface for paid multi-currency without changing the
+paise money engine.
+
+- Added `src/lib/currency.ts` with the supported currency code list.
+- Added Zod schemas for display/base currency updates.
+- Added `src/actions/currency.ts`:
+  `updateDisplayCurrency` and `setGroupBaseCurrency`.
+- Both writes require the paid `multi-currency` entitlement. Group base currency
+  is creator-only because it affects everyone in the ledger.
+- New groups/direct ledgers now persist `baseCurrency:"INR"` and legacy reads
+  default missing `baseCurrency` to `INR`.
+
+Docs updated in `README.md`, `docs/STATE.md`, and `docs/PHASES.md`.
+Important boundary: expenses still use integer paise and INR inputs. Non-INR
+expense creation/conversion should wait for an explicit no-FX/FX policy.
+
+---
+
+## 2026-06-17 — Paid PDF export backend
+
+Added the backend route for paid group/direct PDF exports.
+
+- Installed `pdfkit` + types.
+- Added `GET /api/groups/[groupId]/export/pdf`.
+- The route verifies the session, checks group membership, requires the paid
+  `pdf-export` entitlement, then renders a downloadable PDF with members,
+  current simplified balances, expenses, and settlement history.
+- Kept PDF amounts as `INR 0.00` text for built-in font compatibility.
+
+Docs updated in `README.md`, `docs/STATE.md`, and `docs/PHASES.md`.
+Remaining work: add the paid export button/UI and decide if richer branding is
+needed in the PDF layout.
+
+---
+
+## 2026-06-17 — Paid entitlement guards for backend actions
+
+Added server-side paid feature enforcement so UI paywalls cannot be bypassed by
+calling Server Actions directly.
+
+- Added `src/lib/entitlements.ts` with `requirePaidFeature(uid, feature)`.
+- Wired paid guards into template create/update and recurring create/update
+  actions. Delete actions remain allowed so users can clean up existing paid
+  data after a downgrade.
+- The guard reads `users/{uid}.tier` and returns `code:"paid-required"` for free
+  users.
+
+Docs updated in `README.md`, `AGENTS.md`, `docs/STATE.md`, and
+`docs/PHASES.md`. Remaining monetization backend: real subscription/provider
+state when billing is chosen; current guard uses the existing `tier` field.
+
+---
+
+## 2026-06-17 — Paid templates backend
+
+Added the backend write/read path for paid split templates; no UI yet.
+
+- Added `SplitTemplate` / `TemplateSplitType` to `src/types/index.ts`.
+- Added `paths.template()` and `fetchGroupTemplates(ownerUid, groupId)`.
+- Added Zod schemas for create/update/delete template inputs.
+- Added `src/actions/templates.ts`:
+  `createTemplate`, `updateTemplate`, `deleteTemplate`.
+- Templates are owner-scoped and group-specific. They store participants and
+  optional basis-point weights, never money amounts. Percentage templates must
+  sum to exactly 10000 basis points; applying them later should still go through
+  the normal expense action so paise reconciliation remains centralized.
+
+Docs updated in `README.md`, `docs/STATE.md`, and `docs/PHASES.md`.
+Remaining template work: paid gating and UI on the add-expense screen.
+
+---
+
 ## 2026-06-17 — New motion-rich marketing landing page (`/`)
 
 Replaced the old app-preview home (`src/app/page.tsx`) with the dark, playful,
