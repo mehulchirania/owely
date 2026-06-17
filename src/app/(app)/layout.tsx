@@ -6,6 +6,7 @@
 
 import Link from "next/link";
 import { requireSession } from "@/lib/session";
+import { fetchUser } from "@/lib/read-model";
 import { SignOutButton } from "@/components/SignOutButton";
 
 export default async function AppLayout({
@@ -14,6 +15,8 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const user = await requireSession();
+  const profile = await fetchUser(user.uid);
+  const isPaid = profile?.tier === "paid";
 
   const initial = (user.name ?? "Y").charAt(0).toUpperCase();
 
@@ -43,6 +46,11 @@ export default async function AppLayout({
             <span className="font-display text-lg font-bold tracking-tight text-hi">
               owely
             </span>
+            {isPaid && (
+              <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                Pro
+              </span>
+            )}
           </Link>
 
           {/* Navigation Links */}
@@ -130,6 +138,11 @@ export default async function AppLayout({
               <span className="font-display text-lg font-bold tracking-tight text-hi">
                 owely
               </span>
+              {isPaid && (
+                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                  Pro
+                </span>
+              )}
             </Link>
             <nav className="flex items-center gap-1">
               <Link

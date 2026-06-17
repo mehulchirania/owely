@@ -51,7 +51,7 @@ export async function updateUserAdmin(input: {
       phone: input.phone?.trim() || null,
       tier: input.tier,
     });
-    revalidatePath("/admin");
+    revalidatePath("/", "layout");
     return success(null);
   } catch (error) {
     return failure("Could not update user details.");

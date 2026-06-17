@@ -17,17 +17,23 @@ export default async function AdminPage() {
 
   const db = getAdminDb();
 
-  // Fetch all users
-  const usersSnap = await db.collection(Collections.users).get();
-  const allUsers = usersSnap.docs.map((doc) => {
+  // Fetch all users, newest first to keep the most recent in case of duplicates
+  const usersSnap = await db.collection(Collections.users).orderBy("createdAt", "desc").get();
+  
+  const allUsersMap = new Map();
+  usersSnap.docs.forEach((doc) => {
     const data = doc.data();
-    return {
-      uid: doc.id,
-      displayName: data.displayName || "Owely user",
-      phone: data.phone || null,
-      tier: (data.tier as "free" | "paid") || "free",
-    };
+    const phone = data.phone || doc.id; // fallback to ID if no phone
+    if (!allUsersMap.has(phone)) {
+      allUsersMap.set(phone, {
+        uid: doc.id,
+        displayName: data.displayName || "Owely user",
+        phone: data.phone || null,
+        tier: (data.tier as "free" | "paid") || "free",
+      });
+    }
   });
+  const allUsers = Array.from(allUsersMap.values());
 
   const totalUsers = allUsers.length;
   const freeUsers = allUsers.filter((u) => u.tier === "free").length;
