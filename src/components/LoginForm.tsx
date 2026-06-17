@@ -36,6 +36,7 @@ export function LoginForm() {
   const next = searchParams.get("next") ?? "/groups";
 
   const [pending, setPending] = useState<"google" | "phone" | null>(null);
+  const [status, setStatus] = useState<string>("Verifying…");
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<PhoneStep>("phone");
   const [phone, setPhone] = useState("");
@@ -45,6 +46,7 @@ export function LoginForm() {
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
 
   async function finishSignIn(user: FirebaseUser): Promise<void> {
+    setStatus("Starting session…");
     const idToken = await user.getIdToken();
     const res = await fetch("/api/auth/session", {
       method: "POST",
@@ -52,11 +54,14 @@ export function LoginForm() {
       body: JSON.stringify({ idToken }),
     });
     if (!res.ok) throw new Error("Could not start your session. Please try again.");
+
+    setStatus("Setting up your account…");
     const ensured = await ensureUser();
     if (!ensured.ok) throw new Error(ensured.error);
 
     // First-time sign-in: display name is still the phone number or the default
     // placeholder — send the user through onboarding to pick a real name.
+    setStatus("Redirecting…");
     const u = ensured.data;
     const needsOnboarding =
       !u.displayName ||
@@ -68,7 +73,8 @@ export function LoginForm() {
     } else {
       router.replace(next);
     }
-    router.refresh();
+    // No router.refresh() here — we're navigating away; refreshing the current
+    // page's data before unmounting is redundant and adds latency.
   }
 
   async function handleGoogle(): Promise<void> {
@@ -124,6 +130,7 @@ export function LoginForm() {
       setStep("phone");
       return;
     }
+    setStatus("Verifying…");
     setPending("phone");
     try {
       const cred = await confirmationRef.current.confirm(code.trim());
@@ -214,7 +221,7 @@ export function LoginForm() {
             disabled={busy || code.length < 6}
             className="flex h-13 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-white shadow-[0_16px_42px_-16px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
           >
-            {pending === "phone" ? "Verifying…" : "Verify & continue"}
+            {pending === "phone" ? status : "Verify & continue"}
           </button>
           <button
             type="button"

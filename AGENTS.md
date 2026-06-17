@@ -181,10 +181,16 @@ their groups. Primary authorization lives in the action layer.
 
 ## Settlement / UPI + Cash
 
-UPI deep link: `upi://pay?pa={upiId}&pn={name}&am={amount}&cu=INR`. `am` is in
-**rupees** (divide paise by 100, 2 decimals, at the link boundary). Cash
-settlements are manual records with the same payer-confirmed flow. Owely never
-holds funds — it only opens the user's UPI app or records cash, deliberately
+UPI deep link priority:
+1. If payee has a `upiId` set in their profile → use `buildUpiLink` (VPA-based).
+2. Otherwise → use payee's registered phone number with app-specific intent links:
+   - **GPay:** `intent://upi/pay?pa={phone}@upi&pn={name}&am={amount}&cu=INR#Intent;scheme=tez;package=com.google.android.apps.nbu.paisa.user;end`
+   - **PhonePe:** `intent://pay?pa={phone}@ybl&pn={name}&am={amount}&cu=INR#Intent;scheme=phonepe;package=com.phonepe.app;end`
+   - **Generic UPI:** `upi://pay?pa={phone}&pn={name}&am={amount}&cu=INR`
+
+`am` is in **rupees** (divide paise by 100, 2 decimals, at the link boundary only).
+Cash settlements are manual records with the same payer-confirmed flow.
+Owely never holds funds — it only opens the user's UPI app or records cash, deliberately
 avoiding payment-aggregator regulation.
 
 ## Deployment (Firebase App Hosting)

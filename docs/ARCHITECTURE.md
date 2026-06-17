@@ -114,18 +114,16 @@ as a future optimization if a group ever gets huge.
 
 ## 7. Settlement / UPI + Cash
 
-- UPI settlement opens a deep link:
-  `upi://pay?pa={upiId}&pn={name}&am={amount}&cu=INR`.
-- **`am` is in rupees** (UPI expects rupees) — convert paise→rupees at the link
-  boundary only.
-- Cash settlement is a manual record. It uses the same payer-confirmed
-  `settleUp` flow, with an optional note/reference.
-- **UPI P2P gives no payment callback**, so Owely cannot auto-confirm. The
-  settlement is **manually marked complete by the payer**; the payee can dispute.
-- Owely never holds or moves funds — deliberately staying outside
-  payment-aggregator regulation.
-- Do not add card, wallet, stored-value, payment-gateway, or payment-aggregator
-  settlement flows.
+- UPI settlement priority:
+  1. Payee has `upiId` set → use VPA link: `upi://pay?pa={vpa}&pn={name}&am={amount}&cu=INR`
+  2. Otherwise → use payee's phone number with app-specific intents:
+     - GPay: `intent://upi/pay?pa={phone}@upi&...#Intent;scheme=tez;package=com.google.android.apps.nbu.paisa.user;end`
+     - PhonePe: `intent://pay?pa={phone}@ybl&...#Intent;scheme=phonepe;package=com.phonepe.app;end`
+     - Generic: `upi://pay?pa={phone}&pn={name}&am={amount}&cu=INR`
+- **`am` is in rupees** (UPI expects rupees) — convert paise→rupees at the link boundary only.
+- Cash settlement is a manual record using the same payer-confirmed `settleUp` flow.
+- Owely never holds or moves funds — deliberately staying outside payment-aggregator regulation.
+- Do not add card, wallet, stored-value, payment-gateway, or payment-aggregator settlement flows.
 
 ## 8. Tiers
 
