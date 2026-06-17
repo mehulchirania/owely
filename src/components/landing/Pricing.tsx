@@ -60,13 +60,6 @@ export default function Pricing() {
               <Feature key={b} bold={b} rest={r} />
             ))}
           </div>
-          <Link
-            href="/?login=true"
-            data-magnet
-            className="ow-softbtn mt-auto flex h-[50px] items-center justify-center rounded-[15px] border border-white/10 bg-elevated text-[14.5px] font-semibold text-hi no-underline"
-          >
-            Start for free
-          </Link>
         </div>
 
         {/* PRO */}

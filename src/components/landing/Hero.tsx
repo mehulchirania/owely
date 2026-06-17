@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { ArrowRight, Bolt } from "./icons";
+import { Bolt } from "./icons";
 
 export default function Hero() {
   return (
@@ -41,24 +40,6 @@ export default function Hero() {
             Owely splits group bills to the exact paise and settles them over UPI — no chasing
             friends, no awkward math. Just square up and stay friends.
           </p>
-          <div className="mt-[34px] flex flex-wrap gap-[14px]">
-            <Link
-              href="/?login=true"
-              data-magnet
-              className="ow-glowbtn flex h-14 items-center gap-[10px] rounded-2xl bg-accent px-7 text-[16px] font-semibold text-white no-underline"
-              style={{ boxShadow: "0 16px 38px -12px var(--color-accent)" }}
-            >
-              Start for free
-            </Link>
-            <a
-              href="#how"
-              data-magnet
-              className="ow-softbtn flex h-14 items-center gap-[9px] rounded-2xl border border-white/10 bg-card px-6 text-[16px] font-semibold text-hi no-underline"
-            >
-              See how it works
-              <ArrowRight size={18} />
-            </a>
-          </div>
           <div data-in className="mt-[30px] flex items-center gap-4">
             <div className="flex">
               <Avatar bg="var(--color-accent)" color="#fff">A</Avatar>

@@ -8,6 +8,7 @@
  */
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatPaise, rupeesToPaise, splitEqual } from "@/lib/money";
 import { categoryStyle } from "@/lib/categories";
@@ -35,7 +36,17 @@ interface Props {
   groupId: string;
   members: Member[];
   currentUid: string;
+  userTier: "free" | "paid";
   initial?: ExpenseFormInitial;
+}
+
+interface ReceiptOcrResponse {
+  error?: string;
+  code?: string;
+  title?: string;
+  merchant?: string;
+  amountRupees?: string;
+  date?: string;
 }
 
 const CATEGORIES: ExpenseCategory[] = [
@@ -58,10 +69,26 @@ function safePaise(value: string): number | null {
   }
 }
 
-export function ExpenseForm({ groupId, members, currentUid, initial }: Props) {
+function readOcrResponse(value: unknown): ReceiptOcrResponse {
+  if (!value || typeof value !== "object") return {};
+  const data = value as Record<string, unknown>;
+  return {
+    error: typeof data.error === "string" ? data.error : undefined,
+    code: typeof data.code === "string" ? data.code : undefined,
+    title: typeof data.title === "string" ? data.title : undefined,
+    merchant: typeof data.merchant === "string" ? data.merchant : undefined,
+    amountRupees: typeof data.amountRupees === "string" ? data.amountRupees : undefined,
+    date: typeof data.date === "string" ? data.date : undefined,
+  };
+}
+
+export function ExpenseForm({ groupId, members, currentUid, userTier, initial }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [ocrPending, setOcrPending] = useState(false);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+  const [ocrNote, setOcrNote] = useState<string | null>(null);
 
   const [title, setTitle] = useState(initial?.title ?? "");
   const [amountRupees, setAmount] = useState(initial?.amountRupees ?? "");
@@ -127,6 +154,52 @@ export function ExpenseForm({ groupId, members, currentUid, initial }: Props) {
 
   function setValue(uid: string, value: string): void {
     setSplitValues((prev) => ({ ...prev, [uid]: value }));
+  }
+
+  async function scanReceipt(file: File): Promise<void> {
+    setOcrPending(true);
+    setOcrError(null);
+    setOcrNote(null);
+
+    const formData = new FormData();
+    formData.append("groupId", groupId);
+    formData.append("receipt", file);
+
+    try {
+      const response = await fetch("/api/receipts/ocr", {
+        method: "POST",
+        body: formData,
+      });
+      const data = readOcrResponse(await response.json());
+      if (!response.ok) {
+        setOcrError(data.error ?? "Could not read that receipt.");
+        return;
+      }
+
+      let applied = 0;
+      if (data.title) {
+        setTitle(data.title);
+        applied++;
+      }
+      if (data.amountRupees) {
+        setAmount(data.amountRupees);
+        applied++;
+      }
+
+      if (applied === 0) {
+        setOcrNote("Receipt scanned. No confident amount or merchant was found.");
+      } else {
+        const parts = [
+          data.amountRupees ? "amount" : null,
+          data.title ? "title" : null,
+        ].filter(Boolean);
+        setOcrNote(`Applied ${parts.join(" and ")} from the receipt.`);
+      }
+    } catch {
+      setOcrError("Could not read that receipt. Try another image.");
+    } finally {
+      setOcrPending(false);
+    }
   }
 
   function submit(e: React.FormEvent): void {
@@ -214,6 +287,52 @@ export function ExpenseForm({ groupId, members, currentUid, initial }: Props) {
           </select>
         </label>
       </div>
+
+      {!initial && (
+        <div className="rounded-2xl border border-white/6 bg-card p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-hi">Receipt OCR</p>
+              <p className="mt-1 text-sm leading-5 text-dim">
+                {userTier === "paid"
+                  ? "Upload a receipt image to prefill the title and amount."
+                  : "Receipt scanning is included with Owely Pro."}
+              </p>
+            </div>
+            {userTier === "paid" ? (
+              <label className="flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-accent/25 bg-accent/10 px-4 text-sm font-semibold text-accent transition-colors hover:bg-accent/15 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
+                {ocrPending ? "Scanning..." : "Upload receipt"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={pending || ocrPending}
+                  className="sr-only"
+                  onChange={(e) => {
+                    const file = e.currentTarget.files?.[0];
+                    e.currentTarget.value = "";
+                    if (file) void scanReceipt(file);
+                  }}
+                />
+              </label>
+            ) : (
+              <Link
+                href="/settings"
+                className="flex h-11 shrink-0 items-center justify-center rounded-xl border border-accent/25 bg-accent/10 px-4 text-sm font-semibold text-accent transition-colors hover:bg-accent/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                View Pro
+              </Link>
+            )}
+          </div>
+          {(ocrError || ocrNote) && (
+            <p
+              role={ocrError ? "alert" : "status"}
+              className={`mt-3 text-sm ${ocrError ? "text-coral-soft" : "text-mint"}`}
+            >
+              {ocrError ?? ocrNote}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* paid by */}
       <div className="flex flex-col gap-2">

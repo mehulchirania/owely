@@ -38,6 +38,7 @@ export interface MemberDetail {
 }
 
 export type GroupType = "group" | "direct";
+export type GroupMode = "trip" | "roommates" | "couple" | "lunch" | "friends" | "family" | "custom";
 export type RelationshipCategoryScope = "group" | "direct" | "both";
 export type RelationshipCategoryKind = "predefined" | "custom";
 
@@ -81,6 +82,10 @@ export interface Group {
   baseCurrency?: CurrencyCode;
   /** Monthly expense count to enforce free tier limits. Reset monthly. */
   expenseCount?: number;
+  groupMode?: GroupMode;
+  debtThreshold?: Paise;
+  debtRoundTo?: number;
+  monthlyCloseEnabled?: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -208,6 +213,7 @@ export interface RecurringExpense {
 }
 
 export type SettlementStatus = "pending" | "completed" | "disputed";
+export type SettlementMethod = "upi" | "cash";
 
 export interface Settlement {
   id: string;
@@ -215,6 +221,8 @@ export interface Settlement {
   from: Uid;
   to: Uid;
   amount: Paise;
+  /** How the payer says the money moved. Owely only supports UPI and cash. */
+  method?: SettlementMethod;
   upiId?: string;
   status: SettlementStatus;
   /**
@@ -229,3 +237,15 @@ export interface Settlement {
   settledAt?: number;
   createdAt: number;
 }
+
+export interface MonthlyClosure {
+  id: string;
+  groupId: string;
+  month: number; // 1-12
+  year: number;
+  status: "closed";
+  carryForward: Record<string, Paise>;
+  closedBy: Uid;
+  closedAt: number;
+}
+

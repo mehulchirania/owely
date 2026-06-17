@@ -1,0 +1,34 @@
+/**
+ * Firebase Cloud Function: onCreate user trigger.
+ * Seeds the users/{uid} document immediately upon signup.
+ * 
+ * Paste this in your Firebase functions project (e.g. functions/src/index.ts).
+ */
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
+
+// Initialize Admin SDK if not already initialized
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
+
+export const onUserCreate = functions.auth.user().onCreate(async (user) => {
+  const { uid, displayName, email, phoneNumber, photoURL } = user;
+  
+  const userRef = admin.firestore().doc(`users/${uid}`);
+  const snap = await userRef.get();
+  
+  if (!snap.exists) {
+    await userRef.set({
+      uid,
+      displayName: displayName || "Owely user",
+      email: email || null,
+      phone: phoneNumber || null,
+      photoURL: photoURL || null,
+      tier: "free",
+      currency: "INR",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    console.log(`Firestore document auto-created for uid: ${uid}`);
+  }
+});

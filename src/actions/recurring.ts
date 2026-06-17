@@ -126,10 +126,13 @@ export async function updateRecurring(input: unknown): Promise<ActionResult<null
     if (snap.get("ownerUid") !== auth.data.uid) {
       return failure("Only the owner can change this.", { code: "forbidden" });
     }
+    const groupId = snap.get("groupId") as string | undefined;
     const patch: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };
     if (parsed.data.active !== undefined) patch.active = parsed.data.active;
     if (parsed.data.dayOfMonth !== undefined) patch.dayOfMonth = parsed.data.dayOfMonth;
     await ref.update(patch);
+    if (groupId) revalidatePath(`/groups/${groupId}`);
+    else revalidatePath("/own");
     return success(null);
   } catch (error) {
     logActionError("updateRecurring", error);
@@ -151,7 +154,10 @@ export async function deleteRecurring(input: unknown): Promise<ActionResult<null
     if (snap.get("ownerUid") !== auth.data.uid) {
       return failure("Only the owner can delete this.", { code: "forbidden" });
     }
+    const groupId = snap.get("groupId") as string | undefined;
     await ref.delete();
+    if (groupId) revalidatePath(`/groups/${groupId}`);
+    else revalidatePath("/own");
     return success(null);
   } catch (error) {
     logActionError("deleteRecurring", error);

@@ -73,8 +73,14 @@ export async function recomputeSimplified(
     const settlements = settlementSnap.docs.map((d) => mapSettlement(d.id, d.data()));
     const completed = settlements.filter((s) => s.status === "completed");
 
+    const threshold = (groupSnap.get("debtThreshold") as number | undefined) ?? 0;
+    const roundTo = (groupSnap.get("debtRoundTo") as number | undefined) ?? 0;
+
     const net = netWithSettlements(expenses, freshMembers, completed);
-    const simplified: Settlement[] = simplifyFromNet(net, groupId, () => randomUUID());
+    const simplified: Settlement[] = simplifyFromNet(net, groupId, () => randomUUID(), Date.now(), {
+      threshold,
+      roundTo,
+    });
 
     tx.update(groupRef, {
       simplifiedDebts: simplified,

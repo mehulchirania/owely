@@ -4,6 +4,165 @@ Prepend a new dated entry at the top after every change. Newest first.
 
 ---
 
+## 2026-06-17 — Implemented Phase B — Differentiators (Smart Modes, Guest Links, Batch Add, & Closures)
+
+Completed implementation and verification of Phase B deliverables:
+
+- **Group Mode Selector**: Added selection dropdown for Trip, Roommates, Couple, Lunch, Friends, Family, and Custom in standard group creation form.
+- **Debt Round-off & Thresholds**: Integrated `debtRoundTo` and `debtThreshold` filters in `simplifyFromNet`. Fixed infinite loop edge cases by using dynamic limits and updated Vitest coverage.
+- **Batch Expense Entry**: Implemented `addBatchExpenses` Server Action and the BatchExpenseForm client UI at `/groups/[groupId]/expenses/batch` to quickly log multiple expenses.
+- **Monthly Closures**: Implemented `closeMonth` action, locking helper `isMonthClosed`, and MonthlyClosePanel UI tab. Added write locks blocking new/edited/deleted expenses or settlements in closed months.
+- **Zero-friction Guest Ledger**: Generated guest members immediately (`guest_[uuid]`) on invite and linked them to invite tokens. Added guest-login Route Handler to set secure cookies, and `/groups/[groupId]/guest` page for read-only viewing and payment confirmations.
+- **Guest-to-User Merge**: Added complete migration path in `acceptInvite` action to merge a guest's history, balances, and settlements to their actual authenticated user account upon sign-up.
+- **Fairness Insights**: Created a widget displaying contributor ratios and round-robin payment suggestions on the group Balances tab.
+
+All gates are green: `typecheck` clean, all 31 unit tests pass, and `build` compiles successfully.
+
+---
+
+## 2026-06-17 — Update Architecture and Phased Build Roadmap with Premium Differentiators
+
+Aligned the design specifications and roadmaps with the user's detailed product notes.
+
+- **Updated ARCHITECTURE.md**: Documented positioning taglines ("WhatsApp for shared money"), guest sharing link token patterns, NLP quick add parsing concepts, roommate/couple monthly close carry-forward rules, smart group modes (Trip, Roommates, Couples, Office Lunch), and pricing plans (Pro tier subscription + single-use Trip Pass).
+- **Updated PHASES.md**: Expanded the future roadmap milestones (adding R10 through R14) to explicitly schedule the onboarding flows, group-specific dashboards, guest views, batch inputs, NLP parser, audit feeds, comments, and FCM notifications.
+- **Confirmed Free Tier Limit**: Confirmed keeping the 100 expenses/month limit per group on the Free Tier, removing any conflict indicators.
+
+---
+
+## 2026-06-17 — Custom Category Management, Dashboard Filters, Category Tagging, & Private Personal Ledger (/own)
+
+Implemented the user-facing UI for relationship categories and the un-shared private personal ledger.
+
+- **Private Personal Ledger (`/own`)**: Created the Server Component container (`src/app/(app)/own/page.tsx`) and the Client controller (`src/components/OwnExpenseManager.tsx`). Users can now track private expenses with a monthly spent total summary, full CRUD forms, and category styling icons.
+- **Category Management UI**: Integrated a custom relationship category management dashboard panel (`src/components/CustomCategoriesManager.tsx`) in `/settings` allowing users to view predefined categories and create, edit, or delete custom categories.
+- **Group/Relationship Category Tagging**: Created a dropdown Category picker (`src/components/CategoryPicker.tsx`) integrated in the group details page header. Users can assign standard/custom categories or clear tags from standard groups and direct 1:1 relationships.
+- **Dynamic Category Filtering**: Replaced static dashboard lists with dynamic category-filtered list wrappers (`src/components/FilteredGroupsList.tsx` and `src/components/FilteredPeopleList.tsx`) filtering standard groups and direct relationships instantly on the client side using category chips.
+- **App Shell Navigation**: Added a "Personal" menu item in `layout.tsx` (sidebar + mobile tabs) and protected the `/own` routes in `src/proxy.ts`.
+
+---
+
+## 2026-06-17 — Admin Page Redesign, Inline User Editing, Donut SVG Chart, PWA & Cloud Function Trigger
+
+Updated the admin page at `/admin` to add inline user editing, an interactive SVG donut chart, and remove group membership widgets. Also bootstrapped Progressive Web App (PWA) assets and template Firebase triggers.
+
+- Created `src/app/admin/page.tsx` as a standalone Server Component, bypassing edge middleware configuration.
+- Created `src/components/AdminLoginForm.tsx` lock screen requiring `admin/admin` credentials.
+- Created `src/components/AdminUserRow.tsx` supporting seamless inline spreadsheet-like editing for user Display Name, Phone number, and Tier (Free/Paid).
+- Created a `updateUserAdmin` Server Action inside `src/actions/admin.ts` to write admin updates directly to Firestore.
+- Added a visual **SVG Donut Chart** widget in `/admin` dashboard illustrating Free vs Paid member distribution with an active legend (percentages + counts).
+- Completely removed standard groups and membership editing widgets from the admin panel, deleting `AdminGroupController.tsx` and unused `addGroupMemberAdmin` / `removeGroupMemberAdmin` Server Actions.
+- Bootstrapped PWA setup by creating a web manifest (`public/manifest.json`), generating a custom circular owl app icon image (`public/icon.png`), and linking it within Next.js root layout metadata (`src/app/layout.tsx`).
+- Created a Cloud Function auth trigger template (`scripts/cloud-function-user-trigger.ts`) which auto-seeds new user profiles in Firestore on signup to prevent first-login latency and cold starts.
+
+---
+
+## 2026-06-17 - Recurring expense management UI
+
+Continued the paid-feature buildout by making shared recurring definitions
+usable from group/direct ledgers.
+
+- Added `src/components/RecurringPanel.tsx`.
+- Added a `Recurring` tab to `groups/[groupId]`.
+- Paid users can create monthly equal-split recurring expenses with title,
+  amount, payer, category, participants, and day-of-month.
+- Paid users can pause/resume and delete saved recurring rules.
+- Free users see a Pro affordance instead of calling paid-only actions.
+- `updateRecurring` and `deleteRecurring` now revalidate the affected group or
+  own-expense path after changes.
+- The recurring tab strip is horizontally scroll-safe on narrow mobile widths.
+
+Generation still depends on the existing `/api/cron/recurring` route and
+production Scheduler/`CRON_SECRET` configuration.
+
+Verified with `npm run typecheck`, `npm run build`, `npm test`, and
+`npm run lint`.
+
+---
+
+## 2026-06-17 - Receipt OCR upload UI
+
+Continued the paid-feature buildout by making the existing OCR backend usable
+from the add-expense flow.
+
+- Added a receipt OCR panel to `ExpenseForm` for new expenses.
+- Paid users can upload an image receipt; the form calls
+  `POST /api/receipts/ocr` and prefills the title and amount when the OCR route
+  returns confident hints.
+- Free users see a Pro affordance that routes to Settings instead of hitting the
+  paid route.
+- OCR remains prefill-only: no expense is written until the user confirms the
+  normal expense form, preserving paise validation and split reconciliation.
+- Kept OCR hidden on edit-expense for now to avoid accidental overwrite of an
+  existing expense.
+
+Verified with `npm run typecheck`, `npm run build`, `npm test`, and
+`npm run lint`.
+
+---
+
+## 2026-06-17 - Settlement method + overpay guard
+
+Continued the product-gap buildout with the settlement trust slice.
+
+- Added explicit settlement method capture: `upi` or `cash`.
+- Updated `settleUp` to reject attempts to record a settlement when the payer has
+  no active debt to that payee.
+- Capped recorded settlement amounts to the current simplified debt amount, with
+  both server-side enforcement and client-side inline validation.
+- Updated settlement history and PDF export rows to show UPI/Cash plus any
+  reference or cash note.
+- Kept `method` optional on the shared `Settlement` type because the same type is
+  also used for pending suggested transfers in `group.simplifiedDebts`.
+
+Verified with `npm run typecheck`, `npm run build`, `npm test`, and
+`npm run lint`.
+
+---
+
+## 2026-06-17 - Pro export entry point + balance display alignment
+
+Started the product-gap buildout from the audit with a low-risk UI slice.
+
+- Added a paid PDF export entry point on `groups/[groupId]`:
+  - Paid users get a direct download link to `/api/groups/{groupId}/export/pdf`.
+  - Free users see a Pro export affordance that routes to Settings instead of
+    hitting the paid route and receiving raw JSON.
+- Added a Settings plan/tools panel showing the stored user tier, display
+  currency, monthly free limit, and Pro feature availability.
+- Updated the group member balance display to read from stored simplified
+  transfers via `netPositionFromSettlements`, keeping the visible balance state
+  aligned with completed settlements and disputes.
+- Pinned ESLint back to the compatible 9.x line for `eslint-config-next@16.2.9`
+  so `npm run lint` can execute under the current Next config.
+
+Verified with `npm run typecheck`, `npm run build`, `npm test`, and
+`npm run lint`.
+
+---
+
+## 2026-06-17 — Dashboard Layout + Phone-First UPI Flow
+
+Completed redesign of onboarding layout, dashboard, group detail inline tabs, and phone-first UPI flow.
+
+- Redesigned `/groups` page to act as a proper **Dashboard** containing responsive inline tabs (Groups / People / Activity).
+  - Groups tab: grid of standard groups.
+  - People tab: grid of 1:1 relationships.
+  - Activity tab: recent aggregated activity list across all groups.
+- Redesigned `groups/[groupId]/page.tsx` with **inline tabs** (Expenses / Balances & Settle / Members).
+  - Settle panel and simplified balances transfers are shown directly inside the "Balances & Settle" tab, removing the need to navigate to separate settle page.
+- Created `src/components/DashboardTabs.tsx` to handle client tab switching using URL search parameters (tab is bookmarkable and shareable).
+- Implemented **phone-first UPI flows** inside `SettlePanel.tsx`:
+  - Shows Google Pay, PhonePe, and generic UPI app deep-link buttons using registered phone numbers with app intent schemes (`intent://...`).
+  - Added an **amount input** inside `DebtCard` allowing custom payment/settlement amounts (e.g. for partial settlements) instead of only settling full amounts.
+  - Falls back to VPA/UPI ID if the payee has set one in their profile.
+- Redesigned `/onboarding` page to feature a professional, responsive two-column grid layout on desktop screens.
+- Updated `src/app/(app)/layout.tsx` to show a premium left sidebar navigation on desktop screens (>=1024px) and fallback to standard header/tabs on mobile.
+- Updated docs `docs/STATE.md` and `AGENTS.md`.
+- Created `scripts/seed-mock-data.ts` to seed mock data for users (`8888888888`, `9999999999`, and `7777777777`), 1:1 direct relationship coffee/lunch expenses, and a standard group Goa trip with shared expenses.
+
+---
+
 ## 2026-06-17 — Paid receipt OCR backend
 
 Added the backend prefill path for paid receipt OCR.

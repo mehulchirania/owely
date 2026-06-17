@@ -143,24 +143,26 @@ export function ExpenseFeed({ groupId, currentUid, memberNames, initialExpenses 
                 <div className="text-[11px] text-faint">not involved</div>
               )}
             </div>
-            <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-              <a
-                href={`/groups/${groupId}/expenses/${e.id}/edit`}
-                aria-label={`Edit ${e.title}`}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-dim hover:bg-elevated hover:text-strong focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                ✎
-              </a>
-              <button
-                type="button"
-                onClick={() => handleDelete(e.id)}
-                disabled={pendingId === e.id}
-                aria-label={`Delete ${e.title}`}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-dim hover:bg-coral/10 hover:text-coral focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50"
-              >
-                {pendingId === e.id ? "…" : "🗑"}
-              </button>
-            </div>
+            {!currentUid.startsWith("guest_") && (
+              <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                <a
+                  href={`/groups/${groupId}/expenses/${e.id}/edit`}
+                  aria-label={`Edit ${e.title}`}
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-dim hover:bg-elevated hover:text-strong focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  ✎
+                </a>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(e.id)}
+                  disabled={pendingId === e.id}
+                  aria-label={`Delete ${e.title}`}
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-dim hover:bg-coral/10 hover:text-coral focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50"
+                >
+                  {pendingId === e.id ? "…" : "🗑"}
+                </button>
+              </div>
+            )}
           </li>
         );
       })}

@@ -38,7 +38,7 @@ export default function Nav() {
           className="ow-glowbtn flex h-[42px] items-center gap-2 rounded-[13px] bg-accent px-5 text-sm font-semibold text-white no-underline"
           style={{ boxShadow: "0 10px 24px -10px var(--color-accent)" }}
         >
-          Open app
+          Login
         </Link>
       </div>
     </nav>

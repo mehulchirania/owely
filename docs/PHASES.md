@@ -19,6 +19,8 @@ the app in a working state. Build in order; later phases depend on earlier ones.
    expense, settlement, and debt engine.
 7. Categories = predefined + owner-scoped custom categories for both groups and
    direct people.
+8. **Offline records & Sync** — Database mutations are queued locally using Firestore's IndexedDB offline cache, updating local client views instantly (optimistic UI). Once the network returns, the queue plays back to the server in chronological order. We enforce server-side write idempotency using client-supplied `clientId` values to prevent duplicate entries on retries.
+9. **Cloud Functions offloading** — To scale the backend, heavy async jobs (PDF rendering, Google Vision OCR processing) and lifecycle triggers (like instant `onCreate` user profile seeding to eliminate first-login redirects and cold-starts) are offloaded to Firebase Cloud Functions rather than running synchronously in Server Actions.
 
 Legend: ☐ not started · ◧ in progress · ☑ done.
 
@@ -131,7 +133,7 @@ works; settlement recompute reflects in balances.
 
 ---
 
-## Phase 6 — Direct People + Categories ◧
+## Phase 6 — Direct People + Categories ☑
 
 Core organization layer; not paid. This makes 1:1 expenses first-class without
 forking the money/debt model.
@@ -164,7 +166,7 @@ Status
 - ☑ Category write path: `actions/categories.ts` create/update/delete
   (owner-scoped) + `setGroupCategory` (predefined or owned custom, or clear).
   `ensureUser` initializes new users' `tier:"free"` + `currency:"INR"`.
-- ☐ Category management + filter UI (the only remaining Phase 6 piece).
+- ☑ Category management + filter UI
 
 ---
 
@@ -186,10 +188,7 @@ Deliverables
   `lastRunMonth` + deterministic `{recurringId}_{YYYY-MM}` doc id). Triggered by
   `POST /api/cron/recurring` (secret-guarded) — wire Cloud Scheduler to hit it
   daily. Actions in `actions/recurring.ts`. **No UI yet.**
-- **Own vs shared expenses** ☑ (backend) — NEW: `OwnExpense` + per-user
-  `users/{uid}/ownExpenses` for un-split personal bills (insurance, solo
-  utility), separate from the focus (shared group expenses).
-  `actions/own-expenses.ts` + rule. **No UI yet.**
+- **Own vs shared expenses** ☑ — Private Personal Ledger at `/own` with monthly spent metrics, private expense list, and full CRUD.
 - **Contacts member-add** ☑ (backend) — `findRegisteredUsers` (which contacts
   are on Owely) + `addMembersByPhone` (batch link/invite). UI (Contact Picker
   API, Android/TWA only, with manual fallback) is a future client task.
@@ -214,7 +213,7 @@ client writes introduced.
 
 ---
 
-## Phase 8 — PWA + polish ☐
+## Phase 8 — PWA + polish ◧
 
 Deliverables
 - PWA manifest + service worker (installable; offline shell).
@@ -238,47 +237,56 @@ left is largely the UI to drive them, plus launch ops and billing-provider
 choice.
 Sequenced by dependency and user value; each ships independently, gate-green.
 
-**R1 — Categories UI (finishes Phase 6).** Backend ✅. Category management screen
-(create/edit/delete custom), a picker on group/direct create + a "change
-category" control (→ `setGroupCategory`), category chip (icon+color tint) on
-list rows, and filter groups/people by category.
+**R1 — Categories UI (finishes Phase 6).** ☑ Done.
+**R2 — Own-expenses UI (the "two sections per profile").** ☑ Done.
 
-**R2 — Own-expenses UI (the "two sections per profile").** Backend ✅
-(`actions/own-expenses.ts`, `users/{uid}/ownExpenses`). `/own` route: list +
-monthly total + add/edit/delete; a Shared ⇄ Own switch in the nav.
+**R3 — Recurring UI + scheduler & Monthly Close.** Backend ✅ (`actions/recurring.ts`).
+  - "Make this monthly" on the add-expense form; manage screen to list/pause/reschedule/delete.
+  - Implement **Roommates/Couple monthly close** (freeze month's expenses, carry forward, status badge).
+  - **ops:** wire Cloud Scheduler to POST the cron daily with `CRON_SECRET`.
 
-**R3 — Recurring UI + scheduler.** Backend ✅ (`actions/recurring.ts`,
-`generateDueRecurring`, `/api/cron/recurring`). "Make this monthly" on the
-add-expense form; a manage screen to list/pause/reschedule/delete with next-run;
-**ops:** wire Cloud Scheduler to POST the cron daily with `CRON_SECRET`.
+**R4 — Contacts add UI.** Backend ✅ (`findRegisteredUsers`, `addMembersByPhone`).
+  - Contact Picker API (Android/TWA, secure context) with a manual name+number fallback; "on Owely" badges; batch add. Desktop = manual.
 
-**R4 — Contacts add UI.** Backend ✅ (`findRegisteredUsers`,
-`addMembersByPhone`). Contact Picker API (Android/TWA, secure context) with a
-manual name+number fallback; "on Owely" badges; batch add. Desktop = manual.
+**R5 — Offline replay queue & Auto-Sync (client).** Backend guarantee ✅ (`clientId` idempotency).
+  - Firestore client-side IndexedDB persistence enabled; client queue holds offline mutations and plays back on reconnect; sync indicators.
 
-**R5 — Offline replay queue (client).** Backend guarantee ✅ (`clientId`
-idempotency). IndexedDB queue for expense writes made offline; optimistic UI;
-replay on reconnect; visible sync status. Pairs with the existing offline reads.
+**R6 — Paid tier & Multi-Currency + Trip Pass.** Backend: freemium counting ✅, `tier` field ✅, paid action guards ✅, currency settings actions ✅.
+  - Upgrade/paywall UI, multi-currency controls, per-currency formatting.
+  - Integrate **Trip Pass** (one-time purchase of ₹49/₹99 to unlock Pro features for a single group/trip ledger for 30 days).
 
-**R6 — Paid tier + multi-currency.** Backend: freemium counting ✅, `tier` field
-✅, paid action guards ✅, currency settings actions ✅; needs the
-upgrade/paywall UX on `freemium-limit` / `paid-required` results, plan state,
-multi-currency controls, per-currency formatting, and the no-FX vs FX policy
-before allowing non-INR expense creation.
+**R7 — Premium extras.**
+  - Template UI (backend ✅: `templates/{id}` + actions).
+  - Receipt OCR upload UI (backend ✅: `POST /api/receipts/ocr`).
+  - PDF export UI (backend ✅).
 
-**R7 — Premium extras.** Template UI (backend ✅: `templates/{id}` + actions),
-Receipt OCR upload UI (backend ✅: `POST /api/receipts/ocr`), PDF export UI
-(backend ✅). Optional later: receipt image storage + `receiptURL` persistence.
-Each independent.
+**R8 — PWA + polish (Phase 8).**
+  - PWA manifest + service worker (installable, offline shell).
+  - TWA packaging notes for Play Store listing.
+  - a11y sweep (375px, 44px targets, focus, reduced-motion, AA contrast), empty/loading/error pass.
 
-**R8 — PWA + polish (Phase 8).** Manifest + service worker (installable, offline
-shell), TWA packaging notes, a11y sweep (375px, 44px targets, focus,
-reduced-motion, AA contrast), empty/loading/error pass.
+**R9 — Deploy / ops.**
+  - Console: real `apiKey`/`appId` in `apphosting.yaml`, service-account runtime secret, App Hosting backend + GitHub, Cloud Scheduler (R3), composite indexes, deploy `firestore.rules`. Rotate key.
 
-**R9 — Deploy / ops.** Console: real `apiKey`/`appId` in `apphosting.yaml`,
-service-account runtime secret, App Hosting backend + GitHub, Cloud Scheduler
-(R3), any Firestore composite indexes, deploy `firestore.rules`. Then rotate the
-dev service-account key.
+**R10 — Smart Group Modes & Onboarding [NEW].**
+  - Onboarding selection: "What are you splitting?" (Trip, Roommates, Couple, Friends, Office Lunch, Family, Other).
+  - Render group-specific defaults: Trip trip-cost stats, Roommates rent/utilities balance carry-forward, Couple softer visual tone, Office Lunch round-robin payer suggestion.
+
+**R11 — Guest Links & Sharing [NEW].**
+  - Allow adding "Guest" members without full signup.
+  - Dynamic share links letting unregistered users view balances, view group summaries, and approve UPI/cash settlements.
+
+**R12 — Batch Expense Entry & NLP Quick Add [NEW].**
+  - Multi-row spreadsheet-card hybrid interface for logging multiple expenses at once.
+  - Natural Language Quick Add parsing input: `₹850 dinner @ Goa Trip` -> amount: `850`, description: `dinner`, group: `Goa Trip`.
+
+**R13 — Audit History & Comments [NEW].**
+  - Display modification logs on individual expenses.
+  - "Restore" button for deleted expenses.
+  - Lightweight comment threads on individual expense details.
+
+**R14 — Push Notifications [NEW].**
+  - Firebase FCM setup for added to group, settlement notifications, and monthly close reminders.
 
 ---
 

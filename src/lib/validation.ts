@@ -107,6 +107,7 @@ const CurrencyCodeSchema = z.enum(SUPPORTED_CURRENCY_CODES);
 
 export const CreateGroupSchema = z.object({
   name: z.string().trim().min(1, "Name a group.").max(60, "Keep it under 60 characters."),
+  groupMode: z.enum(["trip", "roommates", "couple", "lunch", "friends", "family", "custom"]).optional(),
 });
 export type CreateGroupInput = z.infer<typeof CreateGroupSchema>;
 
@@ -184,6 +185,12 @@ export const AddExpenseSchema = z.object({
   expense: ExpenseInputSchema,
 });
 export type AddExpenseInput = z.infer<typeof AddExpenseSchema>;
+
+export const AddBatchExpensesSchema = z.object({
+  groupId: UidSchema,
+  expenses: z.array(ExpenseInputSchema).min(1, "Add at least one expense.").max(50),
+});
+export type AddBatchExpensesInput = z.infer<typeof AddBatchExpensesSchema>;
 
 export const EditExpenseSchema = z.object({
   groupId: UidSchema,
@@ -334,6 +341,7 @@ export const SettleUpSchema = z.object({
   groupId: UidSchema,
   to: UidSchema,
   amountRupees: RupeeStringSchema,
+  method: z.enum(["upi", "cash"]),
   paymentRef: z.string().trim().max(64).optional(),
 });
 export type SettleUpInput = z.infer<typeof SettleUpSchema>;
@@ -355,3 +363,19 @@ export const UpdateProfileSchema = z.object({
     .or(z.literal("")),
 });
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
+
+export const CloseMonthSchema = z.object({
+  groupId: UidSchema,
+  month: z.number().int().min(1).max(12),
+  year: z.number().int().min(2000).max(2100),
+});
+export type CloseMonthInput = z.infer<typeof CloseMonthSchema>;
+
+export const GuestSettleUpSchema = z.object({
+  groupId: UidSchema,
+  to: UidSchema,
+  amountRupees: RupeeStringSchema,
+  method: z.enum(["upi", "cash"]),
+  paymentRef: z.string().trim().max(64).optional(),
+});
+export type GuestSettleUpInput = z.infer<typeof GuestSettleUpSchema>;

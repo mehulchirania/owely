@@ -63,7 +63,13 @@ export default async function EditExpensePage({
           </h1>
         </div>
       </div>
-      <ExpenseForm groupId={groupId} members={members} currentUid={user.uid} initial={initial} />
+      <ExpenseForm
+        groupId={groupId}
+        members={members}
+        currentUid={user.uid}
+        userTier="free"
+        initial={initial}
+      />
     </div>
   );
 }

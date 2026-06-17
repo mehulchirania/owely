@@ -8,15 +8,15 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatPaise } from "@/lib/money";
-import { buildUpiLink } from "@/lib/upi";
 import { memberAvatar } from "@/lib/avatar";
 import { disputeSettlement, settleUp } from "@/actions/settlements";
-import type { SettlementStatus } from "@/types";
+import type { SettlementMethod, SettlementStatus } from "@/types";
 
 export interface SettleDebt {
   to: string;
   toName: string;
   toUpiId?: string;
+  toPhone?: string;
   amount: number;
   amountRupees: string;
 }
@@ -28,6 +28,7 @@ export interface SettlementRow {
   fromName: string;
   toName: string;
   amount: number;
+  method: SettlementMethod;
   status: SettlementStatus;
   paymentRef?: string;
   canDispute: boolean;
@@ -38,6 +39,11 @@ interface Props {
   groupName: string;
   myDebts: SettleDebt[];
   history: SettlementRow[];
+}
+
+function cleanPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length > 10 ? digits.slice(-10) : digits;
 }
 
 export function SettlePanel({ groupId, groupName, myDebts, history }: Props) {
@@ -76,31 +82,61 @@ export function SettlePanel({ groupId, groupName, myDebts, history }: Props) {
 function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: string; debt: SettleDebt }) {
   const router = useRouter();
   const [marking, setMarking] = useState(false);
+  const [amountRupees, setAmountRupees] = useState(debt.amountRupees);
+  const [method, setMethod] = useState<SettlementMethod>("upi");
   const [ref, setRef] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const avatar = memberAvatar(debt.to);
 
-  const upiLink = debt.toUpiId
-    ? buildUpiLink({
-        upiId: debt.toUpiId,
-        payeeName: debt.toName,
-        paise: debt.amount,
-        note: `Owely - ${groupName}`,
-      })
+  const parsedPaise = Math.round(parseFloat(amountRupees || "0") * 100);
+  const isValid = !isNaN(parsedPaise) && parsedPaise > 0;
+  const amountTooHigh = isValid && parsedPaise > debt.amount;
+
+  const payeeName = debt.toName;
+  const note = `Owely - ${groupName}`;
+  const amountStr = isValid ? (parsedPaise / 100).toFixed(2) : "0.00";
+
+  // GPay target: if upiId exists, use it. Otherwise use phone@upi
+  const gpayVpa = debt.toUpiId || (debt.toPhone ? `${cleanPhone(debt.toPhone)}@upi` : null);
+  const gpayLink = isValid && gpayVpa
+    ? `intent://upi/pay?pa=${encodeURIComponent(gpayVpa)}&pn=${encodeURIComponent(payeeName)}&am=${amountStr}&cu=INR${note ? `&tn=${encodeURIComponent(note)}` : ""}#Intent;scheme=tez;package=com.google.android.apps.nbu.paisa.user;end`
+    : null;
+
+  // PhonePe target: if upiId exists, use it. Otherwise use phone@ybl
+  const phonepeVpa = debt.toUpiId || (debt.toPhone ? `${cleanPhone(debt.toPhone)}@ybl` : null);
+  const phonepeLink = isValid && phonepeVpa
+    ? `intent://pay?pa=${encodeURIComponent(phonepeVpa)}&pn=${encodeURIComponent(payeeName)}&am=${amountStr}&cu=INR${note ? `&tn=${encodeURIComponent(note)}` : ""}#Intent;scheme=phonepe;package=com.phonepe.app;end`
+    : null;
+
+  // Generic UPI: if upiId exists, use it. Otherwise use phone
+  const genericVpa = debt.toUpiId || (debt.toPhone ? cleanPhone(debt.toPhone) : null);
+  const genericLink = isValid && genericVpa
+    ? `upi://pay?pa=${encodeURIComponent(genericVpa)}&pn=${encodeURIComponent(payeeName)}&am=${amountStr}&cu=INR${note ? `&tn=${encodeURIComponent(note)}` : ""}`
     : null;
 
   function confirmPaid(): void {
+    if (!isValid) {
+      setError("Please enter a valid amount.");
+      return;
+    }
+    if (amountTooHigh) {
+      setError(`You can record up to ${formatPaise(debt.amount)}.`);
+      return;
+    }
     setError(null);
     startTransition(async () => {
       const res = await settleUp({
         groupId,
         to: debt.to,
-        amountRupees: debt.amountRupees,
+        amountRupees: amountRupees,
+        method,
         paymentRef: ref.trim() || undefined,
       });
       if (!res.ok) { setError(res.error); return; }
       router.refresh();
+      setMarking(false);
+      setRef("");
     });
   }
 
@@ -121,28 +157,90 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
           </p>
           {debt.toUpiId ? (
             <p className="mt-1 truncate text-xs text-dim">{debt.toUpiId}</p>
+          ) : debt.toPhone ? (
+            <p className="mt-1 truncate text-xs text-dim">{debt.toPhone}</p>
           ) : (
             <p className="mt-2 text-sm leading-6 text-coral-soft">
-              {debt.toName} has not added a UPI ID. Pay them directly, then mark it paid.
+              No registered phone or UPI ID found. Settle manually.
             </p>
           )}
         </div>
       </div>
 
-      <div className="relative mt-5 flex flex-col gap-3">
-        {upiLink && (
-          <a
-            href={upiLink}
-            target="_blank"
-            rel="noreferrer"
-            className="flex h-13 items-center justify-center gap-2 rounded-2xl bg-accent px-6 font-semibold text-white shadow-[0_14px_32px_-10px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <rect x="5" y="11" width="14" height="9" rx="2" />
-              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-            </svg>
-            Pay {formatPaise(debt.amount)} via UPI
-          </a>
+      <div className="relative mt-5 flex flex-col gap-4">
+        {/* Amount Input */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor={`amount-${debt.to}`} className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+            Amount to settle (₹)
+          </label>
+          <input
+            id={`amount-${debt.to}`}
+            type="number"
+            step="0.01"
+            min="0.01"
+            max={debt.amountRupees}
+            value={amountRupees}
+            onChange={(e) => setAmountRupees(e.target.value)}
+            placeholder="0.00"
+            disabled={pending}
+            className="h-12 rounded-xl border border-white/8 bg-surface px-3 font-display text-lg text-hi outline-none focus:border-accent/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+          />
+          {amountTooHigh && (
+            <p role="alert" className="text-sm text-coral-soft">
+              You can record up to {formatPaise(debt.amount)}.
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/6 bg-surface p-1">
+          {(["upi", "cash"] as const).map((option) => {
+            const active = method === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setMethod(option)}
+                disabled={pending}
+                className={`flex h-11 items-center justify-center rounded-xl text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${active ? "bg-accent text-white" : "text-muted hover:bg-card hover:text-strong"}`}
+              >
+                {option === "upi" ? "UPI" : "Cash"}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* UPI payment links */}
+        {isValid && method === "upi" && (gpayLink || phonepeLink || genericLink) && (
+          <div className="flex flex-col gap-2">
+            {gpayLink && (
+              <a
+                href={gpayLink}
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F9D58] hover:bg-[#0B8043] px-6 font-semibold text-white shadow-[0_12px_24px_-10px_#0F9D58] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                Pay with Google Pay
+              </a>
+            )}
+            {phonepeLink && (
+              <a
+                href={phonepeLink}
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#5f259f] hover:bg-[#4a1c7d] px-6 font-semibold text-white shadow-[0_12px_24px_-10px_#5f259f] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                Pay with PhonePe
+              </a>
+            )}
+            {genericLink && (
+              <a
+                href={genericLink}
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/8 bg-elevated px-6 text-sm font-semibold text-strong transition-colors hover:bg-segment focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                Pay via other UPI App
+              </a>
+            )}
+          </div>
         )}
 
         {!marking ? (
@@ -156,13 +254,13 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
         ) : (
           <div className="flex flex-col gap-3 rounded-2xl border border-white/6 bg-surface p-3">
             <label htmlFor={`ref-${debt.to}`} className="text-sm text-muted">
-              UPI reference / UTR (optional)
+              {method === "upi" ? "UPI reference / UTR (optional)" : "Cash note (optional)"}
             </label>
             <input
               id={`ref-${debt.to}`}
               value={ref}
               onChange={(e) => setRef(e.target.value)}
-              placeholder="e.g. 4538xxxx1234"
+              placeholder={method === "upi" ? "e.g. 4538xxxx1234" : "e.g. paid in person"}
               maxLength={64}
               disabled={pending}
               className="h-11 rounded-xl border border-white/8 bg-card px-3 text-hi outline-none placeholder:text-faint focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
@@ -172,14 +270,14 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
               <button
                 type="button"
                 onClick={confirmPaid}
-                disabled={pending}
+                disabled={pending || !isValid || amountTooHigh}
                 className="flex h-11 flex-1 items-center justify-center rounded-xl bg-accent px-4 font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60"
               >
                 {pending ? "Saving..." : "Confirm paid"}
               </button>
               <button
                 type="button"
-                onClick={() => { setMarking(false); setError(null); }}
+              onClick={() => { setMarking(false); setError(null); }}
                 disabled={pending}
                 className="flex h-11 items-center justify-center rounded-xl border border-white/8 px-4 font-semibold text-strong hover:bg-card"
               >
@@ -217,7 +315,10 @@ function HistoryRow({ groupId, row }: { groupId: string; row: SettlementRow }) {
           <span className="font-semibold text-hi">{row.toName}</span>{" "}
           {formatPaise(row.amount)}
         </p>
-        {row.paymentRef && <p className="truncate text-xs text-dim">Ref: {row.paymentRef}</p>}
+        <p className="truncate text-xs text-dim">
+          {row.method === "upi" ? "UPI" : "Cash"}
+          {row.paymentRef ? ` - Ref: ${row.paymentRef}` : ""}
+        </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass}`}>

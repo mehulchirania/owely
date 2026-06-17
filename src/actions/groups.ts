@@ -11,11 +11,12 @@
  */
 
 import { FieldValue, type Firestore } from "firebase-admin/firestore";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
 import { fetchUser } from "@/lib/read-model";
+import { recomputeSimplified } from "@/lib/recompute";
 import { directPairKey } from "@/lib/relationship-categories";
 import { authorizeMember, authorizeUser } from "@/lib/session";
 import { logActionError } from "@/lib/log";
@@ -131,6 +132,7 @@ export async function createGroup(input: unknown): Promise<ActionResult<{ groupI
       memberDetails: { [auth.data.uid]: detail },
       simplifiedDebts: [],
       baseCurrency: "INR",
+      groupMode: parsed.data.groupMode ?? "custom",
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
@@ -326,10 +328,25 @@ async function linkOrInvite(
     .collection(Collections.invites)
     .where("phone", "==", phone)
     .get();
-  const hasPending = priorInvites.docs.some(
+  const priorInvite = priorInvites.docs.find(
     (d) => d.get("groupId") === group.id && d.get("status") === "pending",
   );
-  if (!hasPending) {
+
+  if (!priorInvite) {
+    const guestUid = `guest_${randomUUID()}`;
+    const detail: MemberDetail = {
+      name,
+      phone,
+      photoURL: null,
+    };
+
+    // Add guest user immediately to the group
+    await db.doc(paths.group(group.id)).update({
+      members: FieldValue.arrayUnion(guestUid),
+      [`memberDetails.${guestUid}`]: detail,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
     await db.collection(Collections.invites).add({
       groupId: group.id,
       groupName: group.name,
@@ -337,6 +354,7 @@ async function linkOrInvite(
       invitedName: name,
       invitedBy,
       status: "pending",
+      guestUid,
       createdAt: FieldValue.serverTimestamp(),
     });
   }
@@ -492,12 +510,24 @@ export async function acceptInvite(input: unknown): Promise<ActionResult<{ group
     }
 
     const groupId = invite.get("groupId") as string;
+    const guestUid = invite.get("guestUid") as string | undefined;
     const detail = await memberDetailFor(auth.data.uid);
-    await db.doc(paths.group(groupId)).update({
-      members: FieldValue.arrayUnion(auth.data.uid),
-      [`memberDetails.${auth.data.uid}`]: detail,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+
+    if (guestUid) {
+      await mergeGuestToUser(db, groupId, guestUid, auth.data.uid, detail);
+    } else {
+      await db.doc(paths.group(groupId)).update({
+        members: FieldValue.arrayUnion(auth.data.uid),
+        [`memberDetails.${auth.data.uid}`]: detail,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+
+    // Recompute simplified debts after member/expense merge
+    const groupSnap = await db.doc(paths.group(groupId)).get();
+    const freshMembers = (groupSnap.get("members") as string[]) ?? [];
+    await recomputeSimplified(groupId, freshMembers);
+
     await inviteRef.update({
       status: "accepted",
       acceptedBy: auth.data.uid,
@@ -509,4 +539,92 @@ export async function acceptInvite(input: unknown): Promise<ActionResult<{ group
     logActionError("acceptInvite", error);
     return failure("Could not accept the invite.");
   }
+}
+
+async function mergeGuestToUser(
+  db: Firestore,
+  groupId: string,
+  guestUid: string,
+  actualUid: string,
+  actualDetail: MemberDetail,
+) {
+  const groupRef = db.doc(paths.group(groupId));
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(groupRef);
+    if (!snap.exists) return;
+
+    const members = (snap.get("members") as string[]) ?? [];
+    const updatedMembers = members.filter((m) => m !== guestUid);
+    if (!updatedMembers.includes(actualUid)) {
+      updatedMembers.push(actualUid);
+    }
+
+    const memberDetails = (snap.get("memberDetails") as Record<string, MemberDetail>) ?? {};
+    const guestDetail = memberDetails[guestUid];
+    const finalDetail = {
+      ...guestDetail,
+      ...actualDetail,
+    };
+
+    delete memberDetails[guestUid];
+    memberDetails[actualUid] = finalDetail;
+
+    tx.update(groupRef, {
+      members: updatedMembers,
+      memberDetails,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+
+  const expensesRef = db.collection(paths.expenses(groupId));
+  const expensesSnap = await expensesRef.get();
+  const batch = db.batch();
+
+  for (const doc of expensesSnap.docs) {
+    const data = doc.data();
+    let changed = false;
+    const updatePayload: any = {};
+
+    if (data.paidBy === guestUid) {
+      updatePayload.paidBy = actualUid;
+      changed = true;
+    }
+
+    if (data.splits && guestUid in data.splits) {
+      const newSplits = { ...data.splits };
+      const share = newSplits[guestUid];
+      delete newSplits[guestUid];
+      newSplits[actualUid] = share;
+      updatePayload.splits = newSplits;
+      changed = true;
+    }
+
+    if (changed) {
+      batch.update(doc.ref, updatePayload);
+    }
+  }
+
+  const settlementsRef = db.collection(paths.settlements(groupId));
+  const settlementsSnap = await settlementsRef.get();
+  for (const doc of settlementsSnap.docs) {
+    const data = doc.data();
+    let changed = false;
+    const updatePayload: any = {};
+
+    if (data.from === guestUid) {
+      updatePayload.from = actualUid;
+      changed = true;
+    }
+    if (data.to === guestUid) {
+      updatePayload.to = actualUid;
+      changed = true;
+    }
+
+    if (changed) {
+      batch.update(doc.ref, updatePayload);
+    }
+  }
+
+  await batch.commit();
 }

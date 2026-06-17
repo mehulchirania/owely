@@ -96,17 +96,32 @@ in [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md).
 
 Core app complete end-to-end (Phases 1-5): Google + Phone OTP sign-in, groups
 with phone invites, expenses with equal/unequal/percentage splits, live debt
-simplification, and UPI/cash settle-up with payment-reference capture + dispute. The
+simplification, and UPI/cash settle-up with explicit method capture,
+over-settlement guards, payment-reference capture, and dispute. The
 `Owely.dc.html` design handoff has been applied to the remaining app surfaces,
 including forms, menus, settings, errors, settle-up, and a login screen styled
-like the post-login dashboard. Phase 6 has 1:1 People UI, direct relationship
-backend support, and category write/read foundations. Paid backend surfaces are
-now in place for templates, recurring definitions, own expenses, contacts,
-offline idempotency, currency metadata, receipt OCR, and PDF export.
+like the post-login dashboard. Phase 6 is fully complete, supporting 1:1 People UI,
+direct relationships, and user-facing Category Management + Dashboard filter UI.
+Phase 7 features are fully supported including saved split templates, group/own
+recurring expenses UI, private Personal Ledger (`/own`) for tracking un-shared expenses
+with monthly summaries, offline-safe idempotent writes, display/base currency metadata,
+paid PDF export, and Google Vision Receipt OCR prefill uploading.
+
+Phase B differentiators are fully implemented:
+- **Group Mode Selector**: Selection of smart modes (Trip, Roommates, Couple, Lunch, Friends, Family, Custom).
+- **Debt Round-off & Thresholds**: Filter balances below threshold and round transfers to nearest rupee.
+- **Batch Expense Entry**: Multi-row batch expense creation action and BatchExpenseForm UI.
+- **Monthly Closures**: Freeze roommate/utilities group months, enforce write locks, and record carry-forward balances.
+- **Zero-friction Guest Ledger**: Invite links seed guest_uuid members immediately. Guests access group details read-only and record settlements using secure session cookies.
+- **Guest-to-User Merge**: Automatic merging of guest ledger history, balances, and settlements to actual authenticated user account upon sign-up.
+- **Fairness Insights**: Visual dashboard tracking contributor ratios and round-robin payee recommendations.
+
+**Landing Page UI Polish**:
+- Removed the "Start for free" and "See how it works" buttons to streamline onboarding, and renamed the navigation link from "Open app" to "Login".
+
 Still console-blocked for a live deploy (API key, App ID, service-account key;
-see env above). Deferred: category management UI, paid feature UI (templates,
-recurring UI, multi-currency controls, OCR upload UI, PDF export button) and PWA/a11y sweep. See
-[`docs/STATE.md`](./docs/STATE.md) and [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md).
+see env above). Deferred: billing-provider selection and final TWA container packaging.
+See [`docs/STATE.md`](./docs/STATE.md) and [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md).
 
 ## What's intentionally not built
 

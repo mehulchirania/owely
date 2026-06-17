@@ -60,13 +60,24 @@ export function simplifyFromNet(
   groupId: string,
   idFactory: () => string,
   now: number = Date.now(),
+  options?: {
+    threshold?: number;
+    roundTo?: number;
+  }
 ): Settlement[] {
+  const threshold = options?.threshold ?? 0;
+  const roundTo = options?.roundTo ?? 0;
+  const limit = roundTo > 0 ? Math.max(threshold, roundTo) : threshold;
+
   // Partition into creditors (owed money) and debtors (owe money).
   const creditors: Array<{ uid: Uid; amount: number }> = [];
   const debtors: Array<{ uid: Uid; amount: number }> = [];
   for (const [uid, balance] of Object.entries(net)) {
-    if (balance > 0) creditors.push({ uid, amount: balance });
-    else if (balance < 0) debtors.push({ uid, amount: -balance });
+    if (balance > limit) {
+      creditors.push({ uid, amount: balance });
+    } else if (balance < -limit) {
+      debtors.push({ uid, amount: -balance });
+    }
   }
 
   // Largest first so we clear the biggest imbalances in the fewest hops.
@@ -79,7 +90,12 @@ export function simplifyFromNet(
   while (ci < creditors.length && di < debtors.length) {
     const creditor = creditors[ci];
     const debtor = debtors[di];
-    const transfer = Math.min(creditor.amount, debtor.amount);
+    let transfer = Math.min(creditor.amount, debtor.amount);
+
+    if (roundTo > 0 && transfer > 0) {
+      const rounded = Math.floor(transfer / roundTo) * roundTo;
+      transfer = Math.min(rounded, creditor.amount, debtor.amount);
+    }
 
     if (transfer > 0) {
       settlements.push({
@@ -95,8 +111,8 @@ export function simplifyFromNet(
 
     creditor.amount -= transfer;
     debtor.amount -= transfer;
-    if (creditor.amount === 0) ci++;
-    if (debtor.amount === 0) di++;
+    if (creditor.amount <= limit) ci++;
+    if (debtor.amount <= limit) di++;
   }
 
   return settlements.sort((a, b) => b.amount - a.amount);

@@ -18,6 +18,7 @@ export const metadata: Metadata = {
   title: "Owely — Split expenses, settle over UPI or cash",
   description:
     "India-first expense splitting. Split group and 1:1 bills, then settle up over UPI or cash.",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

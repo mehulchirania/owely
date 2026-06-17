@@ -125,10 +125,12 @@ export async function GET(
     doc.fontSize(10).text("No settlements recorded.");
   } else {
     for (const settlement of settlements) {
+      const method = settlement.method === "cash" ? "cash" : "UPI";
+      const reference = settlement.paymentRef ? ` | ref: ${settlement.paymentRef}` : "";
       doc
         .fontSize(10)
         .text(
-          `${formatDate(settlement.createdAt)} | ${memberName(group.memberDetails, settlement.from)} -> ${memberName(group.memberDetails, settlement.to)} | ${formatInr(settlement.amount)} | ${settlement.status}`,
+          `${formatDate(settlement.createdAt)} | ${memberName(group.memberDetails, settlement.from)} -> ${memberName(group.memberDetails, settlement.to)} | ${formatInr(settlement.amount)} | ${method} | ${settlement.status}${reference}`,
         );
     }
   }

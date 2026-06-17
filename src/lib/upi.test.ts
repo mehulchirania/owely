@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildUpiLink } from "./upi";
+import { buildUpiLink, buildGpayLink, buildPhonepeLink, buildPhoneUpiLink } from "./upi";
 
 describe("buildUpiLink", () => {
   it("converts paise to rupees with two decimals at the boundary", () => {
@@ -35,3 +35,33 @@ describe("buildUpiLink", () => {
     expect(() => buildUpiLink({ upiId: "", payeeName: "A", paise: 100 })).toThrow();
   });
 });
+
+describe("buildGpayLink", () => {
+  it("creates intent link for GPay using normalized phone number with @upi handle", () => {
+    const link = buildGpayLink({ phone: "+919876543210", payeeName: "A", paise: 1000 });
+    expect(link).toContain("pa=9876543210%40upi");
+    expect(link).toContain("am=10.00");
+    expect(link.startsWith("intent://upi/pay?")).toBe(true);
+    expect(link).toContain("package=com.google.android.apps.nbu.paisa.user");
+  });
+});
+
+describe("buildPhonepeLink", () => {
+  it("creates intent link for PhonePe using normalized phone number with @ybl handle", () => {
+    const link = buildPhonepeLink({ phone: "98765 43210", payeeName: "B", paise: 5000 });
+    expect(link).toContain("pa=9876543210%40ybl");
+    expect(link).toContain("am=50.00");
+    expect(link.startsWith("intent://pay?")).toBe(true);
+    expect(link).toContain("package=com.phonepe.app");
+  });
+});
+
+describe("buildPhoneUpiLink", () => {
+  it("creates generic upi link using raw normalized phone number", () => {
+    const link = buildPhoneUpiLink({ phone: "+91 9876543210", payeeName: "C", paise: 10000 });
+    expect(link).toContain("pa=9876543210");
+    expect(link).toContain("am=100.00");
+    expect(link.startsWith("upi://pay?")).toBe(true);
+  });
+});
+

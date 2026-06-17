@@ -19,6 +19,8 @@ export default async function SettlePage({
     group.memberDetails[uid]?.name ?? "Someone";
   const upiOf = (uid: string): string | undefined =>
     profiles.find((p) => p?.uid === uid)?.upiId;
+  const phoneOf = (uid: string): string | undefined =>
+    profiles.find((p) => p?.uid === uid)?.phone ?? undefined;
 
   const myDebts: SettleDebt[] = group.simplifiedDebts
     .filter((t) => t.from === user.uid)
@@ -26,6 +28,7 @@ export default async function SettlePage({
       to: t.to,
       toName: nameOf(t.to),
       toUpiId: upiOf(t.to),
+      toPhone: phoneOf(t.to),
       amount: t.amount,
       amountRupees: (t.amount / 100).toFixed(2),
     }));
@@ -40,6 +43,7 @@ export default async function SettlePage({
       fromName: s.from === user.uid ? "You" : nameOf(s.from),
       toName: s.to === user.uid ? "You" : nameOf(s.to),
       amount: s.amount,
+      method: s.method ?? "upi",
       status: s.status,
       paymentRef: s.paymentRef,
       canDispute: s.to === user.uid && s.status === "completed",

@@ -136,6 +136,16 @@ pure function so it can run inside a Server Action and in tests identically.
 - [x] Phase 5 — Settlements + UPI/cash + payment-ref capture
 - [x] `Owely.dc.html` design handoff applied to core app surfaces
 - [x] Login redesigned to match the post-login web dashboard feel
+- [x] Responsive layout with desktop sidebar & wide content width (max-w-5xl)
+- [x] Dashboard with inline tabs (Groups / People / Activity)
+- [x] Group details inline tabs (Expenses / Balances & Settle / Members)
+- [x] Phone-first UPI intent payments with custom settlement amount inputs
+- [x] Admin Panel (/admin) for user stats, upgrading tiers, and membership control
+- [x] Group member balances read from stored simplified transfers, so completed
+      settlements/disputes stay reflected in the visible balance UI
+- [x] Settlement trust guardrails: payer records explicit UPI/Cash method,
+      over-settlement is blocked against the active simplified debt, and
+      history/PDF export show method plus reference/note.
 - ◧ Phase 6 — Direct people + categories
   - [x] Domain foundation: `Group.type` (`group`/`direct`), direct pair metadata,
         group/direct category fields, custom `categories/{id}` collection name,
@@ -151,7 +161,7 @@ pure function so it can run inside a Server Action and in tests identically.
         owned custom, or clear). Completed the read-only half (collection, rule,
         read-model, predefined constants already existed). `ensureUser` now
         initializes `tier:"free"` + `currency:"INR"` for new users.
-  - [ ] Category management UI.
+  - [x] Category management & filter UI: Added custom category list/creation inside Settings page and category picker tags in group details, along with dynamic filtering chips on the standard Groups and People dashboard tabs.
 - ◧ Phase 7 — Paid features: backend done for current scope; UI/ops pending
   - [x] Paid feature guards (backend): `requirePaidFeature` enforces `tier:"paid"`
         on paid-only Server Actions; wired into templates and recurring
@@ -162,10 +172,16 @@ pure function so it can run inside a Server Action and in tests identically.
   - [x] PDF export (backend): paid route
         `/api/groups/{groupId}/export/pdf` renders group members, current
         simplified debts, expenses, and settlement history as a downloadable PDF.
+  - [x] PDF export (UI): paid users get a group-level download entry point;
+        free users are routed to Settings instead of seeing raw paid-route JSON.
+  - [x] Plan/tools surface (UI): Settings shows stored tier, display currency,
+        free monthly limit, and Pro feature availability.
   - [x] Recurring expenses (backend): `recurring/{id}` defs + `generateDueRecurring`
         + `/api/cron/recurring` (Cloud Scheduler hits it daily). Idempotent.
-  - [x] Own (personal, un-split) expenses (backend): `users/{uid}/ownExpenses`
-        + actions. The "two sections per profile" — own vs shared tracking.
+  - [x] Recurring expenses (UI): group/direct ledgers have a Recurring tab where
+        paid users can create monthly equal-split rules and pause/resume/delete
+        saved rules. Actual generation still requires Scheduler + `CRON_SECRET`.
+  - [x] Own (personal, un-split) expenses: private personal ledger at `/own` with monthly spent metrics, private expense list, and full add/edit/delete CRUD features.
   - [x] Contacts member-add (backend): `findRegisteredUsers` + `addMembersByPhone`.
   - [x] Offline-safe writes (backend): `clientId` idempotency on expense creation.
   - [x] Multi-currency (backend metadata): paid `actions/currency.ts` writes user
@@ -176,10 +192,23 @@ pure function so it can run inside a Server Action and in tests identically.
         checks optional group membership, calls Google Vision, and returns raw
         text plus amount/date/merchant/title hints. It does not write expenses;
         the normal expense action remains the paise/debt boundary.
-  - [ ] Paid upgrade/paywall UI, templates UI, recurring UI, multi-currency
-        controls/formatting, OCR upload UI, PDF export UI,
-        and UI for own expenses/contact batch add (no UI built yet).
-- [ ] Phase 8 — PWA + polish
+  - [x] Receipt OCR (UI): paid users can upload a receipt image on the new
+        expense form to prefill title/amount; free users see a Pro affordance.
+        OCR remains confirmation-only and does not write expenses directly.
+  - [ ] Paid upgrade/paywall UI, templates UI, multi-currency
+        controls/formatting,
+        and UI for contact batch add (no UI built yet).
+- ◧ Phase 8 — PWA + polish
+  - [x] Bootstrapped PWA: created manifest.json, custom circular owl app icon, and configured Next.js layout metadata.
+  - [x] Landing page simplification: Removed "Start for free" and "See how it works" buttons, renamed "Open app" to "Login".
+- [x] Phase B — Differentiators (Smart Modes, Guest Links, Batch Add, & Closures)
+  - [x] Group Mode Selector: Added selection dropdown for Trip, Roommates, Couple, Lunch, etc. during group creation.
+  - [x] Debt Round-off & Thresholds: Configured simplifyFromNet engine to round transfer balances to nearest unit and filter tiny balances.
+  - [x] Batch Expense Entry: Created addBatchExpenses server action and BatchExpenseForm UI grid rows for trip expenses.
+  - [x] Monthly Closures: Added closeMonth server action, isMonthClosed locking helper, MonthlyClosePanel UI tab, and write locks blocking modifications in closed periods.
+  - [x] Zero-friction Guest Ledger: Generated guest_uuid profiles immediately on invite. Added guest-login Route Handler setting guest session cookies, and /groups/[groupId]/guest page for read-only viewing and payment confirmations.
+  - [x] Guest-to-User Merge: Merges guest ledger history, balances, and settlements to authenticated user account upon acceptInvite.
+  - [x] Fairness Insights: Created widget displaying contributor ratios and round-robin payment suggestions.
 
 Phases 1-5 ship the full core loop. The dark Owely prototype styling now covers
 landing/auth, the dashboard-style login screen, app shell, groups, expenses,

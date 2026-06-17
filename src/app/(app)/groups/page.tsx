@@ -1,12 +1,17 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { requireSession } from "@/lib/session";
-import { fetchStandardGroups } from "@/lib/read-model";
+import { fetchStandardGroups, fetchDirectGroups, fetchUserActivity, fetchRelationshipCategories } from "@/lib/read-model";
 import { formatPaise } from "@/lib/money";
 import { netPositionFromSettlements } from "@/lib/simplify-debts";
 import { CreateGroupForm } from "@/components/CreateGroupForm";
+import { CreateDirectRelationshipForm } from "@/components/CreateDirectRelationshipForm";
+import { DashboardTabs } from "@/components/DashboardTabs";
+import { memberAvatar } from "@/lib/avatar";
+import { FilteredGroupsList } from "@/components/FilteredGroupsList";
+import { FilteredPeopleList } from "@/components/FilteredPeopleList";
 
-export const metadata: Metadata = { title: "Your groups — Owely" };
+export const metadata: Metadata = { title: "Dashboard — Owely" };
 
 /** Deterministic color-forward tile per group (emoji + tint), keyed by id. */
 const GROUP_TILES = [
@@ -37,11 +42,30 @@ function relativeTime(ms: number): string {
   return `${days}d ago`;
 }
 
-export default async function GroupsPage() {
-  const user = await requireSession();
-  const groups = await fetchStandardGroups(user.uid);
+const DASHBOARD_TABS = [
+  { id: "groups", label: "Groups" },
+  { id: "people", label: "People" },
+  { id: "activity", label: "Activity" },
+] as const;
 
-  const nets = groups.map((g) => netPositionFromSettlements(g.simplifiedDebts, user.uid));
+export default async function GroupsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const user = await requireSession();
+  const params = await searchParams;
+  const activeTab = typeof params.tab === "string" ? params.tab : "groups";
+
+  const [standardGroups, directGroups, activity, customCategories] = await Promise.all([
+    fetchStandardGroups(user.uid),
+    fetchDirectGroups(user.uid),
+    fetchUserActivity(user.uid, 15),
+    fetchRelationshipCategories(user.uid),
+  ]);
+
+  const allGroups = [...standardGroups, ...directGroups];
+  const nets = allGroups.map((g) => netPositionFromSettlements(g.simplifiedDebts, user.uid));
   const overall = nets.reduce((a, b) => a + b, 0);
   const owed = nets.reduce((a, b) => (b > 0 ? a + b : a), 0);
   const owe = nets.reduce((a, b) => (b < 0 ? a - b : a), 0);
@@ -54,7 +78,7 @@ export default async function GroupsPage() {
   const firstName = user.name?.split(" ")[0] ?? "there";
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       {/* greeting */}
       <div className="flex flex-col gap-0.5">
         <span className="text-sm text-dim">{today}</span>
@@ -63,92 +87,165 @@ export default async function GroupsPage() {
         </h1>
       </div>
 
-      {/* net balance hero */}
-      <div className="relative overflow-hidden rounded-3xl border border-accent/20 bg-card p-5">
+      {/* net balance hero - responsive layout */}
+      <div className="relative overflow-hidden rounded-3xl border border-accent/20 bg-card p-6 md:p-8">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-10 -right-8 h-36 w-36 rounded-full bg-accent opacity-20 blur-[60px]"
         />
-        <span className="text-[13px] text-muted">Your net balance</span>
-        <div className="mt-1.5 flex items-baseline gap-1.5">
+        <span className="text-sm text-muted">Your overall net balance</span>
+        <div className="mt-1 flex items-baseline gap-1.5">
           <span
-            className={`font-display text-[38px] font-bold tracking-tight ${
+            className={`font-display text-[40px] font-bold tracking-tight ${
               overall > 0 ? "text-mint" : overall < 0 ? "text-coral" : "text-hi"
             }`}
           >
             {overall > 0 ? "+" : overall < 0 ? "−" : ""}
             {formatPaise(Math.abs(overall))}
           </span>
-          <span className="text-[13px] text-dim">overall</span>
+          <span className="text-sm text-dim">across all relationships</span>
         </div>
-        <div className="mt-4 flex gap-2.5">
-          <div className="flex-1 rounded-2xl bg-mint/10 px-3 py-2.5">
-            <span className="text-xs text-mint-soft">You&apos;re owed</span>
-            <div className="mt-0.5 font-display text-[17px] font-semibold text-mint">
+        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 rounded-2xl bg-mint/10 px-4 py-3">
+            <span className="text-xs text-mint-soft font-medium">You&apos;re owed</span>
+            <div className="mt-1 font-display text-xl font-bold text-mint">
               {formatPaise(owed)}
             </div>
           </div>
-          <div className="flex-1 rounded-2xl bg-coral/10 px-3 py-2.5">
-            <span className="text-xs text-coral-soft">You owe</span>
-            <div className="mt-0.5 font-display text-[17px] font-semibold text-coral">
+          <div className="flex-1 rounded-2xl bg-coral/10 px-4 py-3">
+            <span className="text-xs text-coral-soft font-medium">You owe</span>
+            <div className="mt-1 font-display text-xl font-bold text-coral">
               {formatPaise(owe)}
             </div>
           </div>
         </div>
       </div>
 
-      {/* groups header */}
-      <div className="flex items-center justify-between pt-1">
-        <h2 className="font-display text-[15px] font-semibold text-hi">
-          Your groups
-        </h2>
+      {/* tab navigation */}
+      <DashboardTabs tabs={DASHBOARD_TABS} activeTab={activeTab} />
+
+      {/* tab content */}
+      <div className="mt-2">
+        {activeTab === "groups" && (
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="font-display text-lg font-bold text-hi">Groups</h2>
+                <p className="text-sm text-dim">Shared expenses with friends, flatmates or trips.</p>
+              </div>
+              <div className="w-full sm:w-64">
+                <CreateGroupForm />
+              </div>
+            </div>
+
+            {standardGroups.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/10 px-6 py-12 text-center">
+                <span className="text-3xl" role="img" aria-label="empty">🪹</span>
+                <p className="font-medium text-strong">No groups yet</p>
+                <p className="text-sm text-dim">
+                  Create a group for your trip, flat, or crew — then add an expense.
+                </p>
+              </div>
+            ) : (
+              <FilteredGroupsList
+                groups={standardGroups}
+                userId={user.uid}
+                customCategories={customCategories}
+              />
+            )}
+          </div>
+        )}
+
+        {activeTab === "people" && (
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="font-display text-lg font-bold text-hi">People</h2>
+                <p className="text-sm text-dim">Direct 1:1 splits and cash or UPI settlements.</p>
+              </div>
+              <div className="w-full sm:w-64">
+                <CreateDirectRelationshipForm />
+              </div>
+            </div>
+
+            {directGroups.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/10 px-6 py-12 text-center">
+                <span className="text-3xl" role="img" aria-label="person">👤</span>
+                <p className="font-medium text-strong">No people yet</p>
+                <p className="text-sm text-dim">
+                  Add someone to track 1:1 expenses, cash, and UPI settlements.
+                </p>
+              </div>
+            ) : (
+              <FilteredPeopleList
+                people={directGroups}
+                userId={user.uid}
+                customCategories={customCategories}
+              />
+            )}
+          </div>
+        )}
+
+        {activeTab === "activity" && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <h2 className="font-display text-lg font-bold text-hi">Recent Activity</h2>
+              <p className="text-sm text-dim">Latest transactions across all your groups.</p>
+            </div>
+
+            {activity.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/10 px-6 py-12 text-center">
+                <span className="text-3xl" role="img" aria-label="activity">📉</span>
+                <p className="font-medium text-strong">No activity yet</p>
+                <p className="text-sm text-dim">
+                  Expenses and settlements you or your friends add will show up here.
+                </p>
+              </div>
+            ) : (
+              <ul className="flex flex-col gap-2.5">
+                {activity.map((item) => {
+                  const isExpense = item.type === "expense";
+                  return (
+                    <li
+                      key={item.id}
+                      className="flex items-center gap-3 rounded-2xl border border-white/5 bg-card p-4 transition-colors hover:bg-elevated"
+                    >
+                      <span
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl ${
+                          isExpense ? "bg-accent/10 text-accent" : "bg-mint/10 text-mint"
+                        }`}
+                        role="img"
+                        aria-hidden
+                      >
+                        {isExpense ? "🧾" : "💸"}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="font-semibold text-hi truncate">
+                            {isExpense ? item.title : "Settle up"}
+                          </span>
+                          <span className={`font-display text-sm font-semibold ${isExpense ? "text-hi" : "text-mint"}`}>
+                            {formatPaise(item.amount)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-dim mt-0.5">
+                          <span>
+                            in{" "}
+                            <Link href={`/groups/${item.groupId}`} className="text-strong hover:underline">
+                              {item.groupName}
+                            </Link>
+                          </span>
+                          <span>{relativeTime(item.createdAt)}</span>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
-
-      <CreateGroupForm />
-
-      {groups.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/10 px-6 py-12 text-center">
-          <span className="text-3xl" role="img" aria-label="empty">🪹</span>
-          <p className="font-medium text-strong">No groups yet</p>
-          <p className="text-sm text-dim">
-            Create a group for your trip, flat, or crew — then add an expense.
-          </p>
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-2.5">
-          {groups.map((group, i) => {
-            const net = nets[i];
-            const tile = tileFor(group.id);
-            return (
-              <li key={group.id}>
-                <Link
-                  href={`/groups/${group.id}`}
-                  className="flex items-center gap-3 rounded-2xl border border-white/5 bg-card p-3.5 transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                >
-                  <span
-                    className={`flex h-12 w-12 items-center justify-center rounded-2xl text-2xl ${tile.tile}`}
-                    role="img"
-                    aria-hidden
-                  >
-                    {tile.emoji}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold text-hi">
-                      {group.name}
-                    </span>
-                    <span className="text-[13px] text-dim">
-                      {group.members.length}{" "}
-                      {group.members.length === 1 ? "member" : "members"}
-                      {relativeTime(group.updatedAt) && ` · ${relativeTime(group.updatedAt)}`}
-                    </span>
-                  </span>
-                  <NetPill net={net} />
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
     </div>
   );
 }
@@ -176,3 +273,4 @@ function NetPill({ net }: { net: number }) {
     </span>
   );
 }
+

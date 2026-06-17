@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeNetBalances, simplifyDebts } from "./simplify-debts";
+import { computeNetBalances, simplifyDebts, simplifyFromNet } from "./simplify-debts";
 import type { Expense, Uid } from "@/types";
 
 let seq = 0;
@@ -75,5 +75,24 @@ describe("simplifyDebts", () => {
   it("handles a single-member group with no transfers", () => {
     const expenses = [expense("a", { a: 5000 })];
     expect(simplifyDebts(expenses, ["a"], "g1", id)).toEqual([]);
+  });
+
+  it("filters out transfers below threshold", () => {
+    const expenses = [
+      expense("b", { a: 500 }), // A owes B ₹5 (500 paise)
+    ];
+    const net = computeNetBalances(expenses, ["a", "b"]);
+    const s = simplifyFromNet(net, "g1", id, 0, { threshold: 1000 });
+    expect(s).toEqual([]);
+  });
+
+  it("rounds transfer amounts to nearest roundTo unit", () => {
+    const expenses = [
+      expense("b", { a: 850 }), // A owes B 850 paise
+    ];
+    const net = computeNetBalances(expenses, ["a", "b"]);
+    const s = simplifyFromNet(net, "g1", id, 0, { roundTo: 100 });
+    expect(s).toHaveLength(1);
+    expect(s[0].amount).toBe(800); // 850 rounded down to nearest 100 is 800
   });
 });

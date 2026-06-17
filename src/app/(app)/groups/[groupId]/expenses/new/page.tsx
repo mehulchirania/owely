@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/session";
-import { fetchGroup } from "@/lib/read-model";
+import { fetchGroup, fetchUser } from "@/lib/read-model";
 import { ExpenseForm } from "@/components/ExpenseForm";
 
 export default async function NewExpensePage({
@@ -11,7 +11,10 @@ export default async function NewExpensePage({
 }) {
   const { groupId } = await params;
   const user = await requireSession();
-  const group = await fetchGroup(groupId);
+  const [group, profile] = await Promise.all([
+    fetchGroup(groupId),
+    fetchUser(user.uid),
+  ]);
   if (!group || !group.members.includes(user.uid)) notFound();
 
   const members = group.members.map((uid) => ({
@@ -38,7 +41,12 @@ export default async function NewExpensePage({
           </h1>
         </div>
       </div>
-      <ExpenseForm groupId={groupId} members={members} currentUid={user.uid} />
+      <ExpenseForm
+        groupId={groupId}
+        members={members}
+        currentUid={user.uid}
+        userTier={profile?.tier ?? "free"}
+      />
     </div>
   );
 }

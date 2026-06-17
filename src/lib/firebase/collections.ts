@@ -26,6 +26,8 @@ export const Collections = {
   ownExpenses: "ownExpenses",
   /** Recurring-expense definitions (shared + own), top-level: recurring/{id}. */
   recurring: "recurring",
+  /** Per-group monthly closures: groups/{groupId}/closures/{id}. */
+  closures: "closures",
 } as const;
 
 export type CollectionName =
@@ -42,6 +44,10 @@ export const paths = {
     `${Collections.groups}/${groupId}/${Collections.settlements}`,
   settlement: (groupId: string, settlementId: string) =>
     `${Collections.groups}/${groupId}/${Collections.settlements}/${settlementId}`,
+  closures: (groupId: string) =>
+    `${Collections.groups}/${groupId}/${Collections.closures}`,
+  closure: (groupId: string, closureId: string) =>
+    `${Collections.groups}/${groupId}/${Collections.closures}/${closureId}`,
   ownExpenses: (uid: string) =>
     `${Collections.users}/${uid}/${Collections.ownExpenses}`,
   ownExpense: (uid: string, expenseId: string) =>
