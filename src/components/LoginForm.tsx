@@ -100,18 +100,13 @@ export function LoginForm() {
     return recaptchaRef.current;
   }
 
-  async function handleSendOtp(e: React.FormEvent): Promise<void> {
-    e.preventDefault();
+  async function sendOtp(rawPhone: string): Promise<void> {
     setError(null);
-    if (phone.replace(/\D/g, "").length < 10) {
-      setError("Enter a valid 10-digit mobile number.");
-      return;
-    }
     setPending("phone");
     try {
       confirmationRef.current = await signInWithPhoneNumber(
         getFirebaseAuth(),
-        toE164(phone),
+        toE164(rawPhone),
         getRecaptcha(),
       );
       setStep("code");
@@ -122,8 +117,16 @@ export function LoginForm() {
     }
   }
 
-  async function handleVerifyOtp(e: React.FormEvent): Promise<void> {
+  async function handleSendOtp(e: React.FormEvent): Promise<void> {
     e.preventDefault();
+    if (phone.replace(/\D/g, "").length < 10) {
+      setError("Enter a valid 10-digit mobile number.");
+      return;
+    }
+    await sendOtp(phone);
+  }
+
+  async function verifyOtp(rawCode: string): Promise<void> {
     setError(null);
     if (!confirmationRef.current) {
       setError("Request a new code.");
@@ -133,12 +136,17 @@ export function LoginForm() {
     setStatus("Verifying…");
     setPending("phone");
     try {
-      const cred = await confirmationRef.current.confirm(code.trim());
+      const cred = await confirmationRef.current.confirm(rawCode.trim());
       await finishSignIn(cred.user);
     } catch (e) {
       setError(e instanceof Error && !("code" in e) ? e.message : authErrorMessage(e));
       setPending(null);
     }
+  }
+
+  async function handleVerifyOtp(e: React.FormEvent): Promise<void> {
+    e.preventDefault();
+    await verifyOtp(code);
   }
 
   const busy = pending !== null;
@@ -184,8 +192,15 @@ export function LoginForm() {
               inputMode="numeric"
               autoComplete="tel-national"
               placeholder="98765 43210"
+              maxLength={10}
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPhone(val);
+                if (val.replace(/\D/g, "").length === 10 && !busy) {
+                  void sendOtp(val);
+                }
+              }}
               disabled={busy}
               className="h-13 flex-1 bg-transparent text-hi outline-none placeholder:text-faint"
             />
@@ -212,7 +227,13 @@ export function LoginForm() {
             maxLength={6}
             placeholder="------"
             value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "");
+              setCode(val);
+              if (val.length === 6 && !busy) {
+                void verifyOtp(val);
+              }
+            }}
             disabled={busy}
             className="h-13 rounded-2xl border border-white/8 bg-card px-3 text-center font-display text-lg tracking-[0.5em] text-hi outline-none placeholder:text-faint focus:border-accent/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
           />
