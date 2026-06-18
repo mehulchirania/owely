@@ -154,6 +154,9 @@ pure function so it can run inside a Server Action and in tests identically.
       only genuinely new IDs against the free monthly limit.
 - [x] Phase 5 — Settlements + UPI/cash + payment-ref capture
 - [x] `Owely.dc.html` design handoff applied to core app surfaces
+- [x] `DESIGN.md` refreshed as the living app design guide for tokens, app
+      shell, Groups/People/Personal/Recurring/Admin surfaces, mobile/accessibility
+      constraints, money semantics, and implementation checklist.
 - [x] Login redesigned to match the post-login web dashboard feel
 - [x] Responsive layout with desktop sidebar & wide content width (max-w-5xl)
 - [x] Dashboard with inline tabs (Groups / People / Activity)

@@ -1,11 +1,13 @@
+import type { Metadata } from "next";
 import LandingMotion from "@/components/landing/LandingMotion";
 import Nav from "@/components/landing/Nav";
-import Hero from "@/components/landing/Hero";
-import HowItWorks from "@/components/landing/HowItWorks";
+import Pricing from "@/components/landing/Pricing";
 import Footer from "@/components/landing/Footer";
 import { LoginModal } from "@/components/LoginModal";
 
-export default async function Home({
+export const metadata: Metadata = { title: "Pricing — Owely" };
+
+export default async function PricingPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -16,7 +18,6 @@ export default async function Home({
   return (
     <LandingMotion>
       {showLogin && <LoginModal />}
-      {/* scroll progress */}
       <div className="fixed inset-x-0 top-0 z-[200] h-[3px] bg-transparent">
         <div
           data-progress
@@ -24,10 +25,10 @@ export default async function Home({
           style={{ background: "linear-gradient(90deg,var(--color-accent),var(--color-accent2))" }}
         />
       </div>
-
       <Nav />
-      <Hero />
-      <HowItWorks />
+      <div className="pt-[72px]">
+        <Pricing />
+      </div>
       <Footer />
     </LandingMotion>
   );

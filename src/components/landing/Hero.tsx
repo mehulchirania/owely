@@ -107,7 +107,7 @@ export default function Hero() {
               </div>
             </div>
 
-            <div data-float="30" className="absolute -right-[70px] top-[188px] z-[1] transition-transform duration-300">
+            <div data-float="30" className="absolute -right-[70px] top-[188px] z-[4] transition-transform duration-300">
               <div data-floatloop="C" className="rounded-[14px] bg-accent px-[14px] py-[10px]" style={{ boxShadow: "0 24px 50px -16px var(--color-accent)", transform: "rotate(-3deg)" }}>
                 <div className="font-display text-[15px] font-bold text-ink">8 → 3</div>
                 <div className="text-[10px]" style={{ color: "rgba(255,255,255,.85)" }}>debts simplified</div>

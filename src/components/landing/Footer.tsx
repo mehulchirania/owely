@@ -2,9 +2,9 @@ const COLUMNS: Array<{ heading: string; links: Array<{ label: string; href: stri
   {
     heading: "Product",
     links: [
-      { label: "Features", href: "#features" },
-      { label: "How it works", href: "#how" },
-      { label: "Settle up", href: "#simplify" },
+      { label: "Features", href: "/features" },
+      { label: "How it works", href: "/#how" },
+      { label: "Pricing", href: "/pricing" },
     ],
   },
   {

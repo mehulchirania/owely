@@ -85,6 +85,7 @@ src/
     api/groups/[groupId]/export/pdf  Paid PDF export route
   proxy.ts                  Route gate (Next 16 Middleware → Proxy)
 docs/STATE.md               Living status doc
+DESIGN.md                   Living design system + product surface guide
 ```
 
 **Principles**

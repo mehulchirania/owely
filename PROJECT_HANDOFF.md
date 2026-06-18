@@ -4,6 +4,19 @@ Prepend a new dated entry at the top after every change. Newest first.
 
 ---
 
+## 2026-06-18 — Design system guide refreshed
+
+Updated `DESIGN.md` from a short token stub into a current product design guide.
+It now mirrors the Tailwind v4 theme tokens, documents app-shell behavior,
+Groups/People/Personal/Recurring/Admin surface rules, accessibility constraints,
+money/trust rules, paid-feature affordances, and the implementation checklist
+for 375px mobile, focus states, loading/empty/error states, and Server Action
+guardrails.
+
+Verification: `npm run typecheck`.
+
+---
+
 ## 2026-06-18 — Backend hardening continuation
 
 Continued the feature audit after the expense-write and own-recurring fixes.
