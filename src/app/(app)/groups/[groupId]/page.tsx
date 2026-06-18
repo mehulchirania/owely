@@ -25,6 +25,8 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections } from "@/lib/firebase/collections";
 import { CopyButton } from "@/components/CopyButton";
 import { FairnessInsights } from "@/components/FairnessInsights";
+import { GroupCurrencyForm } from "@/components/GroupCurrencyForm";
+import { BatchInviteForm } from "@/components/BatchInviteForm";
 
 function nameOf(group: Group, uid: string): string {
   return group.memberDetails[uid]?.name ?? "Someone";
@@ -380,6 +382,17 @@ export default async function GroupPage({
               </div>
               {!isDirect && <InviteMemberForm groupId={group.id} />}
             </div>
+
+            {!isDirect && <BatchInviteForm groupId={group.id} />}
+
+            {!isDirect && (
+              <GroupCurrencyForm
+                groupId={groupId}
+                current={group.baseCurrency ?? "INR"}
+                isCreator={group.createdBy === user.uid}
+                isPaid={isPaid}
+              />
+            )}
 
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {group.members.map((uid) => {

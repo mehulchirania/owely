@@ -230,7 +230,7 @@ export async function leaveGroup(input: unknown): Promise<ActionResult<null>> {
 
 export async function inviteByPhone(
   input: unknown,
-): Promise<ActionResult<{ linked: boolean }>> {
+): Promise<ActionResult<{ linked: boolean; inviteToken?: string }>> {
   const parsed = parseInput(InviteByPhoneSchema, input);
   if (!parsed.success) return failure(parsed.message, { fieldErrors: parsed.fieldErrors });
   const auth = await authorizeMember(parsed.data.groupId);
@@ -244,9 +244,12 @@ export async function inviteByPhone(
       parsed.data.name,
       parsed.data.phone,
     );
-    if (result === "already-member") return failure("That number is already in this group.");
+    if (result.outcome === "already-member") return failure("That number is already in this group.");
     revalidatePath(`/groups/${parsed.data.groupId}`);
-    return success({ linked: result === "linked" });
+    return success({
+      linked: result.outcome === "linked",
+      inviteToken: result.outcome === "invited" ? result.inviteToken : undefined,
+    });
   } catch (error) {
     logActionError("inviteByPhone", error);
     return failure("Could not send the invite.");

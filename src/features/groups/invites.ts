@@ -3,9 +3,14 @@ import "server-only";
 import { FieldValue, type Firestore } from "firebase-admin/firestore";
 import { randomUUID } from "node:crypto";
 import { Collections, paths } from "@/lib/firebase/collections";
+import { sendSms } from "@/lib/sms";
 import type { Group, MemberDetail } from "@/types";
 
-export type LinkResult = "linked" | "invited" | "already-member";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://owely.app";
+
+export type LinkResult =
+  | { outcome: "linked" | "already-member" }
+  | { outcome: "invited"; inviteToken: string };
 
 type UserByPhone = {
   uid: string;
@@ -77,17 +82,17 @@ async function linkOrInviteKnownPhone(
   pendingPhones: Set<string>,
 ): Promise<LinkResult> {
   if (Object.values(group.memberDetails).some((detail) => detail.phone === phone)) {
-    return "already-member";
+    return { outcome: "already-member" };
   }
 
   if (existingUser) {
-    if (group.members.includes(existingUser.uid)) return "already-member";
+    if (group.members.includes(existingUser.uid)) return { outcome: "already-member" };
     await db.doc(paths.group(group.id)).update({
       members: FieldValue.arrayUnion(existingUser.uid),
       [`memberDetails.${existingUser.uid}`]: existingUser.detail,
       updatedAt: FieldValue.serverTimestamp(),
     });
-    return "linked";
+    return { outcome: "linked" };
   }
 
   if (!pendingPhones.has(phone)) {
@@ -97,7 +102,7 @@ async function linkOrInviteKnownPhone(
       [`memberDetails.${guestUid}`]: { name, phone, photoURL: null },
       updatedAt: FieldValue.serverTimestamp(),
     });
-    await db.collection(Collections.invites).add({
+    const ref = await db.collection(Collections.invites).add({
       groupId: group.id,
       groupName: group.name,
       phone,
@@ -107,9 +112,26 @@ async function linkOrInviteKnownPhone(
       guestUid,
       createdAt: FieldValue.serverTimestamp(),
     });
+    const guestLink = `${APP_URL}/api/groups/${group.id}/guest-login?token=${ref.id}`;
+    const smsBody =
+      `Hi ${name}, you've been added to "${group.name}" on Owely.\n` +
+      `View your share and confirm payments here: ${guestLink}`;
+    sendSms(phone, smsBody).catch((e) =>
+      console.error("[sms] invite delivery failed", e),
+    );
+    return { outcome: "invited", inviteToken: ref.id };
   }
 
-  return "invited";
+  // Already has a pending invite — look it up to return its token
+  const existingSnap = await db
+    .collection(Collections.invites)
+    .where("groupId", "==", group.id)
+    .where("phone", "==", phone)
+    .where("status", "==", "pending")
+    .limit(1)
+    .get();
+  const token = existingSnap.docs[0]?.id ?? "";
+  return { outcome: "invited", inviteToken: token };
 }
 
 export async function linkOrInviteMany(
@@ -138,8 +160,8 @@ export async function linkOrInviteMany(
       existingUsers.get(person.phone),
       pendingPhones,
     );
-    if (result === "linked") added++;
-    else if (result === "invited") invited++;
+    if (result.outcome === "linked") added++;
+    else if (result.outcome === "invited") invited++;
     else skipped++;
   }
 

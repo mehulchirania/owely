@@ -4,6 +4,8 @@ import { fetchUser } from "@/features/auth/queries";
 import { fetchRelationshipCategories } from "@/features/groups/category-queries";
 import { ProfileForm } from "@/components/ProfileForm";
 import { CustomCategoriesManager } from "@/components/CustomCategoriesManager";
+import { DisplayCurrencyForm } from "@/components/DisplayCurrencyForm";
+import { CheckoutButton } from "@/components/CheckoutButton";
 
 export const metadata: Metadata = { title: "Settings - Owely" };
 
@@ -56,6 +58,14 @@ export default async function SettingsPage() {
       {/* Plan section */}
       {isPaid ? <ProPlanCard /> : <FreePlanCard />}
 
+      {/* Display currency */}
+      <div className="rounded-[14px] border border-white/7 bg-surface p-[18px]">
+        <DisplayCurrencyForm
+          current={user?.currency ?? "INR"}
+          isPaid={isPaid}
+        />
+      </div>
+
       {/* Edit profile */}
       <section id="edit-profile" className="rounded-[14px] border border-white/7 bg-surface p-[18px]">
         <p className="mb-4 text-[13.5px] font-semibold text-hi">Edit profile</p>
@@ -101,18 +111,16 @@ function FreePlanCard() {
               Unlimited expenses, AI receipt scanner, PDF export, recurring expenses, and more.
             </p>
             <div className="flex flex-wrap items-center gap-2.5">
-              <button
-                type="button"
-                className="flex h-[38px] items-center rounded-[10px] bg-accent px-[18px] text-[13.5px] font-bold text-white shadow-[0_6px_18px_-6px_var(--color-accent)]"
-              >
-                Go Pro — ₹99/mo
-              </button>
-              <button
-                type="button"
-                className="flex h-[38px] items-center rounded-[10px] border border-accent2/22 bg-accent2/8 px-3.5 text-[13.5px] font-semibold text-accent2"
-              >
-                Trip Pass ₹49
-              </button>
+              <CheckoutButton
+                plan="pro_monthly"
+                label="Go Pro — ₹99/mo"
+                className="flex h-[38px] items-center rounded-[10px] bg-accent px-[18px] text-[13.5px] font-bold text-white shadow-[0_6px_18px_-6px_var(--color-accent)] disabled:opacity-60"
+              />
+              <CheckoutButton
+                plan="trip_pass"
+                label="Trip Pass ₹49"
+                className="flex h-[38px] items-center rounded-[10px] border border-accent2/22 bg-accent2/8 px-3.5 text-[13.5px] font-semibold text-accent2 disabled:opacity-60"
+              />
             </div>
           </div>
         </div>

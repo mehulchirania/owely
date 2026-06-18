@@ -4,6 +4,126 @@ Prepend a new dated entry at the top after every change. Newest first.
 
 ---
 
+## 2026-06-18 — Batch member add UI + non-3rd-party items complete
+
+**`src/components/BatchInviteForm.tsx`** — new client component.
+Collapsed state renders a compact "Add multiple" button with a group-members icon.
+Expanded state shows a dynamic rows form (name + phone per row, add/remove row,
+min 1 row). Submit calls `addMembersByPhone` Server Action and shows a result
+summary card ("N added · M invited · K skipped") with a Done button that resets.
+`useTransition` for pending state; `router.refresh()` updates member list after success.
+
+**`src/app/(app)/groups/[groupId]/page.tsx`** — wired `BatchInviteForm` into the
+Members tab, between the single-invite header row and `GroupCurrencyForm`.
+
+### All non-3rd-party pending items completed this session
+
+| Task | Component(s) |
+|------|-------------|
+| Guest invite link surfaced | `InviteMemberForm`, `invites.ts`, `actions.ts` |
+| Split templates UI | `ExpenseForm` (apply + save + delete chips) |
+| Multi-currency UI | `DisplayCurrencyForm`, `GroupCurrencyForm`, settings + group pages |
+| Batch member add UI | `BatchInviteForm`, group Members tab |
+
+Remaining blockers are all 3rd-party / infra: Razorpay payment gateway, SMS delivery
+(Twilio/MSG91), Cloud Scheduler recurring jobs, Firestore composite indexes, App Hosting
+deployment, Google Vision API. See previous entry for full details.
+
+---
+
+## 2026-06-18 — Pre-launch gap audit
+
+Full audit of what remains before go-live. No code changed this entry.
+
+### Blocking go-live
+
+**Payment gateway (backend + UI) — nothing built.**
+`tier:"paid"` can only be flipped manually by an admin at `/admin`. The "Go
+Pro ₹99/mo" and "Trip Pass ₹49" CTAs on the landing page and settings are
+dead — no Razorpay order creation, no checkout route, no webhook to flip the
+tier on payment confirmation, no success/failure handling. The freemium model
+does not function end-to-end without this. Minimum scope: a
+`POST /api/payments/create-order` route (Razorpay), a client checkout modal
+behind the CTA buttons, and a `POST /api/payments/webhook` that verifies the
+signature and writes `tier:"paid"` (or Trip Pass metadata) via Admin SDK.
+
+**Invite delivery — guest link never surfaced.**
+`inviteByPhone` creates a Firestore pending-invite doc but sends no SMS and
+shows no shareable link. The inviter sees "Invite sent" with no next step; the
+invitee has zero signal. The guest view at `/groups/[groupId]/guest` exists but
+nothing in `InviteMemberForm` exposes the URL after a successful invite. Fix:
+on `res.data.linked === false`, show a copy-to-clipboard guest link
+(`/groups/{groupId}/guest?token={inviteToken}`) so the inviter can paste it
+into WhatsApp. SMS delivery is a Pro feature (deferred); the manual link is the
+free-tier baseline.
+
+**App Hosting not deployed.**
+No GitHub remote exists, no App Hosting backend is connected, and no CI/CD
+pipeline is wired. The App Hosting secrets `CRON_SECRET`,
+`OWELY_ADMIN_USERNAME`, and `OWELY_ADMIN_PASSWORD` have not been created in
+Firebase. The app is not live anywhere. Steps: create GitHub repo → push →
+`firebase apphosting:backends:create` → create the three secrets via
+`firebase apphosting:secrets:set` → set the live `*.hosted.app` domain in
+Firebase Auth authorized domains.
+
+### Must fix before real users
+
+**Firestore composite indexes not deployed.**
+`firestore.indexes.json` was updated with indexes for `invites`
+(phone+status, groupId+status) and `recurring` (ownerUid+active), but
+`firebase deploy --only firestore:indexes` has never been run. Those queries
+throw `FAILED_PRECONDITION` under real data volumes.
+
+**Cloud Scheduler not wired.**
+The `/api/cron/recurring` endpoint exists with `CRON_SECRET` Bearer-token auth,
+but no GCP Cloud Scheduler job has been created. Recurring expenses will never
+auto-generate in production. Create a daily job targeting
+`POST https://<live-url>/api/cron/recurring` with header
+`Authorization: Bearer <CRON_SECRET>`.
+
+**Google Vision API not enabled.**
+Receipt OCR (paid feature) calls the Vision API via the service-account
+credentials. The API is not enabled for project `owely-c6c51`. Enable it at
+GCP console → APIs & Services → Cloud Vision API before any paid user tries OCR.
+
+**Templates UI — backend done, UI missing.**
+`createTemplate`, `updateTemplate`, `deleteTemplate`, Zod schemas, and
+`fetchGroupTemplates` are all complete in
+`src/features/templates/actions.ts` + `queries.ts`. There is no UI on the
+add-expense form to save a split as a template or to apply a saved template.
+Pro plan advertises split templates; they are unreachable until this is built.
+
+**Multi-currency UI — backend done, UI missing.**
+`updateDisplayCurrency` and `setGroupBaseCurrency` paid actions exist in
+`src/features/currency/actions.ts`. There is no settings control for users to
+change their display currency or group base currency. Pro users cannot exercise
+this feature.
+
+### Post-launch (first update)
+
+- **SMS reminders** — Advertised as a Pro feature on the pricing page. Zero
+  backend or infrastructure built. Will require Twilio/MSG91 or Firebase
+  Extensions for SMS.
+- **Contact batch-add UI** — `addMembersByPhone` backend works. No UI. Android
+  Contact Picker is TWA-only; defer until TWA shell exists.
+- **PWA service worker** — Manifest and icon bootstrapped. No service worker,
+  no offline install prompt, no splash screen.
+- **FCM push notifications** — Not started.
+- **NLP quick-add** — Not started.
+
+### Shortest path to first live deploy
+
+1. Deploy: create GitHub repo, push, wire App Hosting.
+2. Create App Hosting secrets (`CRON_SECRET`, admin creds).
+3. Deploy Firestore indexes: `firebase deploy --only firestore:indexes`.
+4. Surfacing invite link: update `InviteMemberForm` to show a copyable guest
+   URL on pending-invite success.
+5. Enable Cloud Vision API in GCP console.
+6. Wire Razorpay "Go Pro" checkout (one route, one webhook, one modal).
+7. Create Cloud Scheduler daily job for `/api/cron/recurring`.
+
+---
+
 ## 2026-06-18 — Design system guide refreshed
 
 Updated `DESIGN.md` from a short token stub into a current product design guide.

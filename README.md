@@ -125,10 +125,13 @@ over-settlement guards, payment-reference capture, and dispute. The
 including forms, menus, settings, errors, settle-up, and a login screen styled
 like the post-login dashboard. Phase 6 is fully complete, supporting 1:1 People UI,
 direct relationships, and user-facing Category Management + Dashboard filter UI.
-Phase 7 features are fully supported including saved split templates, group/own
-recurring expenses UI, private Personal Ledger (`/own`) for tracking un-shared expenses
-with monthly summaries, offline-safe idempotent writes, display/base currency metadata,
-paid PDF export, and Google Vision Receipt OCR prefill uploading.
+Phase 7 features are fully supported including saved split templates (apply/save/delete
+chips on the expense form), multi-currency settings (display currency in Settings and
+per-group base currency in the Members tab), batch member-add (`BatchInviteForm` with
+dynamic name+phone rows and added/invited/skipped summary), group/own recurring expenses
+UI, private Personal Ledger (`/own`) for tracking un-shared expenses with monthly
+summaries, offline-safe idempotent writes, display/base currency metadata, paid PDF
+export, and Google Vision Receipt OCR prefill uploading.
 Expense and settlement writes use a read-first recompute transaction with
 in-memory mutation projection, so Firestore accepts the write ordering while
 `group.simplifiedDebts` still reflects the triggering change immediately.
@@ -153,8 +156,10 @@ Phase B differentiators are fully implemented:
 **Landing Page UI Polish**:
 - Removed the "Start for free" and "See how it works" buttons to streamline onboarding, and renamed the navigation link from "Open app" to "Login".
 
-Remote auth is configured for the live App Hosting domain. Deferred:
-billing-provider selection and final TWA container packaging.
+All non-3rd-party items are complete. Remaining before go-live: Razorpay
+payment gateway (order creation, checkout modal, webhook to flip tier), SMS invite
+delivery, Cloud Scheduler wiring for recurring expenses, Firestore composite index
+deployment, and Firebase App Hosting backend creation. Deferred: TWA container packaging.
 See [`docs/STATE.md`](./docs/STATE.md) and [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md).
 
 ## What's intentionally not built

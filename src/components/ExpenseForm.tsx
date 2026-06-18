@@ -14,7 +14,8 @@ import { formatPaise, rupeesToPaise, splitEqual } from "@/lib/money";
 import { categoryStyle } from "@/lib/categories";
 import { memberAvatar } from "@/lib/avatar";
 import { addExpense, editExpense } from "@/features/expenses/actions";
-import type { ExpenseCategory, SplitType } from "@/types";
+import { createTemplate, deleteTemplate } from "@/features/templates/actions";
+import type { ExpenseCategory, SplitTemplate, SplitType } from "@/types";
 
 interface Member {
   uid: string;
@@ -38,6 +39,7 @@ interface Props {
   currentUid: string;
   userTier: "free" | "paid";
   initial?: ExpenseFormInitial;
+  templates?: SplitTemplate[];
 }
 
 interface ReceiptOcrResponse {
@@ -82,13 +84,18 @@ function readOcrResponse(value: unknown): ReceiptOcrResponse {
   };
 }
 
-export function ExpenseForm({ groupId, members, currentUid, userTier, initial }: Props) {
+export function ExpenseForm({ groupId, members, currentUid, userTier, initial, templates = [] }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [ocrPending, setOcrPending] = useState(false);
   const [ocrError, setOcrError] = useState<string | null>(null);
   const [ocrNote, setOcrNote] = useState<string | null>(null);
+  const [localTemplates, setLocalTemplates] = useState<SplitTemplate[]>(templates);
+  const [saveTemplateName, setSaveTemplateName] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [showSaveForm, setShowSaveForm] = useState(false);
+  const [templateSavedMsg, setTemplateSavedMsg] = useState<string | null>(null);
 
   const [title, setTitle] = useState(initial?.title ?? "");
   const [amountRupees, setAmount] = useState(initial?.amountRupees ?? "");
@@ -154,6 +161,66 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial }:
 
   function setValue(uid: string, value: string): void {
     setSplitValues((prev) => ({ ...prev, [uid]: value }));
+  }
+
+  function applyTemplate(t: SplitTemplate): void {
+    setSplitType(t.splitType);
+    setParticipants(new Set(t.participants));
+    if (t.splitType === "percentage" && t.weights) {
+      const vals: Record<string, string> = {};
+      for (const uid of t.participants) {
+        vals[uid] = String((t.weights[uid] ?? 0) / 100);
+      }
+      setSplitValues(vals);
+    } else {
+      setSplitValues({});
+    }
+  }
+
+  async function handleSaveTemplate(e: React.FormEvent): Promise<void> {
+    e.preventDefault();
+    if (!saveTemplateName.trim() || splitType === "unequal") return;
+    setSavingTemplate(true);
+    setTemplateSavedMsg(null);
+    const weights: Record<string, number> = {};
+    if (splitType === "percentage") {
+      for (const uid of selected.map((m) => m.uid)) {
+        weights[uid] = Math.round(parseFloat(splitValues[uid] ?? "0") * 100);
+      }
+    }
+    const res = await createTemplate({
+      groupId,
+      name: saveTemplateName.trim(),
+      splitType,
+      participants: selected.map((m) => m.uid),
+      ...(splitType === "percentage" ? { weights } : {}),
+    });
+    setSavingTemplate(false);
+    if (res.ok) {
+      setLocalTemplates((prev) => [
+        ...prev,
+        {
+          id: res.data.templateId,
+          ownerUid: currentUid,
+          groupId,
+          name: saveTemplateName.trim(),
+          splitType,
+          participants: selected.map((m) => m.uid),
+          ...(splitType === "percentage" ? { weights } : {}),
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ]);
+      setSaveTemplateName("");
+      setShowSaveForm(false);
+      setTemplateSavedMsg(`Template "${saveTemplateName.trim()}" saved.`);
+      setTimeout(() => setTemplateSavedMsg(null), 3000);
+    }
+  }
+
+  async function handleDeleteTemplate(templateId: string): Promise<void> {
+    await deleteTemplate({ templateId });
+    setLocalTemplates((prev) => prev.filter((t) => t.id !== templateId));
   }
 
   async function scanReceipt(file: File): Promise<void> {
@@ -364,6 +431,39 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial }:
         </div>
       </div>
 
+      {/* saved templates — Pro only */}
+      {userTier === "paid" && localTemplates.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className="px-0.5 text-[13px] text-dim">Templates</span>
+          <div className="flex flex-wrap gap-2">
+            {localTemplates.map((t) => (
+              <div key={t.id} className="group flex items-center gap-0 rounded-full border border-white/8 bg-card">
+                <button
+                  type="button"
+                  onClick={() => applyTemplate(t)}
+                  disabled={pending}
+                  className="flex items-center gap-1.5 py-1.5 pl-3 pr-2 text-[12.5px] font-medium text-strong transition-colors hover:text-hi focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  <span className="text-[10px] text-dim">{t.splitType === "equal" ? "=" : "%"}</span>
+                  {t.name}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteTemplate(t.id)}
+                  disabled={pending}
+                  aria-label={`Delete template ${t.name}`}
+                  className="flex h-7 w-6 items-center justify-center rounded-r-full text-faint opacity-0 transition-opacity hover:text-coral group-hover:opacity-100 focus-visible:opacity-100"
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* split type segmented */}
       <div className="flex flex-col gap-3">
         <div role="tablist" aria-label="Split type" className="flex gap-1 rounded-2xl bg-card p-1">
@@ -456,6 +556,52 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial }:
           })}
         </ul>
       </div>
+
+      {/* save as template — Pro, equal/percentage only */}
+      {userTier === "paid" && splitType !== "unequal" && (
+        <div>
+          {!showSaveForm ? (
+            <button
+              type="button"
+              onClick={() => setShowSaveForm(true)}
+              className="flex items-center gap-1.5 px-0.5 text-[12.5px] text-dim hover:text-muted"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Save as template
+            </button>
+          ) : (
+            <form onSubmit={(e) => void handleSaveTemplate(e)} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={saveTemplateName}
+                onChange={(e) => setSaveTemplateName(e.target.value)}
+                placeholder="Template name"
+                maxLength={40}
+                autoFocus
+                disabled={savingTemplate}
+                className="h-9 flex-1 rounded-xl border border-white/8 bg-card px-3 text-[13px] text-hi outline-none placeholder:text-faint focus:border-accent/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+              />
+              <button
+                type="submit"
+                disabled={savingTemplate || !saveTemplateName.trim()}
+                className="h-9 rounded-xl bg-accent px-3 text-[12.5px] font-semibold text-ink disabled:opacity-60"
+              >
+                {savingTemplate ? "Saving…" : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowSaveForm(false); setSaveTemplateName(""); }}
+                className="h-9 rounded-xl border border-white/8 px-3 text-[12.5px] text-muted hover:bg-elevated"
+              >
+                Cancel
+              </button>
+            </form>
+          )}
+          {templateSavedMsg && <p className="mt-1.5 text-[12px] text-mint">{templateSavedMsg}</p>}
+        </div>
+      )}
 
       {error && (
         <p role="alert" className="rounded-2xl border border-coral/25 bg-coral/10 px-4 py-3 text-sm text-coral-soft">

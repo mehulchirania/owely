@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireSession } from "@/features/auth/session";
 import { fetchGroup } from "@/features/groups/queries";
 import { fetchUser } from "@/features/auth/queries";
+import { fetchGroupTemplates } from "@/features/templates/queries";
 import { ExpenseForm } from "@/components/ExpenseForm";
 
 export default async function NewExpensePage({
@@ -16,6 +17,8 @@ export default async function NewExpensePage({
     fetchGroup(groupId),
     fetchUser(user.uid),
   ]);
+  const isPaid = profile?.tier === "paid";
+  const templates = isPaid ? await fetchGroupTemplates(user.uid, groupId) : [];
   if (!group || !group.members.includes(user.uid)) notFound();
 
   const members = group.members.map((uid) => ({
@@ -47,6 +50,7 @@ export default async function NewExpensePage({
         members={members}
         currentUid={user.uid}
         userTier={profile?.tier ?? "free"}
+        templates={templates}
       />
     </div>
   );

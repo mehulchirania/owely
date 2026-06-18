@@ -2,7 +2,7 @@
 
 India-first freemium expense-splitting app. Android + Web.
 
-_Last updated: 2026-06-18_
+_Last updated: 2026-06-18 (batch member-add UI + templates UI + multi-currency UI complete)_
 
 ## Stack (as scaffolded)
 
@@ -48,7 +48,10 @@ src/
     personal-ledger/  Private /own expenses + queries
     admin/            Admin panel actions
   components/       LoginForm, SignOutButton, CreateGroupForm, InviteMemberForm,
-                    GroupMenu, ExpenseForm, ExpenseFeed, SettlePanel, ProfileForm
+                    BatchInviteForm, GroupMenu, ExpenseForm, ExpenseFeed,
+                    SettlePanel, ProfileForm, CustomCategoriesManager,
+                    DisplayCurrencyForm, GroupCurrencyForm, FairnessInsights,
+                    MonthlyClosePanel, RecurringPanel, CopyButton, CategoryPicker
     landing/        Marketing landing: LandingMotion (client motion engine) +
                     Nav, Hero, Marquee, HowItWorks, Features, Simplify, Compare,
                     Pricing, ValueBand, Cta, Footer, icons
@@ -224,9 +227,16 @@ pure function so it can run inside a Server Action and in tests identically.
   - [x] Receipt OCR (UI): paid users can upload a receipt image on the new
         expense form to prefill title/amount; free users see a Pro affordance.
         OCR remains confirmation-only and does not write expenses directly.
-  - [ ] Paid upgrade/paywall UI, templates UI, multi-currency
-        controls/formatting,
-        and UI for contact batch add (no UI built yet).
+  - [x] Templates UI: apply/save/delete split template chips on ExpenseForm
+        (Pro+; basis-point ↔ percentage conversion at apply/save boundary).
+  - [x] Multi-currency UI: `DisplayCurrencyForm` in Settings (user display
+        currency, Pro-only), `GroupCurrencyForm` in group Members tab
+        (creator+paid; read-only for others).
+  - [x] Batch member-add UI: `BatchInviteForm` in group Members tab — dynamic
+        name+phone rows, calls `addMembersByPhone`, shows added/invited/skipped
+        result summary.
+  - [ ] Payment gateway (Razorpay): "Go Pro" and "Trip Pass" CTAs are still
+        dead buttons. Requires order-create route, checkout modal, and webhook.
 - ◧ Phase 8 — PWA + polish
   - [x] Bootstrapped PWA: created manifest.json, custom circular owl app icon, and configured Next.js layout metadata.
   - [x] Landing page simplification: Removed "Start for free" and "See how it works" buttons, renamed "Open app" to "Login".
@@ -248,10 +258,11 @@ only; no payment gateway/aggregator is planned. Note: Next 16 renamed Middleware
 Direct 1:1 expenses are being built as `type: "direct"` groups so the existing
 expense, settlement, and debt engine remains the single source of truth. Direct
 group backend creation and People screens are in place; category UI remains.
-Paid backend surfaces for templates, recurring, own expenses, contacts,
-offline-idempotent writes, currency metadata, OCR, and PDF export are in place;
-the remaining paid work is templates UI, multi-currency controls/formatting,
-provider/plan-state choice, and console ops.
+All non-3rd-party paid UI is now complete: templates (apply/save/delete on
+ExpenseForm), multi-currency controls (Settings + group Members tab), and batch
+member-add (`BatchInviteForm`). Remaining paid work is the payment gateway
+(Razorpay order/webhook), SMS delivery, console ops, and infra (Cloud Scheduler,
+Firestore indexes, App Hosting deployment).
 
 ## Commands
 
