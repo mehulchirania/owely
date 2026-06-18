@@ -2,7 +2,7 @@
 
 India-first freemium expense-splitting app. Android + Web.
 
-_Last updated: 2026-06-17_
+_Last updated: 2026-06-18_
 
 ## Stack (as scaffolded)
 
@@ -30,16 +30,23 @@ src/
     validation.ts            Zod schemas + parseInput/parseActionData
     session.ts               requireSession / authorizeUser / authorizeMember
     session-cookie.ts        Cookie constants (import-safe for the edge proxy)
-    read-model.ts            Admin reads + Timestamp→millis conversion
+    read-model.ts            Compatibility barrel for feature-owned query modules
     recompute.ts             Shared simplified-debt recompute (server-only, transactional)
     freemium.ts              Freemium limit enforcement (monthly counter per group)
     entitlements.ts          Paid feature guards for Server Actions
     log.ts                   Server-side error logging for action observability
     relationship-categories.ts Predefined group/direct category metadata
     firebase/{client,admin,collections,auth-errors}.ts
-  actions/          The only write path (Server Actions)
-    auth.ts groups.ts expenses.ts settlements.ts categories.ts templates.ts
-    own-expenses.ts recurring.ts currency.ts
+  features/           Domain-organized Server Actions + queries
+    auth/             Session, sign-in, profile, user queries
+    groups/           Group CRUD, direct links, invites, guest merge, categories, closures, queries
+    expenses/         Add/edit/delete, batch, splits, queries
+    settlements/      Settle-up, dispute, guest settle, queries
+    recurring/        Monthly recurring definitions + queries
+    templates/        Saved split templates + queries
+    currency/         Display/base currency settings
+    personal-ledger/  Private /own expenses + queries
+    admin/            Admin panel actions
   components/       LoginForm, SignOutButton, CreateGroupForm, InviteMemberForm,
                     GroupMenu, ExpenseForm, ExpenseFeed, SettlePanel, ProfileForm
     landing/        Marketing landing: LandingMotion (client motion engine) +
@@ -60,8 +67,9 @@ docs/STATE.md       ← this file
 ```
 
 Conventions (from project brief): components in `/components`, server actions in
-`/actions`, utils in `/lib`, types in `/types`. Firestore writes only through
-Server Actions.
+`/features/*/actions.ts`, feature-owned reads in `/features/*/queries.ts`,
+server-only domain helpers beside their feature, pure/cross-feature utilities in
+`/lib`, and types in `/types`. Firestore writes only through Server Actions.
 
 ## Money model — the rules that are already enforced in code
 
@@ -88,8 +96,9 @@ Server Actions.
   Credentials via `FIREBASE_SERVICE_ACCOUNT_KEY` (raw JSON or base64).
 - **Remote auth config:** `apphosting.yaml` includes the public Web `apiKey`
   and `appId` for build-time inlining. The runtime
-  `FIREBASE_SERVICE_ACCOUNT_KEY` App Hosting secret exists in Firebase, and the
-  live `*.hosted.app` domain is authorized in Firebase Auth settings.
+  `FIREBASE_SERVICE_ACCOUNT_KEY`, `CRON_SECRET`, `OWELY_ADMIN_USERNAME`, and
+  `OWELY_ADMIN_PASSWORD` secrets must exist in Firebase App Hosting, and the live
+  `*.hosted.app` domain is authorized in Firebase Auth settings.
 - Paid receipt OCR also requires the Google Cloud Vision API to be enabled for
   the Firebase project/service account.
 
@@ -130,11 +139,19 @@ pure function so it can run inside a Server Action and in tests identically.
 - [x] Service-account key → `FIREBASE_SERVICE_ACCOUNT_KEY`
 - [ ] Create App Hosting backend + connect GitHub repo → live URL
 
+- [ ] Create App Hosting secrets for `CRON_SECRET`, `OWELY_ADMIN_USERNAME`, and
+      `OWELY_ADMIN_PASSWORD`
+
 **Build phases (see `docs/PHASES.md` for deliverables):**
 - [x] Phase 1 — Server plumbing (result, validation, session, route, **proxy**)
 - [x] Phase 2 — Auth UI + app shell (Google + Phone OTP)
 - [x] Phase 3 — Groups (actions + invite by phone)
 - [x] Phase 4 — Expenses (add/edit, split types, simplify recompute)
+      Expense/settlement writes use read-first Firestore recompute transactions
+      with in-memory projections of the pending mutation, avoiding
+      read-after-write transaction failures while keeping cached debts current.
+      Offline client-ID replays no-op before quota checks, and batch adds count
+      only genuinely new IDs against the free monthly limit.
 - [x] Phase 5 — Settlements + UPI/cash + payment-ref capture
 - [x] `Owely.dc.html` design handoff applied to core app surfaces
 - [x] Login redesigned to match the post-login web dashboard feel
@@ -164,6 +181,9 @@ pure function so it can run inside a Server Action and in tests identically.
         read-model, predefined constants already existed). `ensureUser` now
         initializes `tier:"free"` + `currency:"INR"` for new users.
   - [x] Category management & filter UI: Added custom category list/creation inside Settings page and category picker tags in group details, along with dynamic filtering chips on the standard Groups and People dashboard tabs.
+  - [x] Category denormalization cleanup: custom category renames update tagged
+        groups, and deleting a custom category clears the tag from affected
+        group/direct ledgers.
 - ◧ Phase 7 — Paid features: backend done for current scope; UI/ops pending
   - [x] Paid feature guards (backend): `requirePaidFeature` enforces `tier:"paid"`
         on paid-only Server Actions; wired into templates and recurring
@@ -179,11 +199,15 @@ pure function so it can run inside a Server Action and in tests identically.
   - [x] Plan/tools surface (UI): Settings shows stored tier, display currency,
         free monthly limit, and Pro feature availability.
   - [x] Recurring expenses (backend): `recurring/{id}` defs + `generateDueRecurring`
-        + `/api/cron/recurring` (Cloud Scheduler hits it daily). Idempotent.
+        + `/api/cron/recurring` (Cloud Scheduler hits it daily). Generation uses
+        Asia/Kolkata dates and transactionally claims deterministic monthly docs.
   - [x] Recurring expenses (UI): group/direct ledgers have a Recurring tab where
         paid users can create monthly equal-split rules and pause/resume/delete
         saved rules. Actual generation still requires Scheduler + `CRON_SECRET`.
   - [x] Own (personal, un-split) expenses: private personal ledger at `/own` with monthly spent metrics, private expense list, and full add/edit/delete CRUD features.
+  - [x] Own recurring expenses (UI): paid users can create, pause/resume, and
+        delete monthly personal rules on `/own` with a day-of-month selector
+        for SIPs, insurance, subscriptions, and other private recurring costs.
   - [x] Contacts member-add (backend): `findRegisteredUsers` + `addMembersByPhone`.
   - [x] Offline-safe writes (backend): `clientId` idempotency on expense creation.
   - [x] Multi-currency (backend metadata): paid `actions/currency.ts` writes user
@@ -207,7 +231,7 @@ pure function so it can run inside a Server Action and in tests identically.
   - [x] Group Mode Selector: Added selection dropdown for Trip, Roommates, Couple, Lunch, etc. during group creation.
   - [x] Debt Round-off & Thresholds: Configured simplifyFromNet engine to round transfer balances to nearest unit and filter tiny balances.
   - [x] Batch Expense Entry: Created addBatchExpenses server action and BatchExpenseForm UI grid rows for trip expenses.
-  - [x] Monthly Closures: Added closeMonth server action, isMonthClosed locking helper, MonthlyClosePanel UI tab, and write locks blocking modifications in closed periods.
+  - [x] Monthly Closures: Added closeMonth server action, isMonthClosed locking helper, MonthlyClosePanel UI tab, and write locks blocking modifications in closed periods. Closure cutoff math is IST-based and the closure doc is created atomically.
   - [x] Zero-friction Guest Ledger: Generated guest_uuid profiles immediately on invite. Added guest-login Route Handler setting guest session cookies, and /groups/[groupId]/guest page for read-only viewing and payment confirmations.
   - [x] Guest-to-User Merge: Merges guest ledger history, balances, and settlements to authenticated user account upon acceptInvite.
   - [x] Fairness Insights: Created widget displaying contributor ratios and round-robin payment suggestions.
@@ -223,7 +247,8 @@ expense, settlement, and debt engine remains the single source of truth. Direct
 group backend creation and People screens are in place; category UI remains.
 Paid backend surfaces for templates, recurring, own expenses, contacts,
 offline-idempotent writes, currency metadata, OCR, and PDF export are in place;
-the remaining paid work is UI, provider/plan-state choice, and console ops.
+the remaining paid work is templates UI, multi-currency controls/formatting,
+provider/plan-state choice, and console ops.
 
 ## Commands
 

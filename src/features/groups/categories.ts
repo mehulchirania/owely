@@ -16,6 +16,23 @@ import {
   UpdateCategorySchema,
 } from "@/lib/validation";
 
+async function updateGroupsWithCategory(
+  categoryId: string,
+  patch: Record<string, unknown>,
+): Promise<string[]> {
+  const db = getAdminDb();
+  const snap = await db
+    .collection(Collections.groups)
+    .where("categoryId", "==", categoryId)
+    .get();
+  if (snap.empty) return [];
+
+  const writer = db.bulkWriter();
+  for (const doc of snap.docs) writer.update(doc.ref, patch);
+  await writer.close();
+  return snap.docs.map((doc) => doc.id);
+}
+
 export async function createCategory(
   input: unknown,
 ): Promise<ActionResult<{ categoryId: string }>> {
@@ -64,6 +81,13 @@ export async function updateCategory(input: unknown): Promise<ActionResult<null>
     if (parsed.data.icon !== undefined) patch.icon = parsed.data.icon;
     if (parsed.data.appliesTo !== undefined) patch.appliesTo = parsed.data.appliesTo;
     await ref.update(patch);
+    const affectedGroupIds = parsed.data.name
+      ? await updateGroupsWithCategory(parsed.data.categoryId, {
+          categoryName: parsed.data.name,
+          updatedAt: FieldValue.serverTimestamp(),
+        })
+      : [];
+    for (const groupId of affectedGroupIds) revalidatePath(`/groups/${groupId}`);
     revalidatePath("/people");
     revalidatePath("/groups");
     return success(null);
@@ -87,7 +111,14 @@ export async function deleteCategory(input: unknown): Promise<ActionResult<null>
     if (snap.get("ownerUid") !== auth.data.uid) {
       return failure("Only the owner can delete this category.", { code: "forbidden" });
     }
+    const affectedGroupIds = await updateGroupsWithCategory(parsed.data.categoryId, {
+      categoryId: FieldValue.delete(),
+      categoryName: FieldValue.delete(),
+      categoryKind: FieldValue.delete(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
     await ref.delete();
+    for (const groupId of affectedGroupIds) revalidatePath(`/groups/${groupId}`);
     revalidatePath("/people");
     revalidatePath("/groups");
     return success(null);

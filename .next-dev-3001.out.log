@@ -1,0 +1,10 @@
+
+> owely@0.1.0 dev
+> next dev -p 3001
+
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.1.70:3001
+- Environments: .env.local
+✓ Ready in 485ms
+[?25h

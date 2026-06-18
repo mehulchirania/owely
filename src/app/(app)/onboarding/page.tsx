@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { requireSession } from "@/lib/session";
+import { requireSession } from "@/features/auth/session";
 import { fetchUser } from "@/features/auth/queries";
 import { OnboardingForm } from "@/components/OnboardingForm";
 

@@ -150,9 +150,7 @@ add/edit/delete** and store on `group.simplifiedDebts`.
 - Pure utils in `src/lib/` (no React, no Firebase imports).
 - Firebase in `src/lib/firebase/`: `client.ts` (browser, reads + Auth),
   `admin.ts` (`server-only`, privileged writes), `collections.ts` (names/paths).
-- **Server Actions are the only Firestore write path** (`src/actions/`, to be
-  built). Admin SDK bypasses security rules → each action MUST verify the session
-  and check group membership itself.
+- **Server Actions are the only Firestore write path** (`src/features/*/actions.ts`). Admin SDK bypasses security rules → each action MUST verify the session and check group membership itself.
 - Components in `src/components/` (to be built).
 - **Never write Firestore directly from the client.**
 

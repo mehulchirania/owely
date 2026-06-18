@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireSession } from "@/lib/session";
+import { requireSession } from "@/features/auth/session";
 import { fetchGroup } from "@/features/groups/queries";
 import { fetchUser } from "@/features/auth/queries";
 import { BatchExpenseForm } from "@/components/BatchExpenseForm";

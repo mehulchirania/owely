@@ -8,6 +8,14 @@ import { logActionError } from "@/lib/log";
 
 const ADMIN_COOKIE = "owely_admin_session";
 
+function adminCredentials(): { username: string; password: string } | null {
+  const username = process.env.OWELY_ADMIN_USERNAME;
+  const password = process.env.OWELY_ADMIN_PASSWORD;
+  if (username && password) return { username, password };
+  if (process.env.NODE_ENV !== "production") return { username: "admin", password: "admin" };
+  return null;
+}
+
 export async function isAdminAuthenticated(): Promise<boolean> {
   const cookieStore = await cookies();
   return cookieStore.get(ADMIN_COOKIE)?.value === "true";
@@ -17,7 +25,9 @@ export async function loginAdmin(input: unknown): Promise<ActionResult<boolean>>
   const credentials = input as Partial<{ username: unknown; password: unknown }> | null;
   const username = typeof credentials?.username === "string" ? credentials.username : "";
   const password = typeof credentials?.password === "string" ? credentials.password : "";
-  if (username === "admin" && password === "admin") {
+  const expected = adminCredentials();
+  if (!expected) return failure("Admin login is not configured.");
+  if (username === expected.username && password === expected.password) {
     const cookieStore = await cookies();
     cookieStore.set(ADMIN_COOKIE, "true", {
       httpOnly: true,
@@ -60,4 +70,3 @@ export async function updateUserAdmin(input: {
     return failure("Could not update user details.");
   }
 }
-

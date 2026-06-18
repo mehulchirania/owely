@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatPaise } from "@/lib/money";
 import { memberAvatar } from "@/lib/avatar";
+import { cleanPhone } from "@/lib/upi";
 import { guestSettleUp } from "@/features/settlements/actions";
 import type { SettlementMethod, SettlementStatus } from "@/types";
 
@@ -36,10 +37,6 @@ interface Props {
   history: GuestSettlementRow[];
 }
 
-function cleanPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
-  return digits.length > 10 ? digits.slice(-10) : digits;
-}
 
 export function GuestSettlePanel({ groupId, groupName, myDebts, history }: Props) {
   return (

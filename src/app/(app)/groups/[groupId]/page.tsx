@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireSession } from "@/lib/session";
+import { requireSession } from "@/features/auth/session";
 import { headers } from "next/headers";
 import { fetchExpenses } from "@/features/expenses/queries";
 import { fetchGroup } from "@/features/groups/queries";
@@ -8,7 +8,7 @@ import { fetchGroupRecurring } from "@/features/recurring/queries";
 import { fetchRelationshipCategories } from "@/features/groups/category-queries";
 import { fetchSettlements } from "@/features/settlements/queries";
 import { fetchUser } from "@/features/auth/queries";
-import { formatPaise } from "@/lib/money";
+import { formatPaise, paiseToRupees } from "@/lib/money";
 import { netPositionFromSettlements } from "@/lib/simplify-debts";
 import { GroupMenu } from "@/components/GroupMenu";
 import { InviteMemberForm } from "@/components/InviteMemberForm";
@@ -104,7 +104,7 @@ export default async function GroupPage({
       toUpiId: upiOf(t.to),
       toPhone: phoneOf(t.to),
       amount: t.amount,
-      amountRupees: (t.amount / 100).toFixed(2),
+      amountRupees: paiseToRupees(t.amount),
     }));
 
   const history: SettlementRow[] = settlements
@@ -203,47 +203,79 @@ export default async function GroupPage({
       {/* Tab Content */}
       <div className="mt-2">
         {activeTab === "expenses" && (
-          <div className="flex flex-col gap-5">
-            <div className="flex justify-end">
+          <div className="flex flex-col gap-4">
+            {/* action bar */}
+            <div className="flex justify-end gap-2">
               {isPaid ? (
                 <a
                   href={`/api/groups/${group.id}/export/pdf`}
                   target="_blank"
                   rel="noreferrer"
-                  className="mr-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-card text-strong transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:hidden"
+                  className="flex h-[34px] items-center justify-center gap-1.5 rounded-[9px] border border-white/8 bg-card px-3 text-[12.5px] font-semibold text-strong transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   aria-label="Export group PDF"
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <path d="M14 2v6h6" />
-                    <path d="M9 15h6" />
-                    <path d="M9 18h4" />
+                    <path d="M14 2v6h6" /><path d="M9 15h6" /><path d="M9 18h4" />
                   </svg>
+                  Export
                 </a>
               ) : (
                 <Link
                   href="/settings"
-                  className="mr-2 flex h-12 shrink-0 items-center justify-center rounded-2xl border border-accent/20 bg-accent/10 px-4 text-sm font-semibold text-accent transition-colors hover:bg-accent/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:hidden"
+                  className="flex h-[34px] items-center rounded-[9px] border border-accent/20 bg-accent/10 px-3 text-[12.5px] font-semibold text-accent transition-colors hover:bg-accent/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
-                  Pro
+                  Pro export
                 </Link>
               )}
               <Link
                 href={`/groups/${group.id}/expenses/batch`}
-                className="mr-2 flex h-12 w-full sm:w-auto sm:px-4 items-center justify-center gap-2 rounded-2xl border border-white/8 bg-card font-semibold text-strong transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="flex h-[34px] items-center justify-center gap-1.5 rounded-[9px] border border-white/8 bg-card px-3 text-[12.5px] font-semibold text-strong transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 Batch add
               </Link>
               <Link
                 href={`/groups/${group.id}/expenses/new`}
-                className="flex h-12 w-full sm:w-auto sm:px-6 items-center justify-center gap-2 rounded-2xl bg-accent font-semibold text-white shadow-[0_12px_26px_-10px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="flex h-[34px] items-center justify-center gap-1.5 rounded-[9px] bg-accent px-4 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_-6px_var(--color-accent)] transition-colors hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
                   <path d="M12 5v14M5 12h14" />
                 </svg>
                 Add expense
               </Link>
             </div>
+
+            {/* summary strip */}
+            {(() => {
+              const totalAmount = expenses.reduce((s, e) => s + e.amount, 0);
+              const yourShare = expenses.reduce((s, e) => s + (e.splits[user.uid] ?? 0), 0);
+              return (
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-[12px] border border-white/6 bg-surface px-4 py-3">
+                  <div>
+                    <p className="mb-0.5 text-[10.5px] text-dim">Total expenses</p>
+                    <p className="font-display text-[17px] font-bold text-hi">{formatPaise(totalAmount)}</p>
+                  </div>
+                  <div className="hidden h-7 w-px bg-white/8 sm:block" />
+                  <div>
+                    <p className="mb-0.5 text-[10.5px] text-dim">Your share</p>
+                    <p className="font-display text-[17px] font-bold text-hi">{formatPaise(yourShare)}</p>
+                  </div>
+                  <div className="hidden h-7 w-px bg-white/8 sm:block" />
+                  <div>
+                    <p className="mb-0.5 text-[10.5px] text-dim">{myNet > 0 ? "You're owed" : myNet < 0 ? "You owe" : "Settled"}</p>
+                    <p className={`font-display text-[17px] font-bold ${myNet > 0 ? "text-mint" : myNet < 0 ? "text-coral" : "text-dim"}`}>
+                      {myNet > 0 ? "+" : myNet < 0 ? "−" : ""}{formatPaise(Math.abs(myNet))}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/groups/${group.id}?tab=balances`}
+                    className="ml-auto flex h-[34px] items-center rounded-[9px] bg-accent px-4 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_-6px_var(--color-accent)] transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    Settle up
+                  </Link>
+                </div>
+              );
+            })()}
 
             <section className="flex flex-col gap-3">
               <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-dim">Expenses</h2>

@@ -8,9 +8,15 @@ import { fetchExpenses } from "@/features/expenses/queries";
 import { fetchSettlements } from "@/features/settlements/queries";
 import { authorizeMember } from "@/features/auth/session";
 import { netWithSettlements } from "@/lib/simplify-debts";
+import { logActionError } from "@/lib/log";
 import { failure, success, type ActionResult } from "@/lib/result";
 import { CloseMonthSchema, parseInput } from "@/lib/validation";
 import type { MonthlyClosure } from "@/types";
+
+function monthEndCutoffInIndia(year: number, month: number): number {
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
+  return Date.UTC(year, month, 1) - istOffsetMs;
+}
 
 /**
  * Check if the given date falls in a closed month/year for a group.
@@ -21,8 +27,10 @@ export async function isMonthClosed(
   dateOrEpoch: Date | number,
 ): Promise<boolean> {
   const d = typeof dateOrEpoch === "number" ? new Date(dateOrEpoch) : dateOrEpoch;
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
+  // Consistent with currentMonthKey() in freemium.ts — derive month in IST.
+  const ist = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const year = ist.getFullYear();
+  const month = ist.getMonth() + 1;
   const targetId = `${year}-${String(month).padStart(2, "0")}`;
 
   const db = getAdminDb();
@@ -43,9 +51,8 @@ export async function closeMonth(input: unknown): Promise<ActionResult<{ closure
   const auth = await authorizeMember(groupId);
   if (!auth.ok) return auth;
 
-  // The next month starts at month/year.
-  const nextMonthStart = new Date(year, month, 1);
-  const cutoffTime = nextMonthStart.getTime();
+  // The next month starts at 00:00 IST after the closed month.
+  const cutoffTime = monthEndCutoffInIndia(year, month);
 
   try {
     const db = getAdminDb();
@@ -73,7 +80,7 @@ export async function closeMonth(input: unknown): Promise<ActionResult<{ closure
 
     // Save the closure record and update group.monthlyCloseEnabled
     await db.runTransaction(async (tx) => {
-      tx.set(closureRef, {
+      tx.create(closureRef, {
         id: closureId,
         groupId,
         month,
@@ -81,7 +88,7 @@ export async function closeMonth(input: unknown): Promise<ActionResult<{ closure
         status: "closed",
         carryForward,
         closedBy: auth.data.user.uid,
-        closedAt: Date.now(),
+        closedAt: FieldValue.serverTimestamp(),
       });
 
       tx.update(db.doc(paths.group(groupId)), {
@@ -93,16 +100,18 @@ export async function closeMonth(input: unknown): Promise<ActionResult<{ closure
     revalidatePath(`/groups/${groupId}`);
     return success({ closureId });
   } catch (error) {
-    console.error("closeMonth failed:", error);
+    logActionError("closeMonth", error);
     return failure("Failed to close month.");
   }
 }
+
+import { mapClosure } from "@/lib/firebase/mapping";
 
 export async function fetchClosures(groupId: string): Promise<MonthlyClosure[]> {
   try {
     const db = getAdminDb();
     const snap = await db.collection(paths.closures(groupId)).get();
-    return snap.docs.map((doc) => doc.data() as MonthlyClosure);
+    return snap.docs.map((doc) => mapClosure(doc.id, doc.data()));
   } catch (error) {
     console.error("fetchClosures failed:", error);
     return [];

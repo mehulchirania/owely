@@ -5,9 +5,11 @@
  */
 
 import Link from "next/link";
-import { requireSession } from "@/lib/session";
+import { requireSession } from "@/features/auth/session";
 import { fetchUser } from "@/features/auth/queries";
 import { SignOutButton } from "@/components/SignOutButton";
+import { SidebarNav } from "@/components/SidebarNav";
+import { MobileNavTabs } from "@/components/MobileNavTabs";
 
 export default async function AppLayout({
   children,
@@ -19,101 +21,72 @@ export default async function AppLayout({
   const isPaid = profile?.tier === "paid";
 
   const initial = (user.name ?? "Y").charAt(0).toUpperCase();
+  const displayName = user.name ?? "Settings";
+  const email = profile?.email ?? profile?.phone ?? "";
 
   return (
     <div className="relative flex min-h-full flex-col lg:flex-row">
-      {/* ambient brand glow behind the whole app */}
+      {/* ambient brand glow */}
       <div
         aria-hidden
-        className="pointer-events-none fixed -top-40 left-[6%] h-[420px] w-[420px] rounded-full bg-accent opacity-[0.14] blur-[180px]"
+        className="pointer-events-none fixed -top-40 left-[6%] h-[420px] w-[420px] rounded-full bg-accent opacity-[0.1] blur-[180px]"
       />
 
-      {/* Desktop Sidebar (hidden on mobile) */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between border-r border-white/6 bg-ink/40 p-5 backdrop-blur lg:flex">
-        <div className="flex flex-col gap-8">
+      {/* Desktop Sidebar */}
+      <aside className="sticky top-0 hidden h-screen w-[220px] shrink-0 flex-col justify-between border-r border-white/6 bg-ink/50 px-4 py-[18px] backdrop-blur lg:flex">
+        <div className="flex flex-col gap-[26px]">
           {/* Logo */}
           <Link
             href="/groups"
-            className="flex items-center gap-2.5 rounded-xl px-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="flex items-center gap-2 rounded-[10px] px-1 py-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <span
-              className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-accent text-lg"
+              className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-accent text-base shadow-[0_4px_12px_-4px_rgba(139,123,255,.6)]"
               role="img"
               aria-label="owl"
             >
               🦉
             </span>
-            <span className="font-display text-lg font-bold tracking-tight text-hi">
+            <span className="font-display text-[17px] font-bold tracking-tight text-hi">
               owely
             </span>
             {isPaid && (
-              <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
-                Pro
+              <span className="rounded-full border border-accent/24 bg-accent/12 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-[.1em] text-accent">
+                PRO
               </span>
             )}
           </Link>
 
-          {/* Navigation Links */}
-          <nav className="flex flex-col gap-1.5" aria-label="Sidebar Navigation">
-            <Link
-              href="/groups"
-              className="flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-strong transition-colors hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-dim">
-                <rect x="3" y="3" width="7" height="9" />
-                <rect x="14" y="3" width="7" height="5" />
-                <rect x="14" y="12" width="7" height="9" />
-                <rect x="3" y="16" width="7" height="5" />
-              </svg>
-              <span>Dashboard</span>
-            </Link>
-            <Link
-              href="/people"
-              className="flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-strong transition-colors hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-dim">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-              <span>People</span>
-            </Link>
-            <Link
-              href="/own"
-              className="flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-strong transition-colors hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-dim">
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <line x1="12" y1="4" x2="12" y2="20" />
-              </svg>
-              <span>Personal</span>
-            </Link>
-            <Link
-              href="/settings"
-              className="flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-strong transition-colors hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-dim">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-              <span>Settings</span>
-            </Link>
-          </nav>
+          <SidebarNav />
         </div>
 
-        {/* User profile / Logout at bottom */}
-        <div className="flex flex-col gap-3 border-t border-white/6 pt-4">
+        {/* User profile + logout */}
+        <div className="flex flex-col gap-3 border-t border-white/6 pt-3">
           <Link
             href="/settings"
-            className="flex items-center gap-2.5 rounded-xl p-1.5 text-sm font-medium text-muted transition-colors hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="flex items-center gap-2 rounded-xl p-1 transition-colors hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent font-display text-xs font-semibold text-white">
+            <span className="relative flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-accent font-display text-xs font-semibold text-white">
               {initial}
+              {isPaid && (
+                <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-[1.5px] border-ink bg-accent px-[3px] py-[1px] text-[6px] font-bold uppercase leading-none tracking-[.08em] text-white">
+                  PRO
+                </span>
+              )}
             </span>
-            <span className="min-w-0 flex-1 truncate font-semibold text-hi">
-              {user.name ?? "Settings"}
-            </span>
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-1 truncate text-[12.5px] font-semibold text-hi leading-tight">
+                {displayName}
+                {isPaid && (
+                  <span className="rounded-full border border-accent/24 bg-accent/12 px-1 py-px text-[7.5px] font-bold uppercase tracking-[.1em] text-accent">
+                    PRO
+                  </span>
+                )}
+              </p>
+              {email && (
+                <p className="truncate text-[10.5px] text-dim leading-tight">{email}</p>
+              )}
+            </div>
           </Link>
           <SignOutButton />
         </div>
@@ -121,63 +94,41 @@ export default async function AppLayout({
 
       {/* Main Wrapper */}
       <div className="flex flex-1 flex-col min-w-0">
-        {/* Mobile Header (hidden on desktop) */}
+        {/* Mobile Header */}
         <header className="sticky top-0 z-10 border-b border-white/6 bg-ink/80 backdrop-blur lg:hidden">
           <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-2 px-4 py-3">
             <Link
               href="/groups"
-              className="flex items-center gap-2.5 rounded-xl px-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="flex items-center gap-2 rounded-xl px-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <span
-                className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-accent text-lg"
+                className="flex h-[28px] w-[28px] items-center justify-center rounded-[8px] bg-accent text-sm"
                 role="img"
                 aria-label="owl"
               >
                 🦉
               </span>
-              <span className="font-display text-lg font-bold tracking-tight text-hi">
+              <span className="font-display text-[17px] font-bold tracking-tight text-hi">
                 owely
               </span>
               {isPaid && (
-                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
-                  Pro
+                <span className="rounded-full border border-accent/24 bg-accent/12 px-1.5 py-[1.5px] text-[7.5px] font-bold uppercase tracking-[.1em] text-accent">
+                  PRO
                 </span>
               )}
             </Link>
-            <nav className="flex items-center gap-1">
+            <nav className="flex items-center gap-1.5">
               <Link
                 href="/settings"
                 aria-label="Settings"
-                className="flex h-9 items-center gap-2 rounded-full pr-3 pl-1 text-sm font-medium text-muted transition-colors hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-accent font-display text-[13px] font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent font-display text-xs font-semibold text-white">
-                  {initial}
-                </span>
-                {user.name?.split(" ")[0] ?? "Settings"}
+                {initial}
               </Link>
               <SignOutButton />
             </nav>
           </div>
-          <nav className="mx-auto flex w-full max-w-2xl gap-2 px-4 pb-3" aria-label="Primary">
-            <Link
-              href="/groups"
-              className="flex h-10 flex-1 items-center justify-center rounded-2xl border border-white/6 bg-card text-sm font-semibold text-strong transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              Groups
-            </Link>
-            <Link
-              href="/people"
-              className="flex h-10 flex-1 items-center justify-center rounded-2xl border border-white/6 bg-card text-sm font-semibold text-strong transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              People
-            </Link>
-            <Link
-              href="/own"
-              className="flex h-10 flex-1 items-center justify-center rounded-2xl border border-white/6 bg-card text-sm font-semibold text-strong transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              Personal
-            </Link>
-          </nav>
+          <MobileNavTabs />
         </header>
 
         {/* Main Content Area */}

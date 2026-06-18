@@ -4,6 +4,106 @@ Prepend a new dated entry at the top after every change. Newest first.
 
 ---
 
+## 2026-06-18 — Backend hardening continuation
+
+Continued the feature audit after the expense-write and own-recurring fixes.
+
+- Group deletion/invalid direct-ledger cleanup now removes top-level documents
+  that `recursiveDelete(groups/{id})` cannot see: shared recurring definitions,
+  templates, and pending group invites.
+- Recurring generation now derives month/day in `Asia/Kolkata` instead of UTC,
+  and each due rule is claimed inside a Firestore transaction before the
+  generated own/shared expense is written. Concurrent cron calls no longer
+  double-report generation or overwrite deterministic monthly docs.
+- Monthly close now uses an IST cutoff and `tx.create` for the closure doc, so
+  concurrent close attempts cannot silently overwrite the same month.
+- Custom category edits/deletes now propagate denormalized group metadata:
+  renamed categories update `group.categoryName`, and deleted categories clear
+  `categoryId/categoryName/categoryKind` from affected groups.
+- Production admin login no longer accepts hardcoded `admin/admin`; production
+  requires `OWELY_ADMIN_USERNAME` and `OWELY_ADMIN_PASSWORD`. Local development
+  still falls back to `admin/admin` when those env vars are unset.
+- Sign-out now attempts Firebase refresh-token revocation before clearing the
+  session cookie, matching the route comment and reducing stale-session risk.
+- Group-scoped paid API routes now verify group membership before entitlement
+  checks.
+- `apphosting.yaml` now binds `CRON_SECRET` plus admin credential secrets, and
+  `.env.example` documents the admin env vars.
+- ESLint now ignores generated `design-handoff/**` assets, restoring lint to
+  product-code scope.
+
+Verification is green: `npm run typecheck`, `npm run lint`, `npm test`, and
+`npm run build`.
+
+---
+
+## 2026-06-18 — Fix expense Firestore writes and own recurring UI
+
+Fixed the shared expense write failure caused by the simplified-debt recompute
+transaction writing the triggering expense/settlement before reading the
+expenses and settlements collections. Firestore transactions reject
+read-after-write ordering, so `src/lib/recompute.ts` now reads the group,
+expenses, and settlements first, applies the pending write, projects that write
+into the in-memory recompute state, and then updates `group.simplifiedDebts`.
+
+Updated `src/features/expenses/actions.ts` to use the new mutation contract for
+single and batch expense creation. Idempotent client IDs now skip existing docs
+before quota checks and inside the recompute transaction, batch requests count
+only genuinely new expense IDs against the free monthly cap, and the monthly
+freemium counter only bumps for newly-created expenses.
+
+Exposed personal recurring expenses on `/own`: the page now fetches own
+recurring definitions and user tier, and `OwnExpenseManager` lets paid users
+create, pause/resume, and delete monthly personal rules with a 1-28
+day-of-month selector (for SIPs, insurance, subscriptions, etc.).
+
+Verification is green: `npm run typecheck`, `npm run lint`, `npm test`, and
+`npm run build`.
+
+---
+
+## 2026-06-18 — Backend feature-module refactor continued
+
+Continued the backend structure cleanup after the flat `src/actions` removal.
+Moved group internals out of the oversized `src/features/groups/actions.ts`
+file into focused server-only modules:
+
+- `src/features/groups/member-profiles.ts` for member/user profile lookup.
+- `src/features/groups/direct-groups.ts` for deterministic direct group IDs and
+  idempotent direct group creation.
+- `src/features/groups/invites.ts` for invite/link orchestration, including a
+  batched `addMembersByPhone` path that chunks phone lookups and avoids one user
+  query per person.
+- `src/features/groups/guest-merge.ts` for guest-to-user migration of group
+  membership, expense splits, payer fields, and settlement parties.
+
+Also migrated app/routes/components off legacy `@/lib/session`,
+`@/lib/session-cookie`, `@/lib/firebase/auth-errors`, `@/lib/read-model`, and
+`@/actions` imports. They now consume feature-owned auth/actions/query modules
+directly.
+
+Verification is green: `npm run typecheck`, `npm run lint`, `npm test`, and
+`npm run build`.
+
+---
+
+## 2026-06-17 — Easy win bug fixes: timezone, mapping, counter, proxy, docs
+
+Fixed 10 small correctness and consistency issues discovered during a full codebase audit. All gates green: `typecheck` clean, **32 tests pass**, `build` clean, `lint` clean.
+
+- **isMonthClosed timezone bug** (`src/features/groups/closures.ts`): `isMonthClosed` now derives month/year in IST (`Asia/Kolkata`) via `toLocaleString`, matching `currentMonthKey()` in `freemium.ts`. Previously the server timezone (UTC-4/5) caused write locks to apply to the wrong month near month boundaries.
+- **mapGroup dropped new fields** (`src/lib/firebase/mapping.ts`): Added `groupMode`, `debtThreshold`, `debtRoundTo`, `monthlyCloseEnabled` to `mapGroup` so group settings are correctly surfaced to the UI and passed through the type system.
+- **fetchClosures bypassed mapping** (`src/features/groups/closures.ts`): Replaced raw `doc.data() as MonthlyClosure` with a new `mapClosure` helper in `mapping.ts` that converts Firestore timestamps to epoch millis consistently.
+- **addBatchExpenses incremented wrong counter** (`src/features/expenses/actions.ts`): Removed the dead `group.expenseCount` increment and replaced it with `incrementCounterInTx(groupId)` so batch writes correctly consume the freemium monthly quota (consistent with `addExpense`).
+- **/admin exposed in proxy** (`src/proxy.ts`): Added `/admin` to `PROTECTED` and the `matcher` config so the admin login form is no longer publicly reachable without a session cookie.
+- **closeMonth timestamp inconsistency** (`src/features/groups/closures.ts`): Changed `closedAt: Date.now()` to `FieldValue.serverTimestamp()` so all writes use the same atomic Firestore timestamp mechanism.
+- **mapSettlement default method** (`src/lib/firebase/mapping.ts`): Changed the fallback from `"upi"` to `undefined` for legacy settlements that predate the `method` field, preventing misleading UPI labels on historical records.
+- **Stale docs paths** (`README.md`, `AGENTS.md`): Updated the architecture diagram and agent context to reflect the actual `src/features/*/actions.ts` structure instead of the old `src/actions/` path.
+- **Firestore composite indexes** (`firestore.indexes.json`): Added composite indexes for `invites` (phone+status, groupId+status) and `recurring` (ownerUid+active) so these queries don't throw `FAILED_PRECONDITION` at scale.
+- **Inline paise→rupees cleanup** (`src/lib/money.ts`, `src/lib/upi.ts`, `page.tsx`, `SettlePanel`, `GuestSettlePanel`): Added `paiseToRupees` to `money.ts` (with test), exported `cleanPhone` from `upi.ts`, and removed duplicated `cleanPhone` definitions and inline `(amount/100).toFixed(2)` formatting from the settle components and group page.
+
+---
+
 ## 2026-06-17 — Fix Firebase App Hosting auth environment
 
 Remote sign-in was failing while local sign-in worked because the deployed App

@@ -10,6 +10,15 @@
 
 import type { Paise, Uid } from "@/types";
 
+/**
+ * Convert paise to a rupee string with exactly two decimals.
+ * Used at UPI link boundaries and form inputs — the only place
+ * paise→rupees conversion is allowed outside `formatPaise`.
+ */
+export function paiseToRupees(paise: Paise): string {
+  return (paise / 100).toFixed(2);
+}
+
 /** Format paise as a display string, e.g. 123450 -> "₹1,234.50". */
 export function formatPaise(paise: Paise): string {
   const sign = paise < 0 ? "-" : "";

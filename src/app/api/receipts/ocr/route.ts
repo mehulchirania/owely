@@ -3,7 +3,7 @@ import { requirePaidFeature } from "@/lib/entitlements";
 import { logActionError } from "@/lib/log";
 import { extractReceiptHints } from "@/lib/receipt-ocr";
 import { fetchGroup } from "@/features/groups/queries";
-import { getSessionUser } from "@/lib/session";
+import { getSessionUser } from "@/features/auth/session";
 import { detectReceiptText } from "@/lib/vision-ocr";
 
 export const runtime = "nodejs";
@@ -22,9 +22,6 @@ export async function POST(request: Request): Promise<Response> {
   const user = await getSessionUser();
   if (!user) return jsonError("Please sign in to continue.", 401, "unauthorized");
 
-  const paid = await requirePaidFeature(user.uid, "ocr");
-  if (!paid.ok) return jsonError(paid.error, 402, paid.code);
-
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -39,6 +36,9 @@ export async function POST(request: Request): Promise<Response> {
       return jsonError("Group not found.", 404, "not-found");
     }
   }
+
+  const paid = await requirePaidFeature(user.uid, "ocr");
+  if (!paid.ok) return jsonError(paid.error, 402, paid.code);
 
   const receipt = formData.get("receipt");
   if (!(receipt instanceof File)) {

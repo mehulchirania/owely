@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { requireSession } from "@/lib/session";
+import { requireSession } from "@/features/auth/session";
+import { fetchUser } from "@/features/auth/queries";
 import { fetchOwnExpenses } from "@/features/personal-ledger/queries";
+import { fetchOwnedRecurring } from "@/features/recurring/queries";
 
 import { OwnExpenseManager } from "@/components/OwnExpenseManager";
 
@@ -9,7 +11,11 @@ export const metadata: Metadata = { title: "Personal Ledger — Owely" };
 export default async function OwnPage() {
   const session = await requireSession();
 
-  const ownExpenses = await fetchOwnExpenses(session.uid);
+  const [ownExpenses, recurring, user] = await Promise.all([
+    fetchOwnExpenses(session.uid),
+    fetchOwnedRecurring(session.uid),
+    fetchUser(session.uid),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -25,6 +31,8 @@ export default async function OwnPage() {
 
       <OwnExpenseManager
         initialExpenses={ownExpenses}
+        initialRecurring={recurring.filter((item) => item.scope === "own")}
+        userTier={user?.tier ?? "free"}
       />
     </div>
   );

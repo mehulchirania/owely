@@ -2,6 +2,7 @@ import { Timestamp } from "firebase-admin/firestore";
 import type {
   Expense,
   Group,
+  MonthlyClosure,
   OwnExpense,
   RecurringExpense,
   RelationshipCategory,
@@ -17,6 +18,19 @@ function toMillis(value: unknown): number {
   if (value instanceof Timestamp) return value.toMillis();
   if (typeof value === "number") return value;
   return 0;
+}
+
+export function mapClosure(id: string, d: DocData): MonthlyClosure {
+  return {
+    id,
+    groupId: d.groupId,
+    month: d.month ?? 0,
+    year: d.year ?? 0,
+    status: d.status ?? "closed",
+    carryForward: d.carryForward ?? {},
+    closedBy: d.closedBy,
+    closedAt: toMillis(d.closedAt),
+  };
 }
 
 export function mapUser(uid: string, d: DocData): User {
@@ -49,6 +63,10 @@ export function mapGroup(id: string, d: DocData): Group {
     simplifiedDebts: (d.simplifiedDebts ?? []) as Settlement[],
     baseCurrency: d.baseCurrency ?? "INR",
     expenseCount: d.expenseCount,
+    groupMode: d.groupMode,
+    debtThreshold: d.debtThreshold,
+    debtRoundTo: d.debtRoundTo,
+    monthlyCloseEnabled: d.monthlyCloseEnabled,
     createdAt: toMillis(d.createdAt),
     updatedAt: toMillis(d.updatedAt),
   };
@@ -146,7 +164,7 @@ export function mapSettlement(id: string, d: DocData): Settlement {
     from: d.from,
     to: d.to,
     amount: d.amount ?? 0,
-    method: d.method ?? "upi",
+    method: d.method,
     upiId: d.upiId,
     status: d.status ?? "pending",
     paymentRef: d.paymentRef,

@@ -34,7 +34,7 @@ export interface PhoneUpiParams {
   note?: string;
 }
 
-function cleanPhone(phone: string): string {
+export function cleanPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   return digits.length > 10 ? digits.slice(-10) : digits;
 }

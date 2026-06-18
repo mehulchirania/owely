@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertExactSplit,
   formatPaise,
+  paiseToRupees,
   rupeesToPaise,
   splitByWeights,
   splitEqual,
@@ -26,6 +27,12 @@ describe("rupeesToPaise", () => {
 });
 
 describe("formatPaise", () => {
+  it("converts paise to rupees string", () => {
+    expect(paiseToRupees(123450)).toBe("1234.50");
+    expect(paiseToRupees(5)).toBe("0.05");
+    expect(paiseToRupees(-5025)).toBe("-50.25");
+  });
+
   it("renders Indian grouping", () => {
     expect(formatPaise(123450)).toBe("₹1,234.50");
     expect(formatPaise(10000000)).toBe("₹1,00,000.00");

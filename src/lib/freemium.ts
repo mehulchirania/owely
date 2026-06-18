@@ -47,8 +47,10 @@ export type FreemiumResult =
 export async function checkFreemiumLimit(
   groupId: string,
   userTier: "free" | "paid",
+  newExpenseCount = 1,
 ): Promise<FreemiumResult> {
   if (userTier === "paid") return { ok: true };
+  if (newExpenseCount <= 0) return { ok: true };
 
   const db = getAdminDb();
   const counterRef = db.doc(paths.groupCounter(groupId, currentMonthKey()));
@@ -57,7 +59,7 @@ export async function checkFreemiumLimit(
   if (!snap.exists) return { ok: true }; // First expense this month.
 
   const count: number = snap.get("count") ?? 0;
-  if (count >= FREE_MONTHLY_LIMIT) {
+  if (count + newExpenseCount > FREE_MONTHLY_LIMIT) {
     return { ok: false, reason: "limit-reached", limit: FREE_MONTHLY_LIMIT };
   }
   return { ok: true };

@@ -13,7 +13,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getAdminAuth } from "@/lib/firebase/admin";
-import { SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/session";
+import { SESSION_COOKIE, SESSION_MAX_AGE } from "@/features/auth/session";
+import { logActionError } from "@/lib/log";
 
 const cookieOptions = {
   httpOnly: true,
@@ -48,13 +49,23 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Session creation error:", error);
+    logActionError("session:create", error);
     return NextResponse.json({ error: "Could not create a session." }, { status: 401 });
   }
 }
 
 export async function DELETE(): Promise<NextResponse> {
   const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get(SESSION_COOKIE)?.value;
+  if (sessionCookie) {
+    try {
+      const auth = getAdminAuth();
+      const decoded = await auth.verifySessionCookie(sessionCookie);
+      await auth.revokeRefreshTokens(decoded.uid);
+    } catch (error) {
+      logActionError("session:delete", error);
+    }
+  }
   cookieStore.set(SESSION_COOKIE, "", { ...cookieOptions, maxAge: 0 });
   return NextResponse.json({ ok: true });
 }

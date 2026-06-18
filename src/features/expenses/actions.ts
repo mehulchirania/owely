@@ -7,7 +7,9 @@ import { paths } from "@/lib/firebase/collections";
 import {
   recomputeSimplified,
   recomputeMutations,
+  type RecomputeMutation,
 } from "@/lib/recompute";
+import { mapExpense } from "@/lib/firebase/mapping";
 import { computeSplits } from "@/lib/expense-splits";
 import { logActionError } from "@/lib/log";
 import { checkFreemiumLimit, incrementCounterInTx } from "@/lib/freemium";
@@ -42,6 +44,15 @@ export async function addExpense(input: unknown): Promise<ActionResult<{ expense
   const groupId = auth.data.group.id;
   const db = getAdminDb();
 
+  // Idempotent offline replays should no-op before quota checks.
+  const col = db.collection(paths.expenses(groupId));
+  const ref = expense.clientId ? col.doc(expense.clientId) : col.doc();
+
+  if (expense.clientId) {
+    const existing = await ref.get();
+    if (existing.exists) return success({ expenseId: ref.id });
+  }
+
   // Enforce freemium: free-tier users are capped at 100 expenses/group/month.
   const userDoc = await fetchUser(auth.data.user.uid);
   const tier = userDoc?.tier ?? "free";
@@ -56,14 +67,6 @@ export async function addExpense(input: unknown): Promise<ActionResult<{ expense
   // Idempotency: when the client supplies a clientId (offline replay), use it
   // as the doc ID. A replay of an already-saved expense is a no-op success —
   // never a duplicate, never a double-count.
-  const col = db.collection(paths.expenses(groupId));
-  const ref = expense.clientId ? col.doc(expense.clientId) : col.doc();
-
-  if (expense.clientId) {
-    const existing = await ref.get();
-    if (existing.exists) return success({ expenseId: ref.id });
-  }
-
   try {
     // The expense write and recompute run inside one Firestore transaction.
     // The group doc is the contention point — concurrent writes cause a retry
@@ -81,13 +84,9 @@ export async function addExpense(input: unknown): Promise<ActionResult<{ expense
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
       isRecurring: false,
-    });
-    const bumpCounter = incrementCounterInTx(groupId);
+    }, incrementCounterInTx(groupId));
 
-    await recomputeSimplified(groupId, auth.data.group.members, async (tx) => {
-      await createExpense(tx);
-      bumpCounter(tx);
-    });
+    await recomputeSimplified(groupId, auth.data.group.members, createExpense);
     revalidatePath(`/groups/${groupId}`);
     return success({ expenseId: ref.id });
   } catch (error) {
@@ -223,9 +222,22 @@ export async function addBatchExpenses(
     });
   }
 
+  let newExpenseCount = 0;
+  const countedIds = new Set<string>();
+  for (const comp of computedExpenses) {
+    if (countedIds.has(comp.id)) continue;
+    countedIds.add(comp.id);
+    if (!comp.data.clientId) {
+      newExpenseCount++;
+      continue;
+    }
+    const existing = await col.doc(comp.id).get();
+    if (!existing.exists) newExpenseCount++;
+  }
+
   const userDoc = await fetchUser(auth.data.user.uid);
   const tier = userDoc?.tier ?? "free";
-  const freemium = await checkFreemiumLimit(groupId, tier);
+  const freemium = await checkFreemiumLimit(groupId, tier, newExpenseCount);
   if (!freemium.ok) {
     return failure(
       `You've reached the ${freemium.limit} expense monthly limit. Upgrade to Owely Pro for unlimited expenses.`,
@@ -234,19 +246,28 @@ export async function addBatchExpenses(
   }
 
   try {
-    await recomputeSimplified(groupId, auth.data.group.members, async (tx) => {
-      for (const comp of computedExpenses) {
-        const ref = col.doc(comp.id);
-        if (comp.data.clientId) {
-          const snap = await tx.get(ref);
-          if (snap.exists) continue;
+    const createdIds = new Set<string>();
+    const bumpCounter = incrementCounterInTx(groupId);
+    const batchMutation: RecomputeMutation = {
+      write: (tx, state) => {
+        createdIds.clear();
+        for (const comp of computedExpenses) {
+          if (createdIds.has(comp.id)) continue;
+          if (state.expenses.some((expense) => expense.id === comp.id)) continue;
+          tx.set(col.doc(comp.id), comp.data);
+          bumpCounter(tx);
+          createdIds.add(comp.id);
         }
-        tx.set(ref, comp.data);
-        tx.update(db.doc(paths.group(groupId)), {
-          expenseCount: FieldValue.increment(1),
-        });
-      }
-    });
+      },
+      project: (state) => {
+        for (const comp of computedExpenses) {
+          if (!createdIds.has(comp.id)) continue;
+          state.expenses.push(mapExpense(comp.id, comp.data as FirebaseFirestore.DocumentData));
+        }
+      },
+    };
+
+    await recomputeSimplified(groupId, auth.data.group.members, batchMutation);
 
     revalidatePath(`/groups/${groupId}`);
     return success({ expenseIds: computedExpenses.map((e) => e.id) });

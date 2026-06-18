@@ -47,6 +47,10 @@ from the Firebase console:
   app under Project settings.
 - `FIREBASE_SERVICE_ACCOUNT_KEY` — Service accounts → Generate new private key
   (raw JSON or base64). Server-only; never commit it.
+- `CRON_SECRET` is the shared secret for the daily recurring-expense scheduler.
+- `OWELY_ADMIN_USERNAME`, `OWELY_ADMIN_PASSWORD` are required for the production
+  admin panel. Local development falls back to `admin/admin` only when these are
+  unset outside production.
 
 ## Architecture
 
@@ -65,8 +69,15 @@ src/
     result.ts validation.ts session.ts read-model.ts recompute.ts
     *.test.ts               Vitest specs (money · debts · UPI)
     firebase/               client (reads+Auth) · admin (writes) · collections
-  actions/                  Server Actions — the only write path
-    auth.ts groups.ts expenses.ts settlements.ts categories.ts templates.ts currency.ts
+  features/                 Domain-organized Server Actions + queries
+    auth/                   Session, sign-in, profile
+    groups/                 Group CRUD, direct links, invites, guest merge, categories, closures
+    expenses/               Add/edit/delete, batch, splits
+    settlements/            Settle-up, dispute, guest settle
+    recurring/              Monthly recurring definitions
+    templates/              Saved split templates
+    currency/               Display/base currency settings
+    personal-ledger/        Private /own expenses
   components/               Login, groups, expense form/feed, settle panel, …
     landing/                Marketing landing page sections + motion engine
   app/                      App Router: landing (/) · (auth)/login · (app)/* shell
@@ -81,6 +92,10 @@ docs/STATE.md               Living status doc
 - **All money is integer paise.** Never floats. Display divides by 100 at the edge.
 - **Writes go through Server Actions only** (Admin SDK). The client never writes
   Firestore directly. `firestore.rules` is a secondary, deny-by-default layer.
+- **Backend code is feature-first:** app/routes/components import feature actions
+  and feature auth/query modules directly; shared `lib/` code is reserved for
+  pure utilities, Firebase plumbing, compatibility barrels, and cross-feature
+  infrastructure.
 - **Offline-first:** Firestore uses a persistent multi-tab cache so the app works
   on patchy mobile data.
 - Strict TypeScript, no `any`. `npm run build` and `npm test` must stay green.
@@ -92,11 +107,12 @@ an App Hosting backend; every push builds and deploys to a
 `<backend>--owely-c6c51.<region>.hosted.app` URL. Full one-time setup steps are
 in [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md).
 
-Remote auth needs three Firebase-side settings to match the repo config:
+Remote auth needs Firebase-side settings to match the repo config:
 `NEXT_PUBLIC_FIREBASE_API_KEY` and `NEXT_PUBLIC_FIREBASE_APP_ID` are inlined from
-`apphosting.yaml` at build time, `FIREBASE_SERVICE_ACCOUNT_KEY` must exist as an
-App Hosting runtime secret, and the deployed `*.hosted.app` host must be listed
-under Firebase Auth authorized domains.
+`apphosting.yaml` at build time. `FIREBASE_SERVICE_ACCOUNT_KEY`, `CRON_SECRET`,
+`OWELY_ADMIN_USERNAME`, and `OWELY_ADMIN_PASSWORD` must exist as App Hosting
+runtime secrets, and the deployed `*.hosted.app` host must be listed under
+Firebase Auth authorized domains.
 
 ## Status
 
@@ -112,6 +128,17 @@ Phase 7 features are fully supported including saved split templates, group/own
 recurring expenses UI, private Personal Ledger (`/own`) for tracking un-shared expenses
 with monthly summaries, offline-safe idempotent writes, display/base currency metadata,
 paid PDF export, and Google Vision Receipt OCR prefill uploading.
+Expense and settlement writes use a read-first recompute transaction with
+in-memory mutation projection, so Firestore accepts the write ordering while
+`group.simplifiedDebts` still reflects the triggering change immediately.
+Offline client-ID replays return as no-ops before quota checks, and batch adds
+count only genuinely new IDs against the free monthly limit.
+Personal recurring rules on `/own` support a 1-28 day-of-month selector for
+monthly SIPs, insurance, subscriptions, and similar private expenses.
+The recurring scheduler evaluates due dates in Asia/Kolkata and claims each
+monthly generation transactionally before writing deterministic generated docs.
+Deleting groups/direct ledgers also cleans related top-level recurring,
+template, and invite documents.
 
 Phase B differentiators are fully implemented:
 - **Group Mode Selector**: Selection of smart modes (Trip, Roommates, Couple, Lunch, Friends, Family, Custom).

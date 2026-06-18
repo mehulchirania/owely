@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { requireSession } from "@/lib/session";
+import { requireSession } from "@/features/auth/session";
 import { fetchStandardGroups, fetchDirectGroups, fetchUserActivity } from "@/features/groups/queries";
 import { fetchRelationshipCategories } from "@/features/groups/category-queries";
 import { formatPaise } from "@/lib/money";
@@ -65,46 +65,38 @@ export default async function GroupsPage({
   const firstName = user.name?.split(" ")[0] ?? "there";
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* greeting */}
-      <div className="flex flex-col gap-0.5">
-        <span className="text-sm text-dim">{today}</span>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-hi">
-          Hey, {firstName} 👋
-        </h1>
+    <div className="flex flex-col gap-5">
+      {/* page header */}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-[22px] font-bold tracking-tight text-hi">
+            Groups
+          </h1>
+          <p className="mt-0.5 text-[12.5px] text-dim">
+            {standardGroups.length} active {standardGroups.length === 1 ? "group" : "groups"}
+          </p>
+        </div>
       </div>
 
-      {/* net balance hero - responsive layout */}
-      <div className="relative overflow-hidden rounded-3xl border border-accent/20 bg-card p-6 md:p-8">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-10 -right-8 h-36 w-36 rounded-full bg-accent opacity-20 blur-[60px]"
-        />
-        <span className="text-sm text-muted">Your overall net balance</span>
-        <div className="mt-1 flex items-baseline gap-1.5">
-          <span
-            className={`font-display text-[40px] font-bold tracking-tight ${
-              overall > 0 ? "text-mint" : overall < 0 ? "text-coral" : "text-hi"
-            }`}
-          >
-            {overall > 0 ? "+" : overall < 0 ? "−" : ""}
-            {formatPaise(Math.abs(overall))}
-          </span>
-          <span className="text-sm text-dim">across all relationships</span>
+      {/* compact balance strip */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="rounded-[13px] border border-mint/14 bg-surface px-4 py-3">
+          <p className="mb-0.5 text-[10.5px] text-muted">Total owed to you</p>
+          <p className="font-display text-[20px] font-bold text-mint">
+            {owed > 0 ? "+" : ""}{formatPaise(owed)}
+          </p>
         </div>
-        <div className="mt-6 flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 rounded-2xl bg-mint/10 px-4 py-3">
-            <span className="text-xs text-mint-soft font-medium">You&apos;re owed</span>
-            <div className="mt-1 font-display text-xl font-bold text-mint">
-              {formatPaise(owed)}
-            </div>
-          </div>
-          <div className="flex-1 rounded-2xl bg-coral/10 px-4 py-3">
-            <span className="text-xs text-coral-soft font-medium">You owe</span>
-            <div className="mt-1 font-display text-xl font-bold text-coral">
-              {formatPaise(owe)}
-            </div>
-          </div>
+        <div className="rounded-[13px] border border-coral/12 bg-surface px-4 py-3">
+          <p className="mb-0.5 text-[10.5px] text-muted">Total you owe</p>
+          <p className="font-display text-[20px] font-bold text-coral">
+            {owe > 0 ? "−" : ""}{formatPaise(owe)}
+          </p>
+        </div>
+        <div className="hidden rounded-[13px] border border-white/6 bg-surface px-4 py-3 sm:block">
+          <p className="mb-0.5 text-[10.5px] text-muted">Net balance</p>
+          <p className={`font-display text-[20px] font-bold ${overall > 0 ? "text-mint" : overall < 0 ? "text-coral" : "text-hi"}`}>
+            {overall > 0 ? "+" : overall < 0 ? "−" : ""}{formatPaise(Math.abs(overall))}
+          </p>
         </div>
       </div>
 

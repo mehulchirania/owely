@@ -17,7 +17,7 @@ import {
   type User as FirebaseUser,
 } from "firebase/auth";
 import { getFirebaseAuth, googleAuthProvider } from "@/lib/firebase/client";
-import { authErrorMessage } from "@/lib/firebase/auth-errors";
+import { authErrorMessage } from "@/features/auth/auth-errors";
 import { ensureUser } from "@/features/auth/actions";
 
 /** Best-effort client-side E.164 for India. The server re-validates strictly. */

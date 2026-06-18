@@ -19,14 +19,36 @@ import { fetchGroup } from "@/features/groups/queries";
 import { recomputeSimplified } from "@/lib/recompute";
 import { logActionError } from "@/lib/log";
 
+function indiaDateParts(now: Date): { year: number; month: number; day: number } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const partValue = (type: "year" | "month" | "day") => {
+    const part = parts.find((item) => item.type === type)?.value;
+    return part ? Number(part) : 0;
+  };
+  return {
+    year: partValue("year"),
+    month: partValue("month"),
+    day: partValue("day"),
+  };
+}
+
+type GenerationOutcome =
+  | { status: "generated"; groupId?: string }
+  | { status: "already-generated" }
+  | { status: "not-due" }
+  | { status: "malformed" };
+
 /** `now` is injected for testability; defaults to the current time. */
 export async function generateDueRecurring(
   now: Date = new Date(),
 ): Promise<{ scanned: number; generated: number }> {
   const db = getAdminDb();
-  const year = now.getUTCFullYear();
-  const month = now.getUTCMonth() + 1;
-  const day = now.getUTCDate();
+  const { year, month, day } = indiaDateParts(now);
   const monthKey = `${year}-${String(month).padStart(2, "0")}`;
 
   // Single-equality query (auto-indexed); the day window is filtered in memory.
@@ -44,46 +66,81 @@ export async function generateDueRecurring(
 
     const genId = `${doc.id}_${monthKey}`;
     try {
-      if (r.scope === "shared" && r.groupId) {
-        const ref = db.doc(paths.expense(r.groupId, genId));
-        if (!(await ref.get()).exists) {
-          await ref.set({
-            groupId: r.groupId,
-            title: r.title,
-            amount: r.amount,
-            currency: "INR",
-            paidBy: r.paidBy,
-            splits: r.splits,
-            category: r.category,
-            recurringId: doc.id,
-            createdBy: r.ownerUid,
-            createdAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
-            isRecurring: true,
-            recurrenceRule: { frequency: "monthly", dayOfMonth: r.dayOfMonth },
-          });
+      const outcome = await db.runTransaction<GenerationOutcome>(async (tx) => {
+        const recurringSnap = await tx.get(doc.ref);
+        if (!recurringSnap.exists || recurringSnap.get("active") !== true) {
+          return { status: "not-due" };
         }
-        affectedGroups.add(r.groupId);
-      } else if (r.scope === "own") {
-        const ref = db.doc(paths.ownExpense(r.ownerUid, genId));
-        if (!(await ref.get()).exists) {
-          await ref.set({
-            ownerUid: r.ownerUid,
-            title: r.title,
-            amount: r.amount,
-            currency: "INR",
-            category: r.category,
-            recurringId: doc.id,
-            createdAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
-          });
+        if ((recurringSnap.get("dayOfMonth") ?? 1) > day) return { status: "not-due" };
+        if (recurringSnap.get("lastRunMonth") === monthKey) {
+          return { status: "already-generated" };
         }
-      } else {
-        continue; // malformed definition
-      }
 
-      await doc.ref.update({ lastRunMonth: monthKey, updatedAt: FieldValue.serverTimestamp() });
-      generated++;
+        const ownerUid = recurringSnap.get("ownerUid") as string | undefined;
+        const scope = recurringSnap.get("scope") as string | undefined;
+        if (!ownerUid) return { status: "malformed" };
+
+        if (scope === "shared") {
+          const groupId = recurringSnap.get("groupId") as string | undefined;
+          if (!groupId) return { status: "malformed" };
+          const ref = db.doc(paths.expense(groupId, genId));
+          const targetSnap = await tx.get(ref);
+          if (!targetSnap.exists) {
+            tx.set(ref, {
+              groupId,
+              title: recurringSnap.get("title"),
+              amount: recurringSnap.get("amount"),
+              currency: "INR",
+              paidBy: recurringSnap.get("paidBy"),
+              splits: recurringSnap.get("splits"),
+              category: recurringSnap.get("category"),
+              recurringId: doc.id,
+              createdBy: ownerUid,
+              createdAt: FieldValue.serverTimestamp(),
+              updatedAt: FieldValue.serverTimestamp(),
+              isRecurring: true,
+              recurrenceRule: {
+                frequency: "monthly",
+                dayOfMonth: recurringSnap.get("dayOfMonth") ?? 1,
+              },
+            });
+          }
+          tx.update(doc.ref, {
+            lastRunMonth: monthKey,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          return targetSnap.exists ? { status: "already-generated" } : { status: "generated", groupId };
+        }
+
+        if (scope === "own") {
+          const ref = db.doc(paths.ownExpense(ownerUid, genId));
+          const targetSnap = await tx.get(ref);
+          if (!targetSnap.exists) {
+            tx.set(ref, {
+              ownerUid,
+              title: recurringSnap.get("title"),
+              amount: recurringSnap.get("amount"),
+              currency: "INR",
+              category: recurringSnap.get("category"),
+              recurringId: doc.id,
+              createdAt: FieldValue.serverTimestamp(),
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+          }
+          tx.update(doc.ref, {
+            lastRunMonth: monthKey,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          return targetSnap.exists ? { status: "already-generated" } : { status: "generated" };
+        }
+
+        return { status: "malformed" };
+      });
+
+      if (outcome.status === "generated") {
+        generated++;
+        if (outcome.groupId) affectedGroups.add(outcome.groupId);
+      }
     } catch (error) {
       // One bad definition shouldn't stop the rest of the run — but log it so
       // a silently broken recurring rule is discoverable, not invisible.

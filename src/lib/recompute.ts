@@ -14,26 +14,33 @@ import "server-only";
  * expense docs commit independently); the transaction only guarantees the
  * cached `simplifiedDebts` reflects every committed expense.
  *
- * Optional `mutate` runs inside the same transaction, after the group read and
- * before the recompute write, so the triggering write (expense add/edit/delete,
- * settlement record) participates in the atomic update and the recomputed
- * balances always match it.
+ * Optional `mutate` runs inside the same transaction after every Firestore read
+ * has completed. Firestore rejects read-after-write transactions, so mutations
+ * also project their effect into the in-memory expense/settlement arrays before
+ * the simplified balance is derived.
  */
 
 import { randomUUID } from "node:crypto";
 import {
   FieldValue,
   type Transaction,
-  type DocumentReference,
 } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { paths } from "@/lib/firebase/collections";
 import { mapExpense, mapSettlement } from "@/lib/firebase/mapping";
 import { netWithSettlements, simplifyFromNet } from "@/lib/simplify-debts";
-import type { Settlement } from "@/types";
+import type { Expense, Settlement } from "@/types";
 
-/** A write to perform inside the recompute transaction. */
-export type RecomputeMutation = (tx: Transaction) => Promise<void> | void;
+interface RecomputeState {
+  expenses: Expense[];
+  settlements: Settlement[];
+}
+
+/** A write plus its in-memory projection inside the recompute transaction. */
+export interface RecomputeMutation {
+  write: (tx: Transaction, state: RecomputeState) => Promise<void> | void;
+  project?: (state: RecomputeState) => void;
+}
 
 /**
  * Atomically run `mutate` (if given) and recompute `group.simplifiedDebts`.
@@ -60,23 +67,27 @@ export async function recomputeSimplified(
     // Caller's members may be stale; prefer the fresh doc's member list.
     const freshMembers = (groupSnap.get("members") as string[] | undefined) ?? members;
 
-    // Apply the triggering write (expense add/edit/delete, settlement record)
-    // before reading the subcollections so the snapshot includes it.
-    if (mutate) await mutate(tx);
-
     const [expenseSnap, settlementSnap] = await Promise.all([
       tx.get(expensesRef),
       tx.get(settlementsRef),
     ]);
 
-    const expenses = expenseSnap.docs.map((d) => mapExpense(d.id, d.data()));
-    const settlements = settlementSnap.docs.map((d) => mapSettlement(d.id, d.data()));
-    const completed = settlements.filter((s) => s.status === "completed");
+    const state: RecomputeState = {
+      expenses: expenseSnap.docs.map((d) => mapExpense(d.id, d.data())),
+      settlements: settlementSnap.docs.map((d) => mapSettlement(d.id, d.data())),
+    };
+
+    if (mutate) {
+      await mutate.write(tx, state);
+      mutate.project?.(state);
+    }
+
+    const completed = state.settlements.filter((s) => s.status === "completed");
 
     const threshold = (groupSnap.get("debtThreshold") as number | undefined) ?? 0;
     const roundTo = (groupSnap.get("debtRoundTo") as number | undefined) ?? 0;
 
-    const net = netWithSettlements(expenses, freshMembers, completed);
+    const net = netWithSettlements(state.expenses, freshMembers, completed);
     const simplified: Settlement[] = simplifyFromNet(net, groupId, () => randomUUID(), Date.now(), {
       threshold,
       roundTo,
@@ -96,10 +107,21 @@ export const recomputeMutations = {
     groupId: string,
     docId: string,
     data: Record<string, unknown>,
-  ): RecomputeMutation => async (tx) => {
-    const ref: DocumentReference = getAdminDb().doc(paths.expense(groupId, docId));
-    if ((await tx.get(ref)).exists) return;
-    tx.set(ref, data);
+    onCreate?: (tx: Transaction) => void,
+  ): RecomputeMutation => {
+    let shouldCreate = false;
+    return {
+      write: (tx, state) => {
+        shouldCreate = !state.expenses.some((expense) => expense.id === docId);
+        if (!shouldCreate) return;
+        tx.set(getAdminDb().doc(paths.expense(groupId, docId)), data);
+        onCreate?.(tx);
+      },
+      project: (state) => {
+        if (!shouldCreate) return;
+        state.expenses.push(mapExpense(docId, data as FirebaseFirestore.DocumentData));
+      },
+    };
   },
 
   /** Update an existing expense doc. */
@@ -107,30 +129,60 @@ export const recomputeMutations = {
     groupId: string,
     expenseId: string,
     data: Record<string, unknown>,
-  ): RecomputeMutation => (tx) => {
-    tx.update(getAdminDb().doc(paths.expense(groupId, expenseId)), data);
-  },
+  ): RecomputeMutation => ({
+    write: (tx) => {
+      tx.update(getAdminDb().doc(paths.expense(groupId, expenseId)), data);
+    },
+    project: (state) => {
+      const index = state.expenses.findIndex((expense) => expense.id === expenseId);
+      if (index === -1) return;
+      state.expenses[index] = mapExpense(expenseId, {
+        ...state.expenses[index],
+        ...data,
+      } as FirebaseFirestore.DocumentData);
+    },
+  }),
 
   /** Delete an expense doc. */
-  deleteExpense: (groupId: string, expenseId: string): RecomputeMutation => (tx) => {
-    tx.delete(getAdminDb().doc(paths.expense(groupId, expenseId)));
-  },
+  deleteExpense: (groupId: string, expenseId: string): RecomputeMutation => ({
+    write: (tx) => {
+      tx.delete(getAdminDb().doc(paths.expense(groupId, expenseId)));
+    },
+    project: (state) => {
+      state.expenses = state.expenses.filter((expense) => expense.id !== expenseId);
+    },
+  }),
 
   /** Create a settlement doc. */
   createSettlement: (
     groupId: string,
     docId: string,
     data: Record<string, unknown>,
-  ): RecomputeMutation => (tx) => {
-    tx.set(getAdminDb().doc(paths.settlement(groupId, docId)), data);
-  },
+  ): RecomputeMutation => ({
+    write: (tx) => {
+      tx.set(getAdminDb().doc(paths.settlement(groupId, docId)), data);
+    },
+    project: (state) => {
+      state.settlements.push(mapSettlement(docId, data as FirebaseFirestore.DocumentData));
+    },
+  }),
 
   /** Update a settlement doc (e.g. mark disputed). */
   updateSettlement: (
     groupId: string,
     settlementId: string,
     data: Record<string, unknown>,
-  ): RecomputeMutation => (tx) => {
-    tx.update(getAdminDb().doc(paths.settlement(groupId, settlementId)), data);
-  },
+  ): RecomputeMutation => ({
+    write: (tx) => {
+      tx.update(getAdminDb().doc(paths.settlement(groupId, settlementId)), data);
+    },
+    project: (state) => {
+      const index = state.settlements.findIndex((settlement) => settlement.id === settlementId);
+      if (index === -1) return;
+      state.settlements[index] = mapSettlement(settlementId, {
+        ...state.settlements[index],
+        ...data,
+      } as FirebaseFirestore.DocumentData);
+    },
+  }),
 };

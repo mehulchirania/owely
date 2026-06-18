@@ -10,15 +10,20 @@
  * that `ensureUser` claims on that person's first sign-in.
  */
 
-import { FieldValue, type Firestore } from "firebase-admin/firestore";
-import { createHash, randomUUID } from "node:crypto";
+import {
+  FieldValue,
+  type DocumentReference,
+  type Firestore,
+} from "firebase-admin/firestore";
 import { revalidatePath } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections, paths } from "@/lib/firebase/collections";
-import { fetchUser } from "@/features/auth/queries";
 import { recomputeSimplified } from "@/lib/recompute";
-import { directPairKey } from "@/lib/relationship-categories";
 import { authorizeMember, authorizeUser } from "@/features/auth/session";
+import { ensureDirectGroup } from "@/features/groups/direct-groups";
+import { linkOrInvite, linkOrInviteMany } from "@/features/groups/invites";
+import { memberDetailFor, userByPhone } from "@/features/groups/member-profiles";
+import { mergeGuestToUser } from "@/features/groups/guest-merge";
 import { logActionError } from "@/lib/log";
 import { failure, success, type ActionResult } from "@/lib/result";
 import {
@@ -33,95 +38,25 @@ import {
   PhoneSchema,
   RenameGroupSchema,
 } from "@/lib/validation";
-import type { Group, MemberDetail } from "@/types";
+import type { MemberDetail } from "@/types";
 
-type GuestMergeExpensePatch = Partial<{
-  paidBy: string;
-  splits: Record<string, number>;
-}>;
+async function deleteGroupTopLevelDocuments(db: Firestore, groupId: string): Promise<void> {
+  const [recurringSnap, templateSnap, inviteSnap] = await Promise.all([
+    db.collection(Collections.recurring).where("groupId", "==", groupId).get(),
+    db.collection(Collections.templates).where("groupId", "==", groupId).get(),
+    db.collection(Collections.invites).where("groupId", "==", groupId).get(),
+  ]);
 
-type GuestMergeSettlementPatch = Partial<{
-  from: string;
-  to: string;
-}>;
+  const refs: DocumentReference[] = [
+    ...recurringSnap.docs.map((doc) => doc.ref),
+    ...templateSnap.docs.map((doc) => doc.ref),
+    ...inviteSnap.docs.map((doc) => doc.ref),
+  ];
+  if (refs.length === 0) return;
 
-async function memberDetailFor(uid: string): Promise<MemberDetail> {
-  const user = await fetchUser(uid);
-  return {
-    name: user?.displayName ?? "Owely user",
-    phone: user?.phone ?? null,
-    photoURL: user?.photoURL ?? null,
-  };
-}
-
-function directGroupIdForPair(pairKey: string): string {
-  return `direct_${createHash("sha256").update(pairKey).digest("hex").slice(0, 32)}`;
-}
-
-function directGroupName(a: MemberDetail, b: MemberDetail): string {
-  return `${a.name} + ${b.name}`;
-}
-
-async function userByPhone(
-  db: Firestore,
-  phone: string,
-): Promise<{ uid: string; detail: MemberDetail } | null> {
-  const snap = await db
-    .collection(Collections.users)
-    .where("phone", "==", phone)
-    .limit(1)
-    .get();
-  if (snap.empty) return null;
-  const doc = snap.docs[0];
-  return {
-    uid: doc.id,
-    detail: {
-      name: doc.get("displayName") ?? "Owely user",
-      phone: doc.get("phone") ?? phone,
-      photoURL: doc.get("photoURL") ?? null,
-    },
-  };
-}
-
-async function ensureDirectGroup(
-  db: Firestore,
-  uidA: string,
-  detailA: MemberDetail,
-  uidB: string,
-  detailB: MemberDetail,
-): Promise<{ groupId: string; existing: boolean }> {
-  const pairKey = directPairKey(uidA, uidB);
-  const ref = db.doc(paths.group(directGroupIdForPair(pairKey)));
-  let existing = false;
-
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    if (snap.exists) {
-      existing = true;
-      return;
-    }
-    tx.set(ref, {
-      type: "direct",
-      name: directGroupName(detailA, detailB),
-      createdBy: uidA,
-      members: [uidA, uidB],
-      memberDetails: {
-        [uidA]: detailA,
-        [uidB]: detailB,
-      },
-      directPairKey: pairKey,
-      directPeerUids: {
-        [uidA]: uidB,
-        [uidB]: uidA,
-      },
-      simplifiedDebts: [],
-      baseCurrency: "INR",
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-  });
-
-  return { groupId: ref.id, existing };
+  const writer = db.bulkWriter();
+  for (const ref of refs) writer.delete(ref);
+  await writer.close();
 }
 
 export async function createGroup(input: unknown): Promise<ActionResult<{ groupId: string }>> {
@@ -251,6 +186,7 @@ export async function deleteGroup(input: unknown): Promise<ActionResult<null>> {
   try {
     const db = getAdminDb();
     const ref = db.doc(paths.group(parsed.data.groupId));
+    await deleteGroupTopLevelDocuments(db, parsed.data.groupId);
     await db.recursiveDelete(ref); // removes expenses + settlements subcollections too
     revalidatePath("/groups");
     return success(null);
@@ -271,8 +207,10 @@ export async function leaveGroup(input: unknown): Promise<ActionResult<null>> {
     const db = getAdminDb();
     const ref = db.doc(paths.group(parsed.data.groupId));
     const remaining = group.members.filter((m) => m !== user.uid);
+    const shouldDeleteGroup = remaining.length === 0 || (group.type === "direct" && remaining.length < 2);
 
-    if (remaining.length === 0) {
+    if (shouldDeleteGroup) {
+      await deleteGroupTopLevelDocuments(db, parsed.data.groupId);
       await db.recursiveDelete(ref);
     } else {
       await ref.update({
@@ -288,77 +226,6 @@ export async function leaveGroup(input: unknown): Promise<ActionResult<null>> {
     logActionError("leaveGroup", error);
     return failure("Could not leave the group.");
   }
-}
-
-type LinkResult = "linked" | "invited" | "already-member";
-
-async function linkOrInvite(
-  db: Firestore,
-  group: Group,
-  invitedBy: string,
-  name: string,
-  phone: string,
-): Promise<LinkResult> {
-  if (Object.values(group.memberDetails).some((d) => d.phone === phone)) {
-    return "already-member";
-  }
-
-  const existing = await db
-    .collection(Collections.users)
-    .where("phone", "==", phone)
-    .limit(1)
-    .get();
-
-  if (!existing.empty) {
-    const userDoc = existing.docs[0];
-    if (group.members.includes(userDoc.id)) return "already-member";
-    const detail: MemberDetail = {
-      name: userDoc.get("displayName") ?? name,
-      phone,
-      photoURL: userDoc.get("photoURL") ?? null,
-    };
-    await db.doc(paths.group(group.id)).update({
-      members: FieldValue.arrayUnion(userDoc.id),
-      [`memberDetails.${userDoc.id}`]: detail,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-    return "linked";
-  }
-
-  const priorInvites = await db
-    .collection(Collections.invites)
-    .where("phone", "==", phone)
-    .get();
-  const priorInvite = priorInvites.docs.find(
-    (d) => d.get("groupId") === group.id && d.get("status") === "pending",
-  );
-
-  if (!priorInvite) {
-    const guestUid = `guest_${randomUUID()}`;
-    const detail: MemberDetail = {
-      name,
-      phone,
-      photoURL: null,
-    };
-
-    await db.doc(paths.group(group.id)).update({
-      members: FieldValue.arrayUnion(guestUid),
-      [`memberDetails.${guestUid}`]: detail,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-
-    await db.collection(Collections.invites).add({
-      groupId: group.id,
-      groupName: group.name,
-      phone,
-      invitedName: name,
-      invitedBy,
-      status: "pending",
-      guestUid,
-      createdAt: FieldValue.serverTimestamp(),
-    });
-  }
-  return "invited";
 }
 
 export async function inviteByPhone(
@@ -394,22 +261,15 @@ export async function addMembersByPhone(
   const auth = await authorizeMember(parsed.data.groupId);
   if (!auth.ok) return auth;
 
-  const db = getAdminDb();
-  const seen = new Set<string>();
-  let added = 0;
-  let invited = 0;
-  let skipped = 0;
   try {
-    for (const person of parsed.data.people) {
-      if (seen.has(person.phone)) continue;
-      seen.add(person.phone);
-      const r = await linkOrInvite(db, auth.data.group, auth.data.user.uid, person.name, person.phone);
-      if (r === "linked") added++;
-      else if (r === "invited") invited++;
-      else skipped++;
-    }
+    const result = await linkOrInviteMany(
+      getAdminDb(),
+      auth.data.group,
+      auth.data.user.uid,
+      parsed.data.people,
+    );
     revalidatePath(`/groups/${parsed.data.groupId}`);
-    return success({ added, invited, skipped });
+    return success(result);
   } catch (error) {
     logActionError("addMembersByPhone", error);
     return failure("Couldn't add everyone — please try the rest again.");
@@ -527,92 +387,4 @@ export async function acceptInvite(input: unknown): Promise<ActionResult<{ group
     logActionError("acceptInvite", error);
     return failure("Could not accept the invite.");
   }
-}
-
-async function mergeGuestToUser(
-  db: Firestore,
-  groupId: string,
-  guestUid: string,
-  actualUid: string,
-  actualDetail: MemberDetail,
-) {
-  const groupRef = db.doc(paths.group(groupId));
-
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(groupRef);
-    if (!snap.exists) return;
-
-    const members = (snap.get("members") as string[]) ?? [];
-    const updatedMembers = members.filter((m) => m !== guestUid);
-    if (!updatedMembers.includes(actualUid)) {
-      updatedMembers.push(actualUid);
-    }
-
-    const memberDetails = (snap.get("memberDetails") as Record<string, MemberDetail>) ?? {};
-    const guestDetail = memberDetails[guestUid];
-    const finalDetail = {
-      ...guestDetail,
-      ...actualDetail,
-    };
-
-    delete memberDetails[guestUid];
-    memberDetails[actualUid] = finalDetail;
-
-    tx.update(groupRef, {
-      members: updatedMembers,
-      memberDetails,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-  });
-
-  const expensesRef = db.collection(paths.expenses(groupId));
-  const expensesSnap = await expensesRef.get();
-  const batch = db.batch();
-
-  for (const doc of expensesSnap.docs) {
-    const data = doc.data();
-    let changed = false;
-    const updatePayload: GuestMergeExpensePatch = {};
-
-    if (data.paidBy === guestUid) {
-      updatePayload.paidBy = actualUid;
-      changed = true;
-    }
-
-    if (data.splits && guestUid in data.splits) {
-      const newSplits = { ...data.splits };
-      const share = newSplits[guestUid];
-      delete newSplits[guestUid];
-      newSplits[actualUid] = share;
-      updatePayload.splits = newSplits;
-      changed = true;
-    }
-
-    if (changed) {
-      batch.update(doc.ref, updatePayload);
-    }
-  }
-
-  const settlementsRef = db.collection(paths.settlements(groupId));
-  const settlementsSnap = await settlementsRef.get();
-  for (const doc of settlementsSnap.docs) {
-    const data = doc.data();
-    let changed = false;
-    const updatePayload: GuestMergeSettlementPatch = {};
-
-    if (data.from === guestUid) {
-      updatePayload.from = actualUid;
-      changed = true;
-    }
-    if (data.to === guestUid) {
-      updatePayload.to = actualUid;
-      changed = true;
-    }
-
-    if (changed) {
-      batch.update(doc.ref, updatePayload);
-    }
-  }
-
-  await batch.commit();
 }

@@ -4,7 +4,7 @@ import { requirePaidFeature } from "@/lib/entitlements";
 import { fetchExpenses } from "@/features/expenses/queries";
 import { fetchGroup } from "@/features/groups/queries";
 import { fetchSettlements } from "@/features/settlements/queries";
-import { getSessionUser } from "@/lib/session";
+import { getSessionUser } from "@/features/auth/session";
 
 export const runtime = "nodejs";
 
@@ -59,15 +59,15 @@ export async function GET(
     return NextResponse.json({ error: "Please sign in to continue." }, { status: 401 });
   }
 
-  const paid = await requirePaidFeature(user.uid, "pdf-export");
-  if (!paid.ok) {
-    return NextResponse.json({ error: paid.error, code: paid.code }, { status: 402 });
-  }
-
   const { groupId } = await context.params;
   const group = await fetchGroup(groupId);
   if (!group || !group.members.includes(user.uid)) {
     return NextResponse.json({ error: "Group not found." }, { status: 404 });
+  }
+
+  const paid = await requirePaidFeature(user.uid, "pdf-export");
+  if (!paid.ok) {
+    return NextResponse.json({ error: paid.error, code: paid.code }, { status: 402 });
   }
 
   const [expenses, settlements] = await Promise.all([

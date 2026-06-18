@@ -9,10 +9,10 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE } from "@/lib/session-cookie";
+import { SESSION_COOKIE } from "@/features/auth/session-cookie";
 
 /** Authenticated areas of the app. */
-const PROTECTED = ["/groups", "/people", "/settings", "/own"];
+const PROTECTED = ["/groups", "/people", "/settings", "/own", "/admin"];
 
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
@@ -49,5 +49,5 @@ export function proxy(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ["/groups/:path*", "/people/:path*", "/settings/:path*", "/own/:path*"],
+  matcher: ["/groups/:path*", "/people/:path*", "/settings/:path*", "/own/:path*", "/admin/:path*"],
 };

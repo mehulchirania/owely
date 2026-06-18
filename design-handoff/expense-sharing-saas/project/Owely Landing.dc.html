@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:#0b0a0e;overflow:hidden;}
+@keyframes ow-float{0%,100%{transform:translateY(0px)}50%{transform:translateY(-14px)}}
+@keyframes ow-floats{0%,100%{transform:translateY(0px) rotate(1deg)}50%{transform:translateY(-8px) rotate(-1.5deg)}}
+@keyframes ow-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes ow-glow{0%,100%{box-shadow:0 16px 48px -12px rgba(139,123,255,.8)}50%{box-shadow:0 22px 56px -8px rgba(139,123,255,.98)}}
+</style>
+</helmet>
+
+<div style="position:relative;height:100vh;overflow:hidden;background:#0b0a0e;color:#f4f2fa;font-family:'Plus Jakarta Sans',sans-serif;">
+
+  <canvas id="ow-pc" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
+
+  <div data-orb style="position:fixed;top:-220px;left:-120px;width:640px;height:640px;border-radius:50%;background:#8b7bff;filter:blur(200px);opacity:.13;pointer-events:none;z-index:0;transition:transform 1s ease;"></div>
+  <div data-orb style="position:fixed;bottom:-200px;right:-100px;width:580px;height:580px;border-radius:50%;background:#45e0c8;filter:blur(180px);opacity:.09;pointer-events:none;z-index:0;transition:transform 1s ease;"></div>
+
+  <nav id="ow-nav" style="position:fixed;top:0;left:0;right:0;z-index:100;height:64px;display:flex;align-items:center;padding:0 44px;gap:2px;background:rgba(11,10,14,.78);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,.05);">
+    <button onclick="{{ navHome }}" style="display:flex;align-items:center;gap:9px;background:none;border:none;cursor:pointer;color:inherit;padding:5px 10px 5px 2px;border-radius:10px;margin-right:10px;font-family:inherit;transition:background .15s;" style-hover="background:rgba(255,255,255,.04);">
+      <div style="width:34px;height:34px;border-radius:11px;background:#8b7bff;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 14px -4px rgba(139,123,255,.6);flex-shrink:0;">🦉</div>
+      <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;letter-spacing:-.02em;color:#f4f2fa;">owely</span>
+    </button>
+    <button data-navlink="how" onclick="{{ navHow }}" style="height:34px;padding:0 12px;border-radius:8px;background:none;border:none;cursor:pointer;color:#807c92;font-size:13.5px;font-weight:500;font-family:'Plus Jakarta Sans',sans-serif;transition:color .15s,background .15s;" style-hover="color:#f4f2fa;">How it works</button>
+    <button data-navlink="features" onclick="{{ navFeatures }}" style="height:34px;padding:0 12px;border-radius:8px;background:none;border:none;cursor:pointer;color:#807c92;font-size:13.5px;font-weight:500;font-family:'Plus Jakarta Sans',sans-serif;transition:color .15s,background .15s;" style-hover="color:#f4f2fa;">Features</button>
+    <button data-navlink="pricing" onclick="{{ navPricing }}" style="height:34px;padding:0 12px;border-radius:8px;background:none;border:none;cursor:pointer;color:#807c92;font-size:13.5px;font-weight:500;font-family:'Plus Jakarta Sans',sans-serif;transition:color .15s,background .15s;" style-hover="color:#f4f2fa;">Pricing</button>
+    <button data-navlink="why" onclick="{{ navWhy }}" style="height:34px;padding:0 12px;border-radius:8px;background:none;border:none;cursor:pointer;color:#807c92;font-size:13.5px;font-weight:500;font-family:'Plus Jakarta Sans',sans-serif;transition:color .15s,background .15s;" style-hover="color:#f4f2fa;">Why Owely</button>
+    <div style="flex:1;"></div>
+    <a data-magnet href="/login" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 20px;border-radius:11px;background:#8b7bff;color:#fff;font-weight:700;font-size:13.5px;text-decoration:none;box-shadow:0 6px 22px -6px rgba(139,123,255,.72);transition:box-shadow .2s;" style-hover="box-shadow:0 12px 32px -4px rgba(139,123,255,.9);">
+      Login
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+    </a>
+  </nav>
+
+  <div style="position:relative;z-index:1;height:100vh;overflow:hidden;">
+
+    <!-- HOME -->
+    <div id="pg-home" style="position:absolute;inset:0;padding-top:64px;display:flex;align-items:center;justify-content:center;padding-left:48px;padding-right:48px;">
+      <div style="width:100%;max-width:1200px;display:flex;align-items:center;gap:56px;flex-wrap:wrap;">
+
+        <div style="flex:1;min-width:300px;max-width:560px;">
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#17151f;border:1px solid rgba(255,255,255,.08);border-radius:100px;padding:6px 14px;margin-bottom:26px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#54e0a0;flex-shrink:0;animation:ow-pulse 2s ease infinite;"></span>
+            <span style="font-size:12px;color:#c9c5d8;font-weight:500;">India-first · UPI-native 🦉</span>
+          </div>
+          <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(46px,5vw,76px);line-height:.95;letter-spacing:-.035em;margin:0 0 20px 0;">Split anything.<br><span style="color:#8b7bff;">Settle in one tap.</span></h1>
+          <p style="font-size:16.5px;line-height:1.65;color:#a7a3b8;max-width:440px;margin:0 0 32px 0;">Owely splits bills to the exact paise and settles over UPI — no chasing friends, no awkward math. Smart, fast, free to start.</p>
+          <a data-magnet href="/login" style="display:inline-flex;align-items:center;gap:10px;height:56px;padding:0 30px;border-radius:16px;background:#8b7bff;color:#fff;font-weight:700;font-size:16px;text-decoration:none;font-family:'Plus Jakarta Sans',sans-serif;animation:ow-glow 3s ease infinite;" style-hover="transform:translateY(-1px);">
+            Login to Owely
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+          </a>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:24px;">
+            <div style="display:flex;">
+              <div style="width:29px;height:29px;border-radius:50%;background:#8b7bff;border:2.5px solid #0b0a0e;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;color:#fff;z-index:5;position:relative;">A</div>
+              <div style="width:29px;height:29px;border-radius:50%;background:#ff6fb5;border:2.5px solid #0b0a0e;margin-left:-8px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;color:#100f15;z-index:4;position:relative;">D</div>
+              <div style="width:29px;height:29px;border-radius:50%;background:#45d0e0;border:2.5px solid #0b0a0e;margin-left:-8px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;color:#100f15;z-index:3;position:relative;">R</div>
+              <div style="width:29px;height:29px;border-radius:50%;background:#ffc24b;border:2.5px solid #0b0a0e;margin-left:-8px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;color:#100f15;z-index:2;position:relative;">M</div>
+              <div style="width:29px;height:29px;border-radius:50%;background:#54e0a0;border:2.5px solid #0b0a0e;margin-left:-8px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;color:#100f15;z-index:1;position:relative;">K</div>
+            </div>
+            <span style="font-size:12px;color:#807c92;">No ads · No fees · Made in India 🇮🇳</span>
+          </div>
+        </div>
+
+        <div style="flex:0 0 auto;position:relative;">
+          <div style="position:absolute;top:-14px;left:-96px;z-index:2;background:#17151f;border:1px solid rgba(255,255,255,.09);border-radius:13px;padding:9px 12px;display:flex;align-items:center;gap:8px;box-shadow:0 16px 34px -10px rgba(0,0,0,.7);animation:ow-floats 4.2s ease-in-out infinite;">
+            <div style="width:30px;height:30px;border-radius:9px;background:rgba(255,170,80,.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🍽️</div>
+            <div><div style="font-size:11.5px;font-weight:600;color:#f4f2fa;">Beach dinner</div><div style="font-size:10px;color:#807c92;">₹2,850 · split 4</div></div>
+          </div>
+          <div style="position:absolute;bottom:80px;right:-104px;z-index:2;background:#17151f;border:1px solid rgba(84,224,160,.14);border-radius:13px;padding:9px 12px;display:flex;align-items:center;gap:8px;box-shadow:0 16px 34px -10px rgba(0,0,0,.7);animation:ow-floats 3.8s ease-in-out infinite;animation-delay:-1.6s;">
+            <div style="width:30px;height:30px;border-radius:9px;background:rgba(84,224,160,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">✓</div>
+            <div><div style="font-size:11.5px;font-weight:600;color:#54e0a0;">Settled via GPay</div><div style="font-size:10px;color:#807c92;">₹820 received</div></div>
+          </div>
+          <div style="width:276px;height:540px;border-radius:42px;background:#050507;box-shadow:0 60px 110px -26px rgba(0,0,0,.9),0 0 0 7px #141320;overflow:hidden;display:flex;flex-direction:column;animation:ow-float 5.5s ease-in-out infinite;">
+            <div style="height:44px;background:#0b0a0e;display:flex;align-items:center;justify-content:space-between;padding:12px 22px 0;flex-shrink:0;">
+              <span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12.5px;">9:41</span>
+              <span style="font-family:'Space Grotesk',sans-serif;font-size:10px;color:#a7a3b8;">5G</span>
+            </div>
+            <div style="flex:1;background:#100f15;padding:14px 16px;overflow:hidden;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
+                <div><div style="font-size:10px;color:#807c92;margin-bottom:2px;">Goa Trip 🌴</div><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#f4f2fa;">Balances</div></div>
+                <div style="display:flex;align-items:center;gap:5px;">
+                  <div style="width:29px;height:29px;border-radius:9px;background:#8b7bff;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;color:#fff;">A</div>
+                  <span style="background:rgba(139,123,255,.12);border:1px solid rgba(139,123,255,.26);border-radius:100px;padding:2px 6px;font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b6abff;">PRO</span>
+                </div>
+              </div>
+              <div style="border-radius:15px;background:#17151f;border:1px solid rgba(139,123,255,.18);padding:13px;margin-bottom:9px;">
+                <div style="font-size:10px;color:#a7a3b8;margin-bottom:3px;">You're owed</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:25px;color:#54e0a0;">+₹1,240</div>
+                <div style="font-size:9px;color:#56536a;margin-top:1px;">from 2 people</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:8px;background:#17151f;border-radius:11px;padding:8px 10px;">
+                  <div style="width:25px;height:25px;border-radius:50%;background:#45d0e0;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;color:#100f15;flex-shrink:0;">R</div>
+                  <span style="flex:1;font-size:11px;color:#d9d6e4;">Rohan → You</span>
+                  <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11.5px;color:#54e0a0;">₹820</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;background:#17151f;border-radius:11px;padding:8px 10px;">
+                  <div style="width:25px;height:25px;border-radius:50%;background:#ffc24b;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:10px;color:#100f15;flex-shrink:0;">M</div>
+                  <span style="flex:1;font-size:11px;color:#d9d6e4;">Meera → You</span>
+                  <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11.5px;color:#54e0a0;">₹420</span>
+                </div>
+              </div>
+              <div style="height:40px;border-radius:12px;background:#8b7bff;display:flex;align-items:center;justify-content:center;gap:6px;color:#fff;font-weight:700;font-size:12.5px;box-shadow:0 8px 20px -8px rgba(139,123,255,.7);">Settle via UPI <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></div>
+            </div>
+            <div style="height:26px;background:#0b0a0e;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <div style="width:106px;height:4px;border-radius:4px;background:#262333;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div id="pg-how" style="position:absolute;inset:0;padding-top:64px;display:none;overflow-y:auto;">
+      <div style="max-width:1060px;margin:0 auto;padding:52px 44px 60px;">
+        <div style="text-align:center;margin-bottom:48px;">
+          <span style="display:block;font-size:11.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#45e0c8;margin-bottom:12px;">How it works</span>
+          <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(32px,4vw,52px);line-height:1.04;letter-spacing:-.025em;margin:0 0 12px 0;">From bill to settled in 30 seconds.</h2>
+          <p style="font-size:15px;color:#807c92;margin:0;">No learning curve. Enter → calculate → settle.</p>
+        </div>
+        <div style="display:flex;align-items:flex-start;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;text-align:center;padding:0 24px;">
+            <div style="width:62px;height:62px;border-radius:18px;background:rgba(139,123,255,.1);border:1px solid rgba(139,123,255,.18);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px auto;">📝</div>
+            <div style="font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#8b7bff;margin-bottom:8px;">Step 1</div>
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:17px;margin:0 0 8px 0;color:#f4f2fa;">Add expense</h3>
+            <p style="font-size:13px;line-height:1.6;color:#a7a3b8;margin:0 0 14px 0;">Amount, who paid, split method — done in 5 seconds.</p>
+            <div style="background:#17151f;border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:12px;text-align:left;">
+              <div style="font-size:9.5px;color:#807c92;margin-bottom:5px;">New expense</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#f4f2fa;margin-bottom:5px;">₹2,450</div>
+              <div style="font-size:11px;color:#d9d6e4;margin-bottom:6px;">🍽️ Beach dinner</div>
+              <div style="display:flex;gap:4px;"><div style="background:rgba(139,123,255,.12);border-radius:7px;padding:3px 7px;font-size:9px;color:#b6abff;font-weight:600;">Arjun paid</div><div style="background:rgba(255,255,255,.06);border-radius:7px;padding:3px 7px;font-size:9px;color:#a7a3b8;">Split equally</div></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;padding-top:74px;width:36px;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#56536a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+          </div>
+          <div style="flex:1;min-width:200px;text-align:center;padding:0 24px;">
+            <div style="width:62px;height:62px;border-radius:18px;background:rgba(69,224,200,.07);border:1px solid rgba(69,224,200,.17);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px auto;">🪄</div>
+            <div style="font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#45e0c8;margin-bottom:8px;">Step 2</div>
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:17px;margin:0 0 8px 0;color:#f4f2fa;">Owely calculates</h3>
+            <p style="font-size:13px;line-height:1.6;color:#a7a3b8;margin:0 0 14px 0;">8 tangled debts → 3 clean transfers. Auto-minimized.</p>
+            <div style="background:#17151f;border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:12px;text-align:left;">
+              <div style="font-size:9.5px;color:#807c92;margin-bottom:7px;">Simplified transfers</div>
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <div style="display:flex;align-items:center;gap:6px;"><div style="width:6px;height:6px;border-radius:50%;background:#54e0a0;flex-shrink:0;"></div><span style="font-size:10.5px;color:#d9d6e4;flex:1;">Rohan → Arjun</span><span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:11px;color:#54e0a0;">₹820</span></div>
+                <div style="display:flex;align-items:center;gap:6px;"><div style="width:6px;height:6px;border-radius:50%;background:#54e0a0;flex-shrink:0;"></div><span style="font-size:10.5px;color:#d9d6e4;flex:1;">Meera → Arjun</span><span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:11px;color:#54e0a0;">₹420</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;padding-top:74px;width:36px;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#56536a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+          </div>
+          <div style="flex:1;min-width:200px;text-align:center;padding:0 24px;">
+            <div style="width:62px;height:62px;border-radius:18px;background:rgba(84,224,160,.07);border:1px solid rgba(84,224,160,.17);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px auto;">⚡</div>
+            <div style="font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#54e0a0;margin-bottom:8px;">Step 3</div>
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:17px;margin:0 0 8px 0;color:#f4f2fa;">Settle in one tap</h3>
+            <p style="font-size:13px;line-height:1.6;color:#a7a3b8;margin:0 0 14px 0;">Opens GPay/PhonePe with exact amount pre-filled. Done.</p>
+            <div style="background:#17151f;border:1px solid rgba(84,224,160,.12);border-radius:13px;padding:12px;text-align:left;">
+              <div style="font-size:9.5px;color:#807c92;margin-bottom:5px;">Pay Arjun</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#54e0a0;margin-bottom:8px;">₹820</div>
+              <div style="height:33px;border-radius:9px;background:#8b7bff;display:flex;align-items:center;justify-content:center;gap:5px;font-size:11.5px;font-weight:700;color:#fff;">Settle via UPI <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></div>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:48px;">
+          <a href="/login" data-magnet style="display:inline-flex;align-items:center;gap:8px;height:50px;padding:0 26px;border-radius:13px;background:#8b7bff;color:#fff;font-weight:700;font-size:14.5px;text-decoration:none;box-shadow:0 12px 32px -8px rgba(139,123,255,.65);" style-hover="box-shadow:0 16px 40px -6px rgba(139,123,255,.82);">Login to Owely <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEATURES -->
+    <div id="pg-features" style="position:absolute;inset:0;padding-top:64px;display:none;overflow-y:auto;">
+      <div style="max-width:1160px;margin:0 auto;padding:44px 44px 60px;">
+        <div style="text-align:center;margin-bottom:36px;">
+          <span style="display:block;font-size:11.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#8b7bff;margin-bottom:12px;">Features</span>
+          <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(30px,3.8vw,48px);line-height:1.05;letter-spacing:-.025em;margin:0;color:#f4f2fa;">Everything you need to split smarter.</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:13px;">
+          <div style="grid-column:span 2;background:#100f15;border:1px solid rgba(255,255,255,.07);border-radius:17px;padding:22px;position:relative;overflow:hidden;transition:border-color .2s,transform .2s;" style-hover="border-color:rgba(139,123,255,.22);transform:translateY(-2px);">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px;"><div style="width:38px;height:38px;border-radius:11px;background:rgba(139,123,255,.1);display:flex;align-items:center;justify-content:center;font-size:19px;">🪄</div><h3 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15.5px;margin:0;color:#f4f2fa;">Smart debt simplification</h3></div>
+            <p style="font-size:13px;line-height:1.6;color:#a7a3b8;margin:0 0 14px 0;max-width:360px;">Owely nets everyone out and finds the minimum transfers — 8 tangled debts become 3 clean payments.</p>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="background:#17151f;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:6px;"><span style="font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;color:#ff7a8a;">8</span><span style="font-size:9.5px;color:#807c92;line-height:1.3;">tangled<br>debts</span></div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b7bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+              <div style="background:rgba(84,224,160,.07);border:1px solid rgba(84,224,160,.18);border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:6px;"><span style="font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;color:#54e0a0;">3</span><span style="font-size:9.5px;color:#7fcfa6;line-height:1.3;">clean<br>transfers</span></div>
+            </div>
+            <div style="position:absolute;top:-30px;right:-10px;width:140px;height:140px;border-radius:50%;background:#8b7bff;filter:blur(55px);opacity:.1;pointer-events:none;"></div>
+          </div>
+          <div style="background:#100f15;border:1px solid rgba(255,255,255,.07);border-radius:17px;padding:22px;transition:border-color .2s,transform .2s;" style-hover="border-color:rgba(69,224,200,.2);transform:translateY(-2px);">
+            <div style="width:38px;height:38px;border-radius:11px;background:rgba(69,224,200,.07);display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:11px;">⚡</div>
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15.5px;margin:0 0 7px 0;color:#f4f2fa;">One-tap UPI settle</h3>
+            <p style="font-size:13px;line-height:1.6;color:#a7a3b8;margin:0;">Opens GPay, PhonePe, or any UPI app. Owely never holds your money.</p>
+          </div>
+          <div style="background:#100f15;border:1px solid rgba(255,255,255,.07);border-radius:17px;padding:22px;transition:border-color .2s,transform .2s;" style-hover="border-color:rgba(255,194,75,.2);transform:translateY(-2px);">
+            <div style="width:38px;height:38px;border-radius:11px;background:rgba(255,194,75,.07);display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:11px;">🧾</div>
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15.5px;margin:0 0 7px 0;color:#f4f2fa;">Split any way</h3>
+            <p style="font-size:13px;line-height:1.6;color:#a7a3b8;margin:0;">Equal, unequal, or percentage — reconciled to the exact paise.</p>
+          </div>
+          <div style="background:#100f15;border:1px solid rgba(255,255,255,.07);border-radius:17px;padding:22px;transition:border-color .2s,transform .2s;" style-hover="border-color:rgba(139,123,255,.2);transform:translateY(-2px);">
+            <div style="width:38px;height:38px;border-radius:11px;background:rgba(139,123,255,.07);display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:11px;">🏕️</div>
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15.5px;margin:0 0 7px 0;color:#f4f2fa;">Smart group modes</h3>
+            <p style="font-size:13px;line-height:1.6;color:#a7a3b8;margin:0;">Trip, Roommates, Couple, Office Lunch — smart defaults per context.</p>
+          </div>
+          <div style="background:#100f15;border:1px solid rgba(255,255,255,.07);border-radius:17px;padding:22px;transition:border-color .2s,transform .2s;" style-hover="border-color:rgba(255,138,91,.2);transform:translateY(-2px);">
+            <div style="width:38px;height:38px;border-radius:11px;background:rgba(255,138,91,.07);display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:11px;">📶</div>
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15.5px;margin:0 0 7px 0;color:#f4f2fa;">Works offline</h3>
+            <p style="font-size:13px;line-height:1.6;color:#a7a3b8;margin:0;">Add expenses on 2G. Syncs the moment you're back online.</p>
+          </div>
+          <div style="background:#100f15;border:1px solid rgba(139,123,255,.15);border-radius:17px;padding:22px;position:relative;transition:border-color .2s,transform .2s;" style-hover="border-color:rgba(139,123,255,.28);transform:translateY(-2px);">
+            <div style="position:absolute;top:13px;right:13px;background:linear-gradient(90deg,rgba(139,123,255,.14),rgba(69,224,200,.09));border:1px solid rgba(139,123,255,.26);border-radius:100px;padding:2px 7px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b6abff;">✦ Pro</div>
+            <div style="width:38px;height:38px;border-radius:11px;background:rgba(139,123,255,.09);display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:11px;">🤖</div>
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15.5px;margin:0 0 7px 0;color:#f4f2fa;">AI receipt scanner</h3>
+            <p style="font-size:13px;line-height:1.6;color:#a7a3b8;margin:0;">Snap a receipt — extracts amount, merchant, date automatically.</p>
+          </div>
+          <div style="background:#100f15;border:1px solid rgba(139,123,255,.15);border-radius:17px;padding:22px;position:relative;transition:border-color .2s,transform .2s;" style-hover="border-color:rgba(139,123,255,.28);transform:translateY(-2px);">
+            <div style="position:absolute;top:13px;right:13px;background:linear-gradient(90deg,rgba(139,123,255,.14),rgba(69,224,200,.09));border:1px solid rgba(139,123,255,.26);border-radius:100px;padding:2px 7px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b6abff;">✦ Pro</div>
+            <div style="width:38px;height:38px;border-radius:11px;background:rgba(69,224,200,.06);display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:11px;">📄</div>
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15.5px;margin:0 0 7px 0;color:#f4f2fa;">PDF export</h3>
+            <p style="font-size:13px;line-height:1.6;color:#a7a3b8;margin:0;">Full group ledger as a clean PDF — expenses, settlements, balances.</p>
+          </div>
+          <div style="background:#100f15;border:1px solid rgba(139,123,255,.15);border-radius:17px;padding:22px;position:relative;transition:border-color .2s,transform .2s;" style-hover="border-color:rgba(139,123,255,.28);transform:translateY(-2px);">
+            <div style="position:absolute;top:13px;right:13px;background:linear-gradient(90deg,rgba(139,123,255,.14),rgba(69,224,200,.09));border:1px solid rgba(139,123,255,.26);border-radius:100px;padding:2px 7px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b6abff;">✦ Pro</div>
+            <div style="width:38px;height:38px;border-radius:11px;background:rgba(255,122,138,.06);display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:11px;">🔄</div>
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15.5px;margin:0 0 7px 0;color:#f4f2fa;">Recurring expenses</h3>
+            <p style="font-size:13px;line-height:1.6;color:#a7a3b8;margin:0;">Rent, utilities — auto-added monthly on the right day.</p>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:32px;">
+          <a href="/login" data-magnet style="display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 24px;border-radius:13px;background:#8b7bff;color:#fff;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 10px 28px -6px rgba(139,123,255,.6);" style-hover="box-shadow:0 14px 36px -4px rgba(139,123,255,.78);">Login to Owely →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRICING -->
+    <div id="pg-pricing" style="position:absolute;inset:0;padding-top:64px;display:none;overflow-y:auto;">
+      <div style="max-width:980px;margin:0 auto;padding:44px 44px 60px;">
+        <div style="text-align:center;margin-bottom:36px;">
+          <span style="display:block;font-size:11.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#8b7bff;margin-bottom:12px;">Pricing</span>
+          <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(30px,3.8vw,48px);line-height:1.05;letter-spacing:-.025em;margin:0 0 10px 0;color:#f4f2fa;">Start free. Go Pro when you need it.</h2>
+          <p style="font-size:13.5px;color:#807c92;margin:0;">No transaction fees · Cancel anytime · Made in India 🇮🇳</p>
+        </div>
+        <div style="display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;">
+          <div style="flex:1;min-width:250px;background:#100f15;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:26px;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;color:#f4f2fa;">Free</span><span style="background:#1d1b26;border-radius:100px;padding:2px 8px;font-size:10px;font-weight:600;color:#a7a3b8;">For getting started</span></div>
+            <div style="display:flex;align-items:baseline;gap:3px;margin:10px 0 4px 0;"><span style="font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:700;line-height:1;color:#f4f2fa;">₹0</span><span style="font-size:13px;color:#807c92;">/month</span></div>
+            <p style="font-size:12px;color:#807c92;margin:0 0 18px 0;">Everything to get started splitting.</p>
+            <div style="display:flex;flex-direction:column;gap:9px;flex:1;margin-bottom:18px;">
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(84,224,160,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#54e0a0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#d9d6e4;"><strong>100 expenses</strong>/month per group</span></div>
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(84,224,160,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#54e0a0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#d9d6e4;"><strong>Unlimited groups</strong></span></div>
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(84,224,160,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#54e0a0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#d9d6e4;">Smart debt simplification</span></div>
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(84,224,160,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#54e0a0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#d9d6e4;">One-tap UPI settle</span></div>
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(84,224,160,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#54e0a0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#d9d6e4;">Works offline</span></div>
+            </div>
+            <a href="/login" style="display:flex;align-items:center;justify-content:center;height:46px;border-radius:12px;background:#17151f;border:1px solid rgba(255,255,255,.1);color:#f4f2fa;font-weight:600;font-size:13.5px;text-decoration:none;transition:background .2s;" style-hover="background:#1d1b26;">Get started free</a>
+          </div>
+          <div style="flex:1;min-width:250px;background:#13111c;border:1.5px solid rgba(139,123,255,.3);border-radius:20px;padding:26px;display:flex;flex-direction:column;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:-45px;right:-25px;width:160px;height:160px;border-radius:50%;background:#8b7bff;filter:blur(65px);opacity:.16;pointer-events:none;"></div>
+            <div style="position:relative;display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;color:#f4f2fa;">Pro</span><span style="background:#8b7bff;border-radius:100px;padding:2px 9px;font-size:10px;font-weight:700;color:#fff;">Most popular</span></div>
+            <div style="position:relative;display:flex;align-items:baseline;gap:3px;margin:10px 0 4px 0;"><span style="font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:700;line-height:1;color:#f4f2fa;">₹99</span><span style="font-size:13px;color:#807c92;">/month</span></div>
+            <p style="position:relative;font-size:12px;color:#a7a3b8;margin:0 0 18px 0;">Everything in Free, plus unlimited everything.</p>
+            <div style="position:relative;display:flex;flex-direction:column;gap:9px;flex:1;margin-bottom:18px;">
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(139,123,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#b6abff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#f4f2fa;"><strong>Unlimited expenses</strong></span></div>
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(139,123,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#b6abff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#f4f2fa;"><strong>AI receipt scanner</strong></span></div>
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(139,123,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#b6abff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#f4f2fa;"><strong>PDF export</strong></span></div>
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(139,123,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#b6abff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#f4f2fa;"><strong>Recurring expenses</strong></span></div>
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(139,123,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#b6abff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#f4f2fa;">Templates + multi-currency</span></div>
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(139,123,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#b6abff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#f4f2fa;"><strong>Pro badge</strong> ✦ + priority support</span></div>
+            </div>
+            <a data-magnet href="/login" style="position:relative;display:flex;align-items:center;justify-content:center;gap:7px;height:46px;border-radius:12px;background:#8b7bff;color:#fff;font-weight:700;font-size:13.5px;text-decoration:none;box-shadow:0 10px 26px -6px rgba(139,123,255,.6);transition:box-shadow .2s;" style-hover="box-shadow:0 14px 34px -4px rgba(139,123,255,.78);">Go Pro →</a>
+          </div>
+          <div style="flex:1;min-width:250px;background:#100f15;border:1px solid rgba(69,224,200,.17);border-radius:20px;padding:26px;display:flex;flex-direction:column;position:relative;overflow:hidden;">
+            <div style="position:absolute;bottom:-24px;left:-8px;width:130px;height:130px;border-radius:50%;background:#45e0c8;filter:blur(45px);opacity:.08;pointer-events:none;"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;color:#f4f2fa;">Trip Pass</span><span style="background:rgba(69,224,200,.1);border:1px solid rgba(69,224,200,.2);border-radius:100px;padding:2px 8px;font-size:10px;font-weight:600;color:#45e0c8;">One-time</span></div>
+            <div style="display:flex;align-items:baseline;gap:3px;margin:10px 0 4px 0;"><span style="font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:700;line-height:1;color:#45e0c8;">₹49</span><span style="font-size:13px;color:#807c92;">one-time</span></div>
+            <p style="font-size:12px;color:#807c92;margin:0 0 18px 0;">All Pro features for one group — 30 days.</p>
+            <div style="display:flex;flex-direction:column;gap:9px;flex:1;margin-bottom:18px;">
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(69,224,200,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#45e0c8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#d9d6e4;">All Pro for <strong>one group</strong></span></div>
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(69,224,200,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#45e0c8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#d9d6e4;">Valid for <strong>30 days</strong></span></div>
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(69,224,200,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#45e0c8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#d9d6e4;">Perfect for <strong>trips</strong> with friends</span></div>
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:17px;height:17px;border-radius:50%;background:rgba(69,224,200,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#45e0c8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span style="font-size:13px;color:#d9d6e4;">No subscription needed</span></div>
+            </div>
+            <a href="/login" style="display:flex;align-items:center;justify-content:center;height:46px;border-radius:12px;background:rgba(69,224,200,.08);border:1px solid rgba(69,224,200,.25);color:#45e0c8;font-weight:700;font-size:13.5px;text-decoration:none;transition:background .2s;" style-hover="background:rgba(69,224,200,.13);">Get Trip Pass</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHY OWELY -->
+    <div id="pg-why" style="position:absolute;inset:0;padding-top:64px;display:none;overflow-y:auto;">
+      <div style="max-width:1040px;margin:0 auto;padding:44px 44px 60px;">
+        <div style="text-align:center;margin-bottom:36px;">
+          <span style="display:block;font-size:11.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#45e0c8;margin-bottom:12px;">Why Owely</span>
+          <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(30px,3.8vw,48px);line-height:1.05;letter-spacing:-.025em;margin:0;color:#f4f2fa;">Built for India. Built for real friends.</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+          <div style="background:#100f15;border:1px solid rgba(139,123,255,.14);border-radius:17px;padding:24px;">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px;">
+              <div style="width:36px;height:36px;border-radius:10px;background:#8b7bff;display:flex;align-items:center;justify-content:center;font-size:17px;">🦉</div>
+              <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#f4f2fa;">Owely</span>
+              <span style="background:rgba(84,224,160,.08);border:1px solid rgba(84,224,160,.18);border-radius:100px;padding:2px 7px;font-size:9.5px;font-weight:600;color:#54e0a0;">India-first</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#54e0a0;font-size:13px;flex-shrink:0;line-height:1.6;">✓</span><span style="font-size:13px;color:#d9d6e4;">UPI-native settle (GPay, PhonePe, any UPI)</span></div>
+              <div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#54e0a0;font-size:13px;flex-shrink:0;line-height:1.6;">✓</span><span style="font-size:13px;color:#d9d6e4;">Paise-exact — never loses a rupee to rounding</span></div>
+              <div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#54e0a0;font-size:13px;flex-shrink:0;line-height:1.6;">✓</span><span style="font-size:13px;color:#d9d6e4;">Smart modes: Trip, Roommates, Couple, Office</span></div>
+              <div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#54e0a0;font-size:13px;flex-shrink:0;line-height:1.6;">✓</span><span style="font-size:13px;color:#d9d6e4;">Works offline on 2G — add expenses anywhere</span></div>
+              <div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#54e0a0;font-size:13px;flex-shrink:0;line-height:1.6;">✓</span><span style="font-size:13px;color:#d9d6e4;">Free with generous limits · Zero ads</span></div>
+              <div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#54e0a0;font-size:13px;flex-shrink:0;line-height:1.6;">✓</span><span style="font-size:13px;color:#d9d6e4;">Monthly close + carry-forward for roommates</span></div>
+            </div>
+          </div>
+          <div style="background:#100f15;border:1px solid rgba(255,255,255,.05);border-radius:17px;padding:24px;opacity:.7;">
+            <div style="margin-bottom:16px;"><span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#807c92;">Other apps</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#ff7a8a;font-size:13px;flex-shrink:0;line-height:1.6;">✗</span><span style="font-size:13px;color:#807c92;">No UPI — manual bank transfers only</span></div>
+              <div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#ff7a8a;font-size:13px;flex-shrink:0;line-height:1.6;">✗</span><span style="font-size:13px;color:#807c92;">USD-first, poor INR handling and rounding</span></div>
+              <div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#ff7a8a;font-size:13px;flex-shrink:0;line-height:1.6;">✗</span><span style="font-size:13px;color:#807c92;">Generic groups — no context-aware modes</span></div>
+              <div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#ff7a8a;font-size:13px;flex-shrink:0;line-height:1.6;">✗</span><span style="font-size:13px;color:#807c92;">Requires internet at all times</span></div>
+              <div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#ff7a8a;font-size:13px;flex-shrink:0;line-height:1.6;">✗</span><span style="font-size:13px;color:#807c92;">Ads or expensive subscriptions</span></div>
+              <div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#ff7a8a;font-size:13px;flex-shrink:0;line-height:1.6;">✗</span><span style="font-size:13px;color:#807c92;">No monthly close for roommates</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg,rgba(139,123,255,.07),rgba(69,224,200,.05));border:1px solid rgba(255,255,255,.07);border-radius:17px;padding:22px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div style="font-size:30px;">🇮🇳</div>
+          <div style="flex:1;min-width:200px;"><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;color:#f4f2fa;margin-bottom:3px;">Made in India, for India</div><div style="font-size:13px;color:#a7a3b8;">From Goa trips to PG roommates — Owely understands how Indians split money.</div></div>
+          <a href="/login" data-magnet style="display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 20px;border-radius:11px;background:#8b7bff;color:#fff;font-weight:700;font-size:13.5px;text-decoration:none;box-shadow:0 8px 20px -6px rgba(139,123,255,.6);flex-shrink:0;" style-hover="box-shadow:0 12px 28px -4px rgba(139,123,255,.75);">Login →</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: {&quot;width&quot;: 1440, &quot;height&quot;: 900}
+}">
+class Component extends DCLogic {
+  _raf = null;
+  _handlers = [];
+
+  componentDidMount() {
+    this._initParticles();
+    this._initInteractions();
+    this._showPage('home', false);
+  }
+
+  componentWillUnmount() {
+    if (this._raf) cancelAnimationFrame(this._raf);
+    this._handlers.forEach(([el, ev, fn]) => el.removeEventListener(ev, fn));
+  }
+
+  _on(el, ev, fn) {
+    el.addEventListener(ev, fn);
+    this._handlers.push([el, ev, fn]);
+  }
+
+  _initParticles() {
+    const canvas = document.getElementById('ow-pc');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const N = 52;
+    let W = 0, H = 0, pts = [];
+
+    const resize = () => {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+      if (!pts.length) {
+        pts = Array.from({length: N}, () => ({
+          x: Math.random() * W, y: Math.random() * H,
+          vx: (Math.random() - .5) * .35, vy: (Math.random() - .5) * .35,
+          r: Math.random() * 1.4 + .4, o: Math.random() * .32 + .1,
+        }));
+      }
+    };
+    this._on(window, 'resize', resize);
+    resize();
+
+    let mx = -9999, my = -9999;
+    this._on(window, 'mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+    const tick = () => {
+      ctx.clearRect(0, 0, W, H);
+      pts.forEach(p => {
+        const dx = p.x - mx, dy = p.y - my, d2 = dx*dx + dy*dy;
+        if (d2 < 5625) { const d = Math.sqrt(d2); p.vx += (dx/d)*.1; p.vy += (dy/d)*.1; }
+        p.vx *= .993; p.vy *= .993;
+        p.x = (p.x + p.vx + W) % W;
+        p.y = (p.y + p.vy + H) % H;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283);
+        ctx.fillStyle = `rgba(139,123,255,${p.o})`; ctx.fill();
+      });
+      for (let i = 0; i < N; i++) {
+        for (let j = i+1; j < N; j++) {
+          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+          const d2 = dx*dx + dy*dy;
+          if (d2 < 9025) {
+            const alpha = .12 * (1 - Math.sqrt(d2) / 95);
+            ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y);
+            ctx.strokeStyle = `rgba(139,123,255,${alpha})`; ctx.lineWidth = .5; ctx.stroke();
+          }
+        }
+      }
+      this._raf = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+
+  _initInteractions() {
+    document.querySelectorAll('[data-magnet]').forEach(el => {
+      this._on(el, 'mousemove', e => {
+        const r = el.getBoundingClientRect();
+        const x = (e.clientX - r.left - r.width/2) * .28;
+        const y = (e.clientY - r.top - r.height/2) * .28;
+        el.style.transform = `translate(${x}px,${y}px) scale(1.04)`;
+        el.style.transition = 'transform .08s ease';
+      });
+      this._on(el, 'mouseleave', () => {
+        el.style.transform = '';
+        el.style.transition = 'transform .45s cubic-bezier(.34,1.56,.64,1)';
+        setTimeout(() => { if (el) el.style.transition = ''; }, 500);
+      });
+    });
+
+    this._on(window, 'mousemove', e => {
+      const ox = (e.clientX/window.innerWidth - .5) * 44;
+      const oy = (e.clientY/window.innerHeight - .5) * 44;
+      document.querySelectorAll('[data-orb]').forEach((o, i) => {
+        const f = i % 2 === 0 ? 1 : -.65;
+        o.style.transform = `translate(${ox*f}px,${oy*f}px)`;
+        o.style.transition = 'transform .9s ease';
+      });
+    });
+  }
+
+  _showPage(id, animated = true) {
+    const displays = { home: 'flex', how: 'block', features: 'block', pricing: 'block', why: 'block' };
+    Object.keys(displays).forEach(p => {
+      const el = document.getElementById(`pg-${p}`);
+      if (!el) return;
+      if (p === id) {
+        el.style.display = displays[p];
+        el.style.pointerEvents = 'auto';
+        if (animated) {
+          el.style.opacity = '0';
+          el.style.transform = 'translateX(20px) scale(.99)';
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            el.style.transition = 'opacity .42s cubic-bezier(.16,1,.3,1),transform .42s cubic-bezier(.16,1,.3,1)';
+            el.style.opacity = '1';
+            el.style.transform = 'translateX(0) scale(1)';
+          }));
+        } else {
+          el.style.transition = 'none';
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        }
+      } else {
+        const wasVis = el.style.display !== 'none';
+        if (animated && wasVis) {
+          el.style.transition = 'opacity .22s ease,transform .22s ease';
+          el.style.opacity = '0';
+          el.style.transform = 'translateX(-14px) scale(.99)';
+          el.style.pointerEvents = 'none';
+          setTimeout(() => { if (el.style.opacity === '0') el.style.display = 'none'; }, 260);
+        } else {
+          el.style.display = 'none'; el.style.opacity = '0'; el.style.pointerEvents = 'none';
+        }
+      }
+    });
+    document.querySelectorAll('[data-navlink]').forEach(link => {
+      const active = link.dataset.navlink === id;
+      link.style.color = active ? '#f4f2fa' : '#807c92';
+      link.style.background = active ? 'rgba(139,123,255,.1)' : 'transparent';
+    });
+  }
+
+  renderVals() {
+    return {
+      navHome:     () => this._showPage('home'),
+      navHow:      () => this._showPage('how'),
+      navFeatures: () => this._showPage('features'),
+      navPricing:  () => this._showPage('pricing'),
+      navWhy:      () => this._showPage('why'),
+    };
+  }
+}
+</script>
+</body>
+</html>
