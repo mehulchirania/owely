@@ -155,16 +155,26 @@ export async function ensureUser(): Promise<ActionResult<User>> {
             currency: "INR" as const,
           }),
     };
-    await userRef.set(profile, { merge: true });
+    await Promise.all([
+      userRef.set(profile, { merge: true }),
+      linkPendingInvites(session.uid, session.phone, {
+        name: displayName,
+        phone: session.phone,
+        photoURL: session.picture,
+      }),
+    ]);
 
-    await linkPendingInvites(session.uid, session.phone, {
-      name: displayName,
+    const saved: User = {
+      uid: session.uid,
+      displayName,
+      email: session.email,
       phone: session.phone,
-      photoURL: session.picture,
-    });
-
-    const saved = await fetchUser(session.uid);
-    if (!saved) return failure("Could not load your profile.");
+      photoURL: session.picture ?? null,
+      tier: existing?.tier ?? "free",
+      currency: existing?.currency ?? "INR",
+      createdAt: existing?.createdAt ?? Date.now(),
+      ...(existing?.upiId !== undefined ? { upiId: existing.upiId } : {}),
+    };
     return success(saved);
   } catch (error) {
     logActionError("ensureUser", error);

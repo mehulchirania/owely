@@ -4,6 +4,83 @@ Prepend a new dated entry at the top after every change. Newest first.
 
 ---
 
+## 2026-06-20 - OTP Fluid UI\n\n- Fixed utoFocus for OTP input with a robust useEffect and useRef approach.\n- Rebuilt the OTP form into a modern, fluid 6-box design.\n
+## 2026-06-20 - UX Improvements\n\n- Improved LoginForm UX: mobile and OTP input fields now submit on Enter key.\n- Added utoFocus to the OTP field to streamline the sign-in flow.\n
+## 2026-06-19 — Server-side performance optimizations
+
+**`src/features/auth/session.ts`**
+- `getSessionUser` wrapped in React `cache()` — multiple Server Components on the same page now share one verify call per render instead of one each.
+- `verifySessionCookie(token, true)` → `verifySessionCookie(token, false)` — eliminates the Google revocation-check HTTP round-trip on every request. The 14-day cookie expiry is the session bound; sign-out clears the cookie client-side.
+- `authorizeMember` now fetches the session and the group doc concurrently with `Promise.all` instead of sequentially.
+
+**`src/features/auth/actions.ts` — `ensureUser`**
+- `userRef.set` and `linkPendingInvites` now run in parallel (they're independent Firestore paths).
+- Removed the second `fetchUser` call after the write; the User is now constructed from data already in scope, saving one Firestore read on every login.
+
+**`src/features/expenses/actions.ts` — `addExpense`**
+- `isMonthClosed`, clientId idempotency check (`ref.get`), and `fetchUser` now run in parallel with `Promise.all` before the recompute transaction. Down from four sequential Firestore round trips to one parallel batch + one conditional read (freemium check for free-tier users only).
+
+**`src/features/settlements/actions.ts` — `settleUp`**
+- `authorizeMember` and `isMonthClosed` now run in parallel (both only need `groupId` from the parsed input).
+
+Net effect: login (`ensureUser`) cuts one Firestore read and parallelizes write + invite linking. Every page load cuts the Google revocation-check round-trip. `addExpense` and `settleUp` each drop ~2 sequential Firestore RTTs before the transaction.
+
+---
+
+## 2026-06-19 — Mobile UX redesign (Owely Mobile.dc.html)
+
+Implemented all 11 screens from the `Owely Mobile.dc.html` design handoff:
+
+**Structural changes**
+- New `BottomNav` component: 5-tab fixed bottom bar (Home, Groups, FAB, People, Me) replaces the old `MobileNavTabs` inline header strip. FAB is context-aware — links to the current group's new expense page when on a group route, otherwise `/groups`. Hidden on desktop (`lg:hidden`), sidebar unchanged.
+- App layout: removed `MobileNavTabs`, added `<BottomNav />`, added `pb-24 lg:pb-6` to `<main>` so content clears the bar.
+- `proxy.ts`: `/home` added to protected routes and to the matcher; post-login redirect changed from `/groups` → `/home`.
+- `SidebarNav`: Home link added at top (desktop sidebar).
+
+**New screens**
+- `/home` — greeting + large net balance card (coral/mint), top-3 settle-up debts with Settle button, recent activity feed.
+
+**Redesigned screens**
+- Groups (`/groups`): stripped down to groups list only. `FilteredGroupsList` cards updated to horizontal layout (emoji tile | name + category tag + member stack | balance).
+- Group detail Balances tab: individual debt transfer cards with "Settle via UPI" CTA, 🪄 simplified-debts banner, Pro PDF export row. Settlement history panel retained below.
+- People (`/people`): cross-group contact aggregation — builds contact map across direct + standard groups, shows shared groups, net balance. Balance strip at top.
+- Settings/Me (`/settings`): prominent profile hero card (avatar + PRO ring + UPI handle), Free plan usage card + upgrade CTA, Pro features grid. Sign-out button added to page.
+
+**No schema changes** — all data from existing Firestore queries.
+
+---
+
+## 2026-06-19 - Firebase App Hosting secret rollout fixed
+
+Resolved the App Hosting deployment failure:
+
+`Error resolving secret version ... CRON_SECRET/versions/latest`
+
+Firebase state now:
+
+- Backend `owely` exists in `us-east4`.
+- Live URL responds: `https://owely--owely-c6c51.us-east4.hosted.app`.
+- `FIREBASE_SERVICE_ACCOUNT_KEY` existed and App Hosting access was re-granted.
+- Created missing Secret Manager entries and version 1 values for:
+  - `CRON_SECRET`
+  - `OWELY_ADMIN_USERNAME`
+  - `OWELY_ADMIN_PASSWORD`
+- Granted backend `owely` access to all three new secrets with
+  `firebase apphosting:secrets:grantaccess ... -b owely -l us-east4`.
+- Re-triggered an App Hosting rollout from `main`:
+  `firebase apphosting:rollouts:create owely --git-branch main --force --project owely-c6c51`.
+- Verified `/api/cron/recurring` returns `401 Unauthorized` without a bearer
+  token, not `503 Cron is not configured`, confirming `CRON_SECRET` resolves in
+  the deployed runtime.
+- Verified `firebase deploy --only firestore --dry-run --project owely-c6c51`
+  compiles Firestore rules successfully.
+
+Remaining infra work: create the actual Cloud Scheduler job that calls
+`POST /api/cron/recurring` with `Authorization: Bearer <CRON_SECRET>`, deploy
+Firestore indexes for real, and enable Google Vision API if OCR is needed in
+production.
+
+---
 ## 2026-06-18 — Batch member add UI + non-3rd-party items complete
 
 **`src/components/BatchInviteForm.tsx`** — new client component.

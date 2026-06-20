@@ -7,7 +7,7 @@
  * cookie is the source of truth from here on.
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   RecaptchaVerifier,
@@ -33,7 +33,7 @@ type PhoneStep = "phone" | "code";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/groups";
+  const next = searchParams.get("next") ?? "/home";
 
   const [pending, setPending] = useState<"google" | "phone" | null>(null);
   const [status, setStatus] = useState<string>("Verifying…");
@@ -41,9 +41,19 @@ export function LoginForm() {
   const [step, setStep] = useState<PhoneStep>("phone");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
+  const [isOtpFocused, setIsOtpFocused] = useState(false);
 
   const confirmationRef = useRef<ConfirmationResult | null>(null);
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
+  const otpInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (step === "code" && otpInputRef.current) {
+      // Use setTimeout to ensure it runs after DOM is painted
+      const timer = setTimeout(() => otpInputRef.current?.focus(), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [step]);
 
   async function finishSignIn(user: FirebaseUser): Promise<void> {
     setStatus("Starting session…");
@@ -100,8 +110,8 @@ export function LoginForm() {
     return recaptchaRef.current;
   }
 
-  async function handleSendOtp(e: React.FormEvent): Promise<void> {
-    e.preventDefault();
+  async function handleSendOtp(e?: React.SyntheticEvent): Promise<void> {
+    if (e) e.preventDefault();
     setError(null);
     if (phone.replace(/\D/g, "").length < 10) {
       setError("Enter a valid 10-digit mobile number.");
@@ -116,15 +126,15 @@ export function LoginForm() {
         getRecaptcha(),
       );
     } catch (e) {
-      setError(authErrorMessage(e));
+      setError(e instanceof Error && !("code" in e) ? e.message : authErrorMessage(e));
       setStep("phone");
     } finally {
       setPending(null);
     }
   }
 
-  async function handleVerifyOtp(e: React.FormEvent): Promise<void> {
-    e.preventDefault();
+  async function handleVerifyOtp(e?: React.SyntheticEvent): Promise<void> {
+    if (e) e.preventDefault();
     setError(null);
     if (!confirmationRef.current) {
       setError("Request a new code.");
@@ -155,22 +165,6 @@ export function LoginForm() {
         </p>
       )}
 
-      <button
-        type="button"
-        onClick={handleGoogle}
-        disabled={busy}
-        className="flex h-13 items-center justify-center gap-2.5 rounded-2xl bg-hi px-6 font-semibold text-ink transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
-      >
-        <GoogleGlyph />
-        {pending === "google" ? "Signing in…" : "Continue with Google"}
-      </button>
-
-      <div className="flex items-center gap-3 py-1 text-xs text-faint">
-        <span className="h-px flex-1 bg-white/8" />
-        or use your phone
-        <span className="h-px flex-1 bg-white/8" />
-      </div>
-
       {step === "phone" ? (
         <form onSubmit={handleSendOtp} className="flex flex-col gap-3">
           <label htmlFor="phone" className="text-sm font-medium text-strong">
@@ -187,6 +181,12 @@ export function LoginForm() {
               placeholder="98765 43210"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !busy) {
+                  e.preventDefault();
+                  handleSendOtp(e);
+                }
+              }}
               disabled={busy}
               className="h-13 flex-1 bg-transparent text-hi outline-none placeholder:text-faint"
             />
@@ -200,27 +200,59 @@ export function LoginForm() {
           </button>
         </form>
       ) : (
-        <form onSubmit={handleVerifyOtp} className="flex flex-col gap-3">
-          <label htmlFor="code" className="text-sm font-medium text-strong">
+        <form onSubmit={handleVerifyOtp} className="flex flex-col gap-5">
+          <label htmlFor="code" className="text-sm font-medium text-strong text-center">
             Enter the 6-digit code sent to {toE164(phone)}
           </label>
-          <input
-            id="code"
-            name="code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            placeholder="------"
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            disabled={busy}
-            className="h-13 rounded-2xl border border-white/8 bg-card px-3 text-center font-display text-lg tracking-[0.5em] text-hi outline-none placeholder:text-faint focus:border-accent/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
-          />
+          <div className="relative mx-auto flex gap-2 sm:gap-3">
+            <input
+              ref={otpInputRef}
+              id="code"
+              name="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !busy && code.length >= 6) {
+                  e.preventDefault();
+                  handleVerifyOtp(e);
+                }
+              }}
+              onFocus={() => setIsOtpFocused(true)}
+              onBlur={() => setIsOtpFocused(false)}
+              disabled={busy}
+              className="absolute inset-0 z-10 h-full w-full cursor-text text-transparent caret-transparent opacity-0 selection:bg-transparent"
+            />
+            {Array.from({ length: 6 }).map((_, i) => {
+              const char = code[i] || "";
+              const isActive = isOtpFocused && (code.length === i || (code.length === 6 && i === 5));
+              
+              return (
+                <div
+                  key={i}
+                  className={`relative pointer-events-none flex h-14 w-11 items-center justify-center rounded-2xl border sm:h-16 sm:w-12 text-2xl font-display text-hi transition-all duration-300 ${
+                    isActive && !busy
+                      ? "border-accent bg-accent/5 shadow-[0_0_16px_-4px_var(--color-accent)] ring-2 ring-accent/40"
+                      : "border-white/8 bg-card"
+                  }`}
+                >
+                  <span className={`transition-all duration-200 ${char ? "scale-100 opacity-100" : "scale-50 opacity-0"}`}>
+                    {char}
+                  </span>
+                  {isActive && !char && !busy && (
+                    <span className="absolute h-6 w-px animate-pulse bg-accent" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
           <button
             type="submit"
             disabled={busy || code.length < 6}
-            className="flex h-13 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-ink shadow-[0_16px_42px_-16px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
+            className="mt-2 flex h-13 items-center justify-center rounded-2xl bg-accent px-6 font-semibold text-ink shadow-[0_16px_42px_-16px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
           >
             {pending === "phone" ? status : "Verify & continue"}
           </button>
@@ -238,6 +270,22 @@ export function LoginForm() {
           </button>
         </form>
       )}
+
+      <div className="flex items-center gap-3 py-1 text-xs text-faint">
+        <span className="h-px flex-1 bg-white/8" />
+        or
+        <span className="h-px flex-1 bg-white/8" />
+      </div>
+
+      <button
+        type="button"
+        onClick={handleGoogle}
+        disabled={busy}
+        className="flex h-13 items-center justify-center gap-2.5 rounded-2xl bg-hi px-6 font-semibold text-ink transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:translate-y-0 disabled:opacity-60"
+      >
+        <GoogleGlyph />
+        {pending === "google" ? "Signing in…" : "Continue with Google"}
+      </button>
 
       {/* Invisible reCAPTCHA mount point for Phone OTP. */}
       <div id="recaptcha-container" />

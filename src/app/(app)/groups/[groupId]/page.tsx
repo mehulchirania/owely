@@ -292,52 +292,124 @@ export default async function GroupPage({
         )}
 
         {activeTab === "balances" && (
-          <div className="flex flex-col gap-6">
-            {/* simplified balances summary */}
-            <div className="rounded-3xl border border-white/6 bg-card p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-[13px] text-muted font-medium">Simplified transfers summary</span>
-                {transfers.length > 0 && (
-                  <span className="rounded-full bg-accent2/12 px-2.5 py-1 text-[11px] font-semibold text-accent2">
-                    {transfers.length} {transfers.length === 1 ? "transfer" : "transfers"}
-                  </span>
-                )}
+          <div className="flex flex-col gap-4">
+            {/* Simplified debts banner */}
+            {transfers.length === 0 ? (
+              <div className="rounded-[16px] border border-white/6 bg-card px-4 py-6 text-center">
+                <p className="text-[15px] font-semibold text-hi">All settled up 🎉</p>
+                <p className="mt-1 text-[12.5px] text-dim">No outstanding balances in this group.</p>
               </div>
-
-              {transfers.length === 0 ? (
-                <p className="py-2 text-center text-sm text-muted">
-                  {myNet === 0 ? "You're all settled up. 🎉" : "Everyone's square. 🎉"}
-                </p>
-              ) : (
-                <div className="flex flex-col gap-3.5">
-                  {transfers.map((t) => {
-                    const iOwe = t.from === user.uid;
-                    const isToMe = t.to === user.uid;
-                    const other = iOwe ? t.to : t.from;
-                    const a = memberAvatar(other);
-                    return (
-                      <div key={t.id} className="flex items-center gap-3">
-                        <span className={`flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold ${a.bg} ${a.fg}`}>
-                          {nameOf(group, other).charAt(0).toUpperCase()}
-                        </span>
-                        <span className="flex-1 text-sm text-strong">
-                          {iOwe ? (
-                            <>You owe <b className="font-semibold text-hi">{nameOf(group, t.to)}</b></>
-                          ) : isToMe ? (
-                            <><b className="font-semibold text-hi">{nameOf(group, t.from)}</b> owes you</>
-                          ) : (
-                            <><b className="font-semibold text-strong">{nameOf(group, t.from)}</b> owes <b className="font-semibold text-strong">{nameOf(group, t.to)}</b></>
-                          )}
-                        </span>
-                        <span className={`font-display text-[15px] font-semibold ${iOwe ? "text-coral" : isToMe ? "text-mint" : "text-strong"}`}>
-                          {formatPaise(t.amount)}
-                        </span>
-                      </div>
-                    );
-                  })}
+            ) : (
+              <>
+                {/* Magic banner */}
+                <div className="flex items-center gap-[10px] rounded-[13px] border border-accent/18 bg-accent/7 px-[14px] py-[11px]">
+                  <span className="text-[18px]" aria-hidden>🪄</span>
+                  <div>
+                    <p className="text-[12.5px] font-semibold text-accent">
+                      Owely simplified debts
+                    </p>
+                    <p className="text-[11px] text-dim">
+                      {transfers.length} {transfers.length === 1 ? "transfer" : "transfers"} · saves everyone hassle
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* Transfer cards */}
+                {transfers.map((t) => {
+                  const iOwe = t.from === user.uid;
+                  const isToMe = t.to === user.uid;
+                  const fromAvatar = memberAvatar(t.from);
+                  const toAvatar = memberAvatar(t.to);
+                  return (
+                    <div
+                      key={t.id}
+                      className="rounded-[16px] border border-white/7 bg-card px-[14px] py-[13px]"
+                    >
+                      {/* From → To + amount */}
+                      <div className="mb-[10px] flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`flex h-8 w-8 items-center justify-center rounded-full font-display text-[13px] font-bold ${fromAvatar.bg} ${fromAvatar.fg}`}
+                          >
+                            {nameOf(group, t.from).charAt(0).toUpperCase()}
+                          </span>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-faint"
+                            aria-hidden
+                          >
+                            <path d="M5 12h14M13 6l6 6-6 6" />
+                          </svg>
+                          <span
+                            className={`flex h-8 w-8 items-center justify-center rounded-full font-display text-[13px] font-bold ${toAvatar.bg} ${toAvatar.fg}`}
+                          >
+                            {nameOf(group, t.to).charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-display text-[16px] font-bold text-hi">
+                            {formatPaise(t.amount)}
+                          </p>
+                          <p className="text-[10px] text-dim">
+                            {iOwe ? "You" : nameOf(group, t.from)} → {isToMe ? "You" : nameOf(group, t.to)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Action button */}
+                      {iOwe ? (
+                        <a
+                          href={`/groups/${group.id}?tab=balances#settle`}
+                          className="flex h-[38px] w-full items-center justify-center gap-1.5 rounded-[10px] bg-accent text-[13.5px] font-bold text-white shadow-[0_4px_14px_-4px_rgba(139,123,255,.6)]"
+                        >
+                          Settle via UPI
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M5 12h14M13 6l6 6-6 6" />
+                          </svg>
+                        </a>
+                      ) : isToMe ? (
+                        <div className="flex h-[38px] w-full items-center justify-center rounded-[10px] border border-white/8 bg-surface text-[13px] text-muted">
+                          Awaiting payment
+                        </div>
+                      ) : (
+                        <div className="flex h-[38px] w-full items-center justify-center rounded-[10px] border border-white/6 bg-surface text-[13px] text-faint">
+                          Between others
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* PDF export — Pro only */}
+                <div className="flex items-center justify-between rounded-[13px] border border-accent/15 bg-card px-[14px] py-[12px]">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[17px]" aria-hidden>📄</span>
+                    <span className="text-[13px] font-medium text-strong">Export as PDF</span>
+                  </div>
+                  {isPaid ? (
+                    <a
+                      href={`/api/groups/${group.id}/export/pdf`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex h-[30px] items-center rounded-[8px] bg-accent px-3 text-[11.5px] font-bold text-white"
+                    >
+                      Export
+                    </a>
+                  ) : (
+                    <span className="rounded-full border border-accent/28 bg-accent/14 px-[7px] py-[2px] text-[9px] font-bold uppercase tracking-[.1em] text-accent">
+                      ✦ PRO
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Fairness Insights */}
             <FairnessInsights
@@ -349,9 +421,11 @@ export default async function GroupPage({
               simplifiedDebts={transfers}
             />
 
-            {/* Settle Panel */}
-            <div className="flex flex-col gap-3">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-dim">Settle Dues</h2>
+            {/* Settlement history */}
+            <div id="settle" className="flex flex-col gap-3">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-dim">
+                Record settlement
+              </h2>
               <SettlePanel
                 groupId={groupId}
                 groupName={group.name}

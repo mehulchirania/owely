@@ -2,7 +2,7 @@
 
 India-first freemium expense-splitting app. Android + Web.
 
-_Last updated: 2026-06-18 (batch member-add UI + templates UI + multi-currency UI complete)_
+_Last updated: 2026-06-19 (mobile UX redesign from Owely Mobile.dc.html — bottom nav, Home screen, redesigned Groups/People/Settings/Balances tab)_
 
 ## Stack (as scaffolded)
 
@@ -140,10 +140,9 @@ pure function so it can run inside a Server Action and in tests identically.
 - [x] Paste `apiKey` + `appId` into `.env.local` + `apphosting.yaml`
 - [x] Add live `*.hosted.app` URL to Firebase Auth authorized domains
 - [x] Service-account key → `FIREBASE_SERVICE_ACCOUNT_KEY`
-- [ ] Create App Hosting backend + connect GitHub repo → live URL
+- [x] App Hosting backend `owely` connected and live at `https://owely--owely-c6c51.us-east4.hosted.app`
 
-- [ ] Create App Hosting secrets for `CRON_SECRET`, `OWELY_ADMIN_USERNAME`, and
-      `OWELY_ADMIN_PASSWORD`
+- [x] App Hosting secrets created and granted to backend: `CRON_SECRET`, `OWELY_ADMIN_USERNAME`, and `OWELY_ADMIN_PASSWORD`
 
 **Build phases (see `docs/PHASES.md` for deliverables):**
 - [x] Phase 1 — Server plumbing (result, validation, session, route, **proxy**)
@@ -240,6 +239,7 @@ pure function so it can run inside a Server Action and in tests identically.
 - ◧ Phase 8 — PWA + polish
   - [x] Bootstrapped PWA: created manifest.json, custom circular owl app icon, and configured Next.js layout metadata.
   - [x] Landing page simplification: Removed "Start for free" and "See how it works" buttons, renamed "Open app" to "Login".
+  - [x] Login flow refinement: Elevated mobile OTP as the primary authentication method over Google sign-in, rebuilt the OTP input as an animated 6-box fluid interface with robust auto-focusing, and enhanced error message visibility.
 - [x] Phase B — Differentiators (Smart Modes, Guest Links, Batch Add, & Closures)
   - [x] Group Mode Selector: Added selection dropdown for Trip, Roommates, Couple, Lunch, etc. during group creation.
   - [x] Debt Round-off & Thresholds: Configured simplifyFromNet engine to round transfer balances to nearest unit and filter tiny balances.

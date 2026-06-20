@@ -43,10 +43,11 @@ export async function settleUp(
 ): Promise<ActionResult<{ settlementId: string }>> {
   const parsed = parseInput(SettleUpSchema, input);
   if (!parsed.success) return failure(parsed.message, { fieldErrors: parsed.fieldErrors });
-  const auth = await authorizeMember(parsed.data.groupId);
+  const [auth, closed] = await Promise.all([
+    authorizeMember(parsed.data.groupId),
+    isMonthClosed(parsed.data.groupId, Date.now()),
+  ]);
   if (!auth.ok) return auth;
-
-  const closed = await isMonthClosed(parsed.data.groupId, Date.now());
   if (closed) {
     return failure("This month is closed. You cannot record new settlements.", { code: "closed-month" });
   }

@@ -32,11 +32,6 @@ export async function addExpense(input: unknown): Promise<ActionResult<{ expense
   const auth = await authorizeMember(parsed.data.groupId);
   if (!auth.ok) return auth;
 
-  const closed = await isMonthClosed(parsed.data.groupId, Date.now());
-  if (closed) {
-    return failure("This month is closed. You cannot add new expenses.", { code: "closed-month" });
-  }
-
   const split = computeSplits(parsed.data.expense, auth.data.group);
   if (!split.ok) return failure(split.error, { code: "reconciliation" });
 
@@ -44,17 +39,22 @@ export async function addExpense(input: unknown): Promise<ActionResult<{ expense
   const groupId = auth.data.group.id;
   const db = getAdminDb();
 
-  // Idempotent offline replays should no-op before quota checks.
   const col = db.collection(paths.expenses(groupId));
   const ref = expense.clientId ? col.doc(expense.clientId) : col.doc();
 
-  if (expense.clientId) {
-    const existing = await ref.get();
-    if (existing.exists) return success({ expenseId: ref.id });
-  }
+  // Run all independent pre-flight reads in parallel: closure check, idempotency
+  // check, and user-tier fetch don't depend on each other.
+  const [closed, existingSnap, userDoc] = await Promise.all([
+    isMonthClosed(groupId, Date.now()),
+    expense.clientId ? ref.get() : Promise.resolve(null),
+    fetchUser(auth.data.user.uid),
+  ]);
 
-  // Enforce freemium: free-tier users are capped at 100 expenses/group/month.
-  const userDoc = await fetchUser(auth.data.user.uid);
+  if (closed) {
+    return failure("This month is closed. You cannot add new expenses.", { code: "closed-month" });
+  }
+  if (existingSnap?.exists) return success({ expenseId: ref.id });
+
   const tier = userDoc?.tier ?? "free";
   const freemium = await checkFreemiumLimit(groupId, tier);
   if (!freemium.ok) {
@@ -109,7 +109,6 @@ export async function editExpense(input: unknown): Promise<ActionResult<null>> {
   const db = getAdminDb();
   const ref = db.doc(paths.expense(groupId, expenseId));
 
-  // Verify existence before entering the transaction.
   const existing = await ref.get();
   if (!existing.exists) return failure("That expense no longer exists.", { code: "not-found" });
 

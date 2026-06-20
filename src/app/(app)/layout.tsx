@@ -9,7 +9,7 @@ import { requireSession } from "@/features/auth/session";
 import { fetchUser } from "@/features/auth/queries";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SidebarNav } from "@/components/SidebarNav";
-import { MobileNavTabs } from "@/components/MobileNavTabs";
+import { BottomNav } from "@/components/BottomNav";
 
 export default async function AppLayout({
   children,
@@ -37,7 +37,7 @@ export default async function AppLayout({
         <div className="flex flex-col gap-[26px]">
           {/* Logo */}
           <Link
-            href="/groups"
+            href="/home"
             className="flex items-center gap-2 rounded-[10px] px-1 py-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <span
@@ -98,7 +98,7 @@ export default async function AppLayout({
         <header className="sticky top-0 z-10 border-b border-white/6 bg-ink/80 backdrop-blur lg:hidden">
           <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-2 px-4 py-3">
             <Link
-              href="/groups"
+              href="/home"
               className="flex items-center gap-2 rounded-xl px-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <span
@@ -128,14 +128,15 @@ export default async function AppLayout({
               <SignOutButton />
             </nav>
           </div>
-          <MobileNavTabs />
         </header>
 
         {/* Main Content Area */}
-        <main className="relative mx-auto w-full max-w-2xl lg:max-w-5xl flex-1 px-4 py-6">
+        <main className="relative mx-auto w-full max-w-2xl lg:max-w-5xl flex-1 px-4 py-6 pb-24 lg:pb-6">
           {children}
         </main>
       </div>
+
+      <BottomNav />
     </div>
   );
 }

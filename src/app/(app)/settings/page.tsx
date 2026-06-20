@@ -6,8 +6,9 @@ import { ProfileForm } from "@/components/ProfileForm";
 import { CustomCategoriesManager } from "@/components/CustomCategoriesManager";
 import { DisplayCurrencyForm } from "@/components/DisplayCurrencyForm";
 import { CheckoutButton } from "@/components/CheckoutButton";
+import { SignOutButton } from "@/components/SignOutButton";
 
-export const metadata: Metadata = { title: "Settings - Owely" };
+export const metadata: Metadata = { title: "Me — Owely" };
 
 export default async function SettingsPage() {
   const session = await requireSession();
@@ -17,42 +18,54 @@ export default async function SettingsPage() {
   ]);
   const isPaid = user?.tier === "paid";
   const initial = (user?.displayName ?? session.name ?? "Y").charAt(0).toUpperCase();
+  const displayName = user?.displayName ?? session.name ?? "";
   const email = user?.email ?? user?.phone ?? "";
+  const upiId = user?.upiId ?? "";
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="font-display text-[20px] font-bold tracking-tight text-hi">Settings</h1>
-
-      {/* Profile card */}
-      <div className="flex items-center gap-[14px] rounded-[14px] border border-white/7 bg-surface p-[18px]">
+      {/* Profile hero card */}
+      <div className="flex items-center gap-4 rounded-[18px] border border-white/7 bg-card px-5 py-5">
         <div className="relative shrink-0">
           <span
-            className={`flex h-12 w-12 items-center justify-center rounded-full bg-accent font-display text-xl font-bold text-white ${isPaid ? "shadow-[0_0_0_2.5px_rgba(139,123,255,.4)]" : ""}`}
+            className={`flex h-14 w-14 items-center justify-center rounded-full bg-accent font-display text-[22px] font-bold text-white ${
+              isPaid ? "shadow-[0_0_0_3px_rgba(139,123,255,.35)]" : ""
+            }`}
           >
             {initial}
           </span>
           {isPaid && (
-            <span className="absolute -bottom-1 -right-1 rounded-full border-[1.5px] border-surface bg-accent px-[3px] py-[1px] text-[7px] font-bold uppercase leading-none tracking-[.08em] text-white">
+            <span className="absolute -bottom-1 -right-1 rounded-full border-[1.5px] border-card bg-accent px-[4px] py-[1.5px] text-[7px] font-bold uppercase leading-none tracking-[.08em] text-white">
               PRO
             </span>
           )}
         </div>
-        <div>
-          <p className="flex items-center gap-2 text-[15px] font-semibold text-hi">
-            {user?.displayName ?? session.name ?? ""}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate font-display text-[16px] font-bold text-hi">
+              {displayName}
+            </p>
             {isPaid && (
-              <span className="rounded-full border border-accent/26 bg-accent/12 px-1.5 py-px text-[9px] font-bold uppercase tracking-[.1em] text-accent">
+              <span className="shrink-0 rounded-full border border-accent/26 bg-accent/12 px-1.5 py-px text-[9px] font-bold uppercase tracking-[.1em] text-accent">
                 PRO
               </span>
             )}
-          </p>
-          {email && <p className="text-[12.5px] text-dim">{email}</p>}
+          </div>
+          {email && (
+            <p className="mt-0.5 truncate text-[12px] text-dim">{email}</p>
+          )}
+          {upiId && (
+            <p className="mt-0.5 truncate text-[11.5px] font-medium text-accent">
+              {upiId}
+            </p>
+          )}
         </div>
-        <div className="ml-auto">
-          <a href="#edit-profile" className="flex h-8 items-center rounded-[9px] border border-white/9 bg-card px-3 text-[12.5px] font-medium text-muted transition-colors hover:bg-elevated">
-            Edit
-          </a>
-        </div>
+        <a
+          href="#edit-profile"
+          className="shrink-0 flex h-8 items-center rounded-[9px] border border-white/9 bg-surface px-3 text-[12px] font-medium text-muted transition-colors hover:bg-elevated"
+        >
+          Edit
+        </a>
       </div>
 
       {/* Plan section */}
@@ -67,15 +80,24 @@ export default async function SettingsPage() {
       </div>
 
       {/* Edit profile */}
-      <section id="edit-profile" className="rounded-[14px] border border-white/7 bg-surface p-[18px]">
+      <section
+        id="edit-profile"
+        className="rounded-[14px] border border-white/7 bg-surface p-[18px]"
+      >
         <p className="mb-4 text-[13.5px] font-semibold text-hi">Edit profile</p>
         <ProfileForm
-          displayName={user?.displayName ?? session.name ?? ""}
-          upiId={user?.upiId ?? ""}
+          displayName={displayName}
+          upiId={upiId}
         />
       </section>
 
+      {/* Custom categories */}
       <CustomCategoriesManager initialCategories={categories} />
+
+      {/* Sign out */}
+      <div className="flex justify-center pt-2 pb-4">
+        <SignOutButton />
+      </div>
     </div>
   );
 }
@@ -83,34 +105,38 @@ export default async function SettingsPage() {
 function FreePlanCard() {
   return (
     <>
-      {/* Usage */}
+      {/* Usage card */}
       <div className="rounded-[14px] border border-white/7 bg-surface p-[18px]">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-[13.5px] font-semibold text-hi">Plan</p>
-          <span className="rounded-full bg-elevated px-2.5 py-0.5 text-[10px] font-semibold text-dim">
-            Free tier
+          <p className="text-[13.5px] font-semibold text-hi">Free plan</p>
+          <span className="rounded-full border border-white/10 bg-elevated px-2.5 py-0.5 text-[10px] font-semibold text-dim">
+            100 expenses / mo
           </span>
         </div>
-        <p className="mb-0.5 text-[11.5px] text-dim">Monthly limit</p>
-        <p className="text-[10.5px] text-faint">100 expenses per group · resets on the 1st</p>
+        <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-elevated">
+          <div className="h-full w-[0%] rounded-full bg-accent" />
+        </div>
+        <p className="text-[11px] text-faint">Resets on the 1st of each month</p>
       </div>
 
       {/* Upgrade CTA */}
       <div className="relative overflow-hidden rounded-[14px] border-[1.5px] border-accent/28 bg-[#13111c] p-[18px]">
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-5 -top-7 h-32 w-32 rounded-full bg-accent opacity-[0.16] blur-[50px]"
+          className="pointer-events-none absolute -right-5 -top-7 h-36 w-36 rounded-full bg-accent opacity-[0.14] blur-[60px]"
         />
-        <div className="relative flex items-start gap-[14px]">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-accent/15 text-[20px]">
+        <div className="relative flex items-start gap-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-accent/15 text-[20px] text-accent">
             ✦
           </span>
           <div className="flex-1">
-            <p className="font-display text-[15px] font-bold text-hi">Unlock Owely Pro</p>
-            <p className="mt-1 mb-3 text-[12.5px] text-muted leading-relaxed">
-              Unlimited expenses, AI receipt scanner, PDF export, recurring expenses, and more.
+            <p className="font-display text-[15px] font-bold text-hi">
+              Unlock Owely Pro
             </p>
-            <div className="flex flex-wrap items-center gap-2.5">
+            <p className="mb-4 mt-1 text-[12.5px] leading-relaxed text-muted">
+              Unlimited expenses · AI receipt scanner · PDF export · recurring splits · multi-currency
+            </p>
+            <div className="flex flex-wrap gap-2.5">
               <CheckoutButton
                 plan="pro_monthly"
                 label="Go Pro — ₹99/mo"
@@ -143,23 +169,35 @@ function ProPlanCard() {
     <div className="relative overflow-hidden rounded-[14px] border-[1.5px] border-accent/28 bg-[#13111c] p-[18px]">
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-5 -top-7 h-32 w-32 rounded-full bg-accent opacity-[0.15] blur-[50px]"
+        className="pointer-events-none absolute -right-5 -top-7 h-36 w-36 rounded-full bg-accent opacity-[0.13] blur-[60px]"
       />
       <div className="relative">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <p className="text-[14px] font-bold text-hi">Owely Pro</p>
-            <span className="rounded-full bg-accent px-2 py-px text-[9.5px] font-bold text-white">
+            <p className="font-display text-[15px] font-bold text-hi">
+              Owely Pro
+            </p>
+            <span className="rounded-full bg-accent px-2 py-px text-[9px] font-bold uppercase tracking-[.06em] text-white">
               Active
             </span>
           </div>
-          <p className="text-[12px] text-dim">Renews on the 1st</p>
+          <p className="text-[11.5px] text-dim">Renews on the 1st</p>
         </div>
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-2 gap-y-2 gap-x-3">
           {PRO_FEATURES.map((feat) => (
-            <div key={feat} className="flex items-center gap-1.5">
+            <div key={feat} className="flex items-center gap-2">
               <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-accent/18">
-                <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#b6abff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <svg
+                  width="7"
+                  height="7"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#b6abff"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
               </span>

@@ -9,6 +9,7 @@
  */
 
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAdminAuth } from "@/lib/firebase/admin";
@@ -27,13 +28,24 @@ export interface SessionUser {
   picture: string | null;
 }
 
-/** Resolve the signed-in user from the session cookie, or `null`. Never throws. */
-export async function getSessionUser(): Promise<SessionUser | null> {
+/**
+ * Resolve the signed-in user from the session cookie, or `null`. Never throws.
+ *
+ * Wrapped in React `cache()` so multiple Server Components on the same page
+ * (e.g. layout + page both calling requireSession) trigger only one Admin SDK
+ * verify call per render, not one per component.
+ *
+ * `checkRevoked: false` — verifies the JWT signature locally without a Google
+ * network round-trip. The 14-day session expiry is the primary session bound;
+ * revocation-on-every-request adds latency without meaningful security gain for
+ * a consumer app where sign-out clears the cookie client-side.
+ */
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   try {
-    const decoded = await getAdminAuth().verifySessionCookie(token, true);
+    const decoded = await getAdminAuth().verifySessionCookie(token, false);
     return {
       uid: decoded.uid,
       email: decoded.email ?? null,
@@ -42,10 +54,9 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       picture: decoded.picture ?? null,
     };
   } catch {
-    // Expired / revoked / malformed cookie — treat as signed out.
     return null;
   }
-}
+});
 
 /** Server Component / route-handler guard: redirect to login when signed out. */
 export async function requireSession(): Promise<SessionUser> {
@@ -61,13 +72,12 @@ export async function authorizeUser(): Promise<ActionResult<SessionUser>> {
   return success(user);
 }
 
-/** Action guard: signed-in AND a member of `groupId`. */
+/** Action guard: signed-in AND a member of `groupId`. Fetches session + group in parallel. */
 export async function authorizeMember(
   groupId: string,
 ): Promise<ActionResult<{ user: SessionUser; group: Group }>> {
-  const user = await getSessionUser();
+  const [user, group] = await Promise.all([getSessionUser(), fetchGroup(groupId)]);
   if (!user) return failure("Please sign in to continue.", { code: "unauthorized" });
-  const group = await fetchGroup(groupId);
   if (!group) return failure("Group not found.", { code: "not-found" });
   if (!group.members.includes(user.uid)) {
     return failure("You're not a member of this group.", { code: "forbidden" });

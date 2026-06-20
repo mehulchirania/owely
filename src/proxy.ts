@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/features/auth/session-cookie";
 
 /** Authenticated areas of the app. */
-const PROTECTED = ["/groups", "/people", "/settings", "/own", "/admin"];
+const PROTECTED = ["/home", "/groups", "/people", "/settings", "/own", "/admin"];
 
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
@@ -40,7 +40,7 @@ export function proxy(request: NextRequest): NextResponse {
       return NextResponse.next();
     }
     const url = request.nextUrl.clone();
-    url.pathname = "/groups";
+    url.pathname = "/home";
     url.search = "";
     return NextResponse.redirect(url);
   }
@@ -49,5 +49,5 @@ export function proxy(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ["/groups/:path*", "/people/:path*", "/settings/:path*", "/own/:path*", "/admin/:path*"],
+  matcher: ["/home", "/groups/:path*", "/people/:path*", "/settings/:path*", "/own/:path*", "/admin/:path*"],
 };

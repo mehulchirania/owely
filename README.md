@@ -155,6 +155,7 @@ Phase B differentiators are fully implemented:
 
 **Landing Page UI Polish**:
 - Removed the "Start for free" and "See how it works" buttons to streamline onboarding, and renamed the navigation link from "Open app" to "Login".
+- **Login Flow Refinement**: Reordered mobile OTP to be the primary sign-in action, rebuilt the OTP input with a highly fluid, animated 6-box design, stabilized auto-focus behavior, and enhanced error visibility for edge cases.
 
 All non-3rd-party items are complete. Remaining before go-live: Razorpay
 payment gateway (order creation, checkout modal, webhook to flip tier), SMS invite

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 function isActive(pathname: string, href: string): boolean {
+  if (href === "/home") return pathname === "/home";
   if (href === "/groups") return pathname === "/groups" || pathname.startsWith("/groups/");
   if (href === "/people") return pathname === "/people" || pathname.startsWith("/people/");
   return pathname === href || pathname.startsWith(href + "/");
@@ -14,8 +15,17 @@ export function SidebarNav() {
 
   const items = [
     {
+      href: "/home",
+      label: "Home",
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      ),
+    },
+    {
       href: "/groups",
-      label: "Dashboard",
+      label: "Groups",
       icon: (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
