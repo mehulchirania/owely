@@ -45,7 +45,7 @@ async function linkPendingInvites(
   const pending = await db
     .collection(Collections.invites)
     .where("phone", "==", phone)
-    .where("status", "==", "pending")
+    .where("status", "in", ["pending", "consumed"])
     .get();
 
   let linked = 0;

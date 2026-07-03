@@ -28,6 +28,8 @@ export const Collections = {
   recurring: "recurring",
   /** Per-group monthly closures: groups/{groupId}/closures/{id}. */
   closures: "closures",
+  /** Processed payment IDs for idempotency: webhookEvents/{paymentId}. */
+  webhookEvents: "webhookEvents",
 } as const;
 
 export type CollectionName =

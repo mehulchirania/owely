@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { FirebaseInit } from "@/components/FirebaseInit";
 
 const grotesk = Space_Grotesk({
   variable: "--font-grotesk",
@@ -31,7 +32,10 @@ export default function RootLayout({
       lang="en"
       className={`${grotesk.variable} ${jakarta.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col bg-ink text-hi">{children}</body>
+      <body className="min-h-full flex flex-col bg-ink text-hi">
+        <FirebaseInit />
+        {children}
+      </body>
     </html>
   );
 }

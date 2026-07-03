@@ -2,7 +2,15 @@
 
 India-first freemium expense-splitting app. Android + Web.
 
-_Last updated: 2026-06-19 (mobile UX redesign from Owely Mobile.dc.html — bottom nav, Home screen, redesigned Groups/People/Settings/Balances tab)_
+_Last updated: 2026-07-03 (full architecture + security audit — see `docs/AUDIT.md`)_
+
+> **Audit status (2026-07-03):** `docs/AUDIT.md` records the full issue list.
+> **P0 (S1–S3) ✅** Admin HMAC auth, single-use read-only guests, Trip Pass expiry.
+> **P1 (S4–S6, §5) ✅** Webhook dedupe + amount check, client payment verify fallback, 24h sessions, multi-currency paywall removed.
+> **P2 (S7–S9, §4) ✅** Phone-enum rate-limit, atomic guest merge, App Check wired, freemium counter symmetric on delete.
+> **P3 ✅** UPI links consolidated to `upi.ts`, client money parsing aligned with `rupeesToPaise`, touch targets 44px, `Group.expenseCount` stale field was already absent.
+> **P4 ✅** `freemium.test.ts` (10 tests) covering counter cap, batch size, IST month key, paid bypass.
+> **One console action remaining:** Firebase App Check enforcement — see [`docs/APP_CHECK_SETUP.md`](docs/APP_CHECK_SETUP.md).
 
 ## Stack (as scaffolded)
 

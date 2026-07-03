@@ -4,6 +4,93 @@ Prepend a new dated entry at the top after every change. Newest first.
 
 ---
 
+## 2026-07-03 — P3 Polish + P4 Tests
+
+- **GuestSettlePanel:** UPI deep-links now route through `buildGpayLink`, `buildPhonepeLink`, `buildPhoneUpiLink`, `buildUpiLink` in `upi.ts`. No more inline link construction.
+- **Client money parsing:** Replaced `Math.round(parseFloat(...) * 100)` with a `parseRupees()` helper that mirrors `rupeesToPaise` semantics (rejects sub-paise, rejects non-numeric).
+- **Touch targets:** Bumped payment-method toggle and UPI app buttons from h-9 (36px) to h-11 (44px). "Settle dues" button also h-11. Meets 44×44px minimum across all interactive elements in the guest flow.
+- **Guest settle action removed from panel:** Replaced the `guestSettleUp` call + confirm button with an informational message directing guests to a registered account. Matches the S2 fix (guests are read-only).
+- **`docs/APP_CHECK_SETUP.md`:** Step-by-step guide for reCAPTCHA Enterprise key creation, Firebase App Check registration, enforcement, and local debug token setup.
+- **`freemium.test.ts`:** 10 new tests covering `checkFreemiumLimit` (paid bypass, first-expense, below/at/over limit, batch size) and `currentMonthKey` (IST timezone crossing, zero-padding).
+
+State: `npm run typecheck` clean, `npm test` 46/46 passing.
+
+---
+
+## 2026-07-03 — Firebase App Check (S9)
+
+Wired Firebase App Check into the client SDK to prevent SMS-pumping and quota drain on the public API key. Added `getAppCheck()` to `client.ts`, a root-level `FirebaseInit` client component, `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` to `apphosting.yaml`, and full setup instructions in `.env.example`. **Console steps (reCAPTCHA Enterprise key + Firebase App Check enforcement) still required.**
+
+State: `npm run typecheck` clean, `npm test` 36/36 passing.
+
+---
+
+## 2026-07-03 — P1/P2 Integrity & Abuse Hardening
+
+- **§5 (Multi-currency):** Removed `"multi-currency"` from the `PaidFeature` paywall. Display and group currency preferences are now free. FX conversion remains unbuilt — paywall will be reintroduced when real conversion is implemented.
+- **S7 (Phone Enumeration):** Capped `FindUsersSchema` input to 50 phones per call (was 500). Stripped `uid` from the response — callers get `phone + name + photoURL` only.
+- **S8 (Atomic Guest Merge):** Collapsed `mergeGuestToUser` from three sequential operations into a single Firestore transaction. Added a 400-document safety cap.
+- **§4 (Freemium Counter):** Added `decrementCounterInTx` and wired it into `deleteExpense` so the monthly cap reflects live expenses, not raw write-count.
+
+State: `npm run typecheck` clean, `npm test` 36/36 passing.
+
+---
+
+## 2026-07-03 — Security Fixes (S4, S5, S6)
+
+Implemented P1 backend fixes from the audit:
+- **S4 (Webhook Dedupe & Amounts):** Added deduplication to the webhook using a new `webhookEvents` collection keyed by `payment.id`. Webhook now strictly validates that `entity.amount` matches `PLAN_AMOUNT_PAISE[plan]`.
+- **S5 (Client Payment Verification):** Added `/api/payments/verify` client fallback endpoint. Validates Razorpay signatures and polls the Razorpay API to prevent forged requests, before applying the same idempotent grant used by the webhook.
+- **S6 (Session Duration):** Shortened `SESSION_MAX_AGE` from 14 days to 24 hours to mitigate the lack of an online revocation check.
+
+---
+
+## 2026-07-03 — Security Fixes (S1, S2, S3)
+
+Implemented P0 fixes from the recent security audit:
+- **S1 (Admin Auth):** Replaced the boolean `owely_admin_session` cookie with a 24-hour HMAC-signed JWT (using Node crypto and `OWELY_ADMIN_PASSWORD` secret). Removed the insecure `admin/admin` development fallback entirely.
+- **S2 (Guest Hardening):** Guest links are now single-use (marked as `"consumed"` on first load). `guestSettleUp` has been disabled server-side, rendering guests strictly read-only on the ledger. They must sign up to record a payment.
+- **S3 (Trip Pass Expiry):** Enforced `tripPassExpiresAt` in `requirePaidFeature` (`src/lib/entitlements.ts`). Added Vitest regression tests to prevent permanent Pro access from expired passes.
+
+State: `npm run typecheck` clean, `npm test` 36/36 passing.
+
+---
+
+## 2026-07-03 — Full architecture, security & feature audit
+
+Produced `docs/AUDIT.md` — a complete evaluation of architecture, a security
+audit (financial transactions), feature-vs-sold gaps, UI/UX, and a backend
+rewrite verdict. No code changed this pass; this is an assessment deliverable.
+
+**Verdict:** the backend is well-architected and does **not** need a rewrite —
+clean layering, single write path, integer-paise money, transactional recompute.
+Fix the prioritized list in `docs/AUDIT.md §7`, not the foundation.
+
+**Three release-blockers found:**
+- **S1 (Critical):** `/admin` is guarded by a forgeable static cookie
+  (`owely_admin_session=true`) — anyone can self-grant admin, flip users to
+  `paid`, and read all users' name+phone. `src/features/admin/actions.ts`.
+- **S2 (Critical):** Guest invite links are permanent, reusable bearer tokens
+  granting ledger read + settlement writes; never expire, never consumed. A
+  forwarded link lets a stranger erase real members' debts.
+  `src/app/api/groups/[groupId]/guest-login/route.ts` + `guestSettleUp`.
+- **S3 (Critical, revenue):** ₹49 Trip Pass grants permanent Pro —
+  `tripPassExpiresAt` is written by the webhook but never read by
+  `requirePaidFeature` (`src/lib/entitlements.ts`).
+
+**Also flagged:** webhook has no amount cross-check or event idempotency (S4);
+no missed-webhook reconciliation path (S5); session verified with
+`checkRevoked:false` (S6); `findRegisteredUsers` phone-enumeration oracle (S7);
+non-atomic `mergeGuestToUser` (S8); no App Check (S9). **Multi-currency is sold
+as a paid feature but not implemented** — every expense hardcodes
+`currency:"INR"`, no FX/conversion anywhere; build it or remove from paywall.
+Test coverage is engines-only (32 tests, 4 files) — zero tests on the action,
+auth, payment, or guest paths.
+
+State at audit: `npm run typecheck` clean, `npm test` 32/32 passing.
+
+---
+
 ## 2026-06-20 - OTP Fluid UI\n\n- Fixed utoFocus for OTP input with a robust useEffect and useRef approach.\n- Rebuilt the OTP form into a modern, fluid 6-box design.\n
 ## 2026-06-20 - UX Improvements\n\n- Improved LoginForm UX: mobile and OTP input fields now submit on Enter key.\n- Added utoFocus to the OTP field to streamline the sign-in flow.\n
 ## 2026-06-19 — Server-side performance optimizations

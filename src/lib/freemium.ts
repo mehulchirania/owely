@@ -85,3 +85,26 @@ export function incrementCounterInTx(
     );
   };
 }
+
+/**
+ * Decrement the monthly counter inside a recompute transaction. Call this from
+ * the `mutate` callback of deleteExpense so deletion is symmetric with addition.
+ * The counter is clamped at 0 via a separate read-then-write, but since this
+ * runs inside the recompute transaction we use FieldValue.increment(-1) and
+ * accept that an edge case (deleting a recurring expense seeded before the
+ * counter existed) may push the counter to -1 — that is harmless because the
+ * check in checkFreemiumLimit always returns ok when count < limit.
+ */
+export function decrementCounterInTx(
+  groupId: string,
+): (tx: Transaction) => void {
+  const monthKey = currentMonthKey();
+  return (tx: Transaction) => {
+    const ref = getAdminDb().doc(paths.groupCounter(groupId, monthKey));
+    tx.set(
+      ref,
+      { count: FieldValue.increment(-1), updatedAt: FieldValue.serverTimestamp() },
+      { merge: true },
+    );
+  };
+}

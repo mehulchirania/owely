@@ -6,5 +6,5 @@
 
 export const SESSION_COOKIE = "__session";
 
-/** 14 days, in seconds — the max Firebase session-cookie lifetime. */
-export const SESSION_MAX_AGE = 14 * 24 * 60 * 60;
+/** 1 day, in seconds — short session lifetime to mitigate missing revocation checks. */
+export const SESSION_MAX_AGE = 24 * 60 * 60;

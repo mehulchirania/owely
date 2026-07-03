@@ -6,14 +6,12 @@ import { failure, success, type ActionResult } from "@/lib/result";
 export type PaidFeature =
   | "templates"
   | "recurring"
-  | "multi-currency"
   | "ocr"
   | "pdf-export";
 
 const FEATURE_LABELS: Record<PaidFeature, string> = {
   templates: "Templates",
   recurring: "Recurring expenses",
-  "multi-currency": "Multi-currency",
   ocr: "Receipt OCR",
   "pdf-export": "PDF export",
 };
@@ -28,7 +26,14 @@ export async function requirePaidFeature(
   feature: PaidFeature,
 ): Promise<ActionResult<null>> {
   const user = await fetchUser(uid);
-  if (user?.tier === "paid") return success(null);
+  if (user?.tier === "paid") {
+    if (user.tripPassExpiresAt && user.tripPassExpiresAt <= Date.now()) {
+      return failure(`Your Trip Pass has expired. ${FEATURE_LABELS[feature]} is available on Owely Pro.`, {
+        code: "paid-required",
+      });
+    }
+    return success(null);
+  }
   return failure(`${FEATURE_LABELS[feature]} is available on Owely Pro.`, {
     code: "paid-required",
   });

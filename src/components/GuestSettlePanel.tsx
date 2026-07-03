@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { formatPaise } from "@/lib/money";
 import { memberAvatar } from "@/lib/avatar";
-import { cleanPhone } from "@/lib/upi";
-import { guestSettleUp } from "@/features/settlements/actions";
+import {
+  buildGpayLink,
+  buildPhonepeLink,
+  buildPhoneUpiLink,
+  buildUpiLink,
+} from "@/lib/upi";
 import type { SettlementMethod, SettlementStatus } from "@/types";
 
 export interface GuestSettleDebt {
@@ -72,62 +75,63 @@ export function GuestSettlePanel({ groupId, groupName, myDebts, history }: Props
 }
 
 function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: string; debt: GuestSettleDebt }) {
-  const router = useRouter();
-  const [marking, setMarking] = useState(false);
-  const [amountRupees, setAmountRupees] = useState(debt.amountRupees);
+  const [open, setOpen] = useState(false);
   const [method, setMethod] = useState<SettlementMethod>("upi");
   const [ref, setRef] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
   const avatar = memberAvatar(debt.to);
 
-  const parsedPaise = Math.round(parseFloat(amountRupees || "0") * 100);
-  const isValid = !isNaN(parsedPaise) && parsedPaise > 0;
-  const amountTooHigh = isValid && parsedPaise > debt.amount;
+  /** Parse a rupee string the same way rupeesToPaise does on the server:
+   *  - Split on ".", take up to 2 decimal places
+   *  - Reject sub-paise (more than 2 decimal places)
+   *  - Returns null for non-numeric or empty input
+   */
+  function parseRupees(raw: string): number | null {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    const parts = trimmed.split(".");
+    if (parts.length > 2) return null;
+    if (parts[1] !== undefined && parts[1].length > 2) return null; // sub-paise
+    const rupees = parseFloat(trimmed);
+    if (!isFinite(rupees) || rupees <= 0) return null;
+    return Math.round(rupees * 100);
+  }
+
+  const [amountRupees, setAmountRupees] = useState(debt.amountRupees);
+  const parsedPaise = parseRupees(amountRupees);
+  const isValid = parsedPaise !== null;
+  const amountTooHigh = isValid && parsedPaise! > debt.amount;
 
   const payeeName = debt.toName;
   const note = `Owely - ${groupName}`;
-  const amountStr = isValid ? (parsedPaise / 100).toFixed(2) : "0.00";
 
-  const gpayVpa = debt.toUpiId || (debt.toPhone ? `${cleanPhone(debt.toPhone)}@upi` : null);
-  const gpayLink = isValid && gpayVpa
-    ? `intent://upi/pay?pa=${encodeURIComponent(gpayVpa)}&pn=${encodeURIComponent(payeeName)}&am=${amountStr}&cu=INR${note ? `&tn=${encodeURIComponent(note)}` : ""}#Intent;scheme=tez;package=com.google.android.apps.nbu.paisa.user;end`
+  // Build UPI links via upi.ts (single source of truth)
+  const linkPaise = isValid && !amountTooHigh ? parsedPaise! : null;
+
+  const gpayLink = linkPaise
+    ? debt.toUpiId
+      ? buildGpayLink({ phone: debt.toUpiId.split("@")[0], payeeName, paise: linkPaise, note })
+      : debt.toPhone
+        ? buildGpayLink({ phone: debt.toPhone, payeeName, paise: linkPaise, note })
+        : null
     : null;
 
-  const phonepeVpa = debt.toUpiId || (debt.toPhone ? `${cleanPhone(debt.toPhone)}@ybl` : null);
-  const phonepeLink = isValid && phonepeVpa
-    ? `intent://pay?pa=${encodeURIComponent(phonepeVpa)}&pn=${encodeURIComponent(payeeName)}&am=${amountStr}&cu=INR${note ? `&tn=${encodeURIComponent(note)}` : ""}#Intent;scheme=phonepe;package=com.phonepe.app;end`
+  const phonepeLink = linkPaise
+    ? debt.toUpiId
+      ? buildPhonepeLink({ phone: debt.toUpiId.split("@")[0], payeeName, paise: linkPaise, note })
+      : debt.toPhone
+        ? buildPhonepeLink({ phone: debt.toPhone, payeeName, paise: linkPaise, note })
+        : null
     : null;
 
-  const genericVpa = debt.toUpiId || (debt.toPhone ? cleanPhone(debt.toPhone) : null);
-  const genericLink = isValid && genericVpa
-    ? `upi://pay?pa=${encodeURIComponent(genericVpa)}&pn=${encodeURIComponent(payeeName)}&am=${amountStr}&cu=INR${note ? `&tn=${encodeURIComponent(note)}` : ""}`
+  const genericLink = linkPaise
+    ? debt.toUpiId
+      ? buildUpiLink({ upiId: debt.toUpiId, payeeName, paise: linkPaise, note })
+      : debt.toPhone
+        ? buildPhoneUpiLink({ phone: debt.toPhone, payeeName, paise: linkPaise, note })
+        : null
     : null;
 
-  function confirmPaid(): void {
-    if (!isValid) {
-      setError("Please enter a valid amount.");
-      return;
-    }
-    if (amountTooHigh) {
-      setError(`You can record up to ${formatPaise(debt.amount)}.`);
-      return;
-    }
-    setError(null);
-    startTransition(async () => {
-      const res = await guestSettleUp({
-        groupId,
-        to: debt.to,
-        amountRupees: amountRupees,
-        method,
-        paymentRef: ref.trim() || undefined,
-      });
-      if (!res.ok) { setError(res.error); return; }
-      router.refresh();
-      setMarking(false);
-      setRef("");
-    });
-  }
+  const hasUpiOption = !!(debt.toUpiId || debt.toPhone);
 
   return (
     <article className="relative overflow-hidden rounded-3xl border border-accent2/20 bg-card p-5">
@@ -142,27 +146,31 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
             {formatPaise(debt.amount)}
           </p>
 
-          {!marking ? (
+          {!open ? (
             <button
-              onClick={() => setMarking(true)}
-              className="mt-4 flex h-10 items-center justify-center rounded-xl bg-accent px-4 text-xs font-semibold text-ink transition-all hover:brightness-110 active:scale-95"
+              onClick={() => setOpen(true)}
+              className="mt-4 flex h-11 items-center justify-center rounded-xl bg-accent px-4 text-xs font-semibold text-ink transition-all hover:brightness-110 active:scale-95"
             >
-              Settle dues
+              Pay via UPI
             </button>
           ) : (
             <div className="mt-5 border-t border-white/6 pt-4 flex flex-col gap-4">
-              {error && <p className="text-xs text-destructive font-medium">{error}</p>}
-
               <div>
                 <label className="block text-[10px] font-semibold uppercase tracking-wider text-dim mb-1">
-                  Amount to record (₹)
+                  Amount (₹)
                 </label>
                 <input
                   type="text"
+                  inputMode="decimal"
                   value={amountRupees}
                   onChange={(e) => setAmountRupees(e.target.value)}
-                  className="w-full h-10 rounded-xl border border-white/8 bg-surface px-3 text-sm text-hi placeholder-faint focus:border-accent focus:outline-none"
+                  className="w-full h-11 rounded-xl border border-white/8 bg-surface px-3 text-sm text-hi placeholder-faint focus:border-accent focus:outline-none"
                 />
+                {amountTooHigh && (
+                  <p className="mt-1 text-xs text-destructive font-medium">
+                    Max {formatPaise(debt.amount)}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -175,7 +183,7 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
                       key={m}
                       type="button"
                       onClick={() => setMethod(m)}
-                      className={`flex-1 h-9 rounded-lg border text-xs font-semibold uppercase tracking-wider transition-colors ${
+                      className={`flex-1 h-11 rounded-lg border text-xs font-semibold uppercase tracking-wider transition-colors ${
                         method === m
                           ? "border-accent bg-accent/10 text-accent"
                           : "border-white/8 bg-surface text-dim hover:bg-elevated"
@@ -190,9 +198,9 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
               {method === "upi" && (
                 <div className="flex flex-col gap-2">
                   <label className="block text-[10px] font-semibold uppercase tracking-wider text-dim">
-                    Pay via UPI Apps
+                    Open UPI App
                   </label>
-                  {(!debt.toUpiId && !debt.toPhone) ? (
+                  {!hasUpiOption ? (
                     <p className="text-[11px] text-faint bg-white/4 p-2 rounded-lg">
                       Payee has not set a UPI ID or phone number. Record cash or settle manually.
                     </p>
@@ -201,7 +209,7 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
                       {gpayLink && (
                         <a
                           href={gpayLink}
-                          className="flex h-9 items-center justify-center rounded-lg border border-white/8 bg-surface text-[11px] font-semibold hover:bg-elevated transition-colors"
+                          className="flex h-11 items-center justify-center rounded-lg border border-white/8 bg-surface text-[11px] font-semibold hover:bg-elevated transition-colors"
                         >
                           GPay
                         </a>
@@ -209,7 +217,7 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
                       {phonepeLink && (
                         <a
                           href={phonepeLink}
-                          className="flex h-9 items-center justify-center rounded-lg border border-white/8 bg-surface text-[11px] font-semibold hover:bg-elevated transition-colors"
+                          className="flex h-11 items-center justify-center rounded-lg border border-white/8 bg-surface text-[11px] font-semibold hover:bg-elevated transition-colors"
                         >
                           PhonePe
                         </a>
@@ -217,26 +225,13 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
                       {genericLink && (
                         <a
                           href={genericLink}
-                          className="flex h-9 items-center justify-center rounded-lg border border-white/8 bg-surface text-[11px] font-semibold hover:bg-elevated transition-colors"
+                          className="flex h-11 items-center justify-center rounded-lg border border-white/8 bg-surface text-[11px] font-semibold hover:bg-elevated transition-colors"
                         >
                           Generic
                         </a>
                       )}
                     </div>
                   )}
-
-                  <div className="mt-1">
-                    <label className="block text-[10px] font-semibold uppercase tracking-wider text-dim mb-1">
-                      UPI Ref / UTR (optional)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="12-digit transaction number"
-                      value={ref}
-                      onChange={(e) => setRef(e.target.value)}
-                      className="w-full h-10 rounded-xl border border-white/8 bg-surface px-3 text-sm text-hi placeholder-faint focus:border-accent focus:outline-none"
-                    />
-                  </div>
                 </div>
               )}
 
@@ -250,26 +245,22 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
                     placeholder="e.g. Paid in cash"
                     value={ref}
                     onChange={(e) => setRef(e.target.value)}
-                    className="w-full h-10 rounded-xl border border-white/8 bg-surface px-3 text-sm text-hi placeholder-faint focus:border-accent focus:outline-none"
+                    className="w-full h-11 rounded-xl border border-white/8 bg-surface px-3 text-sm text-hi placeholder-faint focus:border-accent focus:outline-none"
                   />
                 </div>
               )}
 
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={() => setMarking(false)}
-                  className="flex-1 h-10 rounded-xl border border-white/8 bg-surface text-xs font-semibold text-strong hover:bg-elevated transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmPaid}
-                  disabled={pending}
-                  className="flex-1 h-10 rounded-xl bg-accent text-xs font-semibold text-ink hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
-                >
-                  {pending ? "Saving..." : "Confirm paid"}
-                </button>
-              </div>
+              <p className="text-[11px] text-dim bg-white/4 rounded-xl p-3 leading-relaxed">
+                Once you&apos;ve paid, ask a group member to confirm the settlement in their Owely app. Or
+                <strong> sign up to claim your account</strong> and confirm it yourself.
+              </p>
+
+              <button
+                onClick={() => setOpen(false)}
+                className="h-11 rounded-xl border border-white/8 bg-surface text-xs font-semibold text-strong hover:bg-elevated transition-colors"
+              >
+                Close
+              </button>
             </div>
           )}
         </div>

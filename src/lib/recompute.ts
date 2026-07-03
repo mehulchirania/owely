@@ -144,9 +144,14 @@ export const recomputeMutations = {
   }),
 
   /** Delete an expense doc. */
-  deleteExpense: (groupId: string, expenseId: string): RecomputeMutation => ({
+  deleteExpense: (
+    groupId: string,
+    expenseId: string,
+    onDelete?: (tx: Transaction) => void,
+  ): RecomputeMutation => ({
     write: (tx) => {
       tx.delete(getAdminDb().doc(paths.expense(groupId, expenseId)));
+      onDelete?.(tx);
     },
     project: (state) => {
       state.expenses = state.expenses.filter((expense) => expense.id !== expenseId);

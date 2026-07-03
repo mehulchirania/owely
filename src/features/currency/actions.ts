@@ -2,7 +2,6 @@
 
 import { FieldValue } from "firebase-admin/firestore";
 import { revalidatePath } from "next/cache";
-import { requirePaidFeature } from "@/lib/entitlements";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { paths } from "@/lib/firebase/collections";
 import { logActionError } from "@/lib/log";
@@ -22,9 +21,6 @@ export async function updateDisplayCurrency(
   if (!auth.ok) return auth;
   const parsed = parseInput(UpdateDisplayCurrencySchema, input);
   if (!parsed.success) return failure(parsed.message, { fieldErrors: parsed.fieldErrors });
-
-  const entitlement = await requirePaidFeature(auth.data.uid, "multi-currency");
-  if (!entitlement.ok) return entitlement;
 
   try {
     await getAdminDb().doc(paths.user(auth.data.uid)).set(
@@ -50,9 +46,6 @@ export async function setGroupBaseCurrency(
 
   const auth = await authorizeMember(parsed.data.groupId);
   if (!auth.ok) return auth;
-
-  const entitlement = await requirePaidFeature(auth.data.user.uid, "multi-currency");
-  if (!entitlement.ok) return entitlement;
 
   if (auth.data.group.createdBy !== auth.data.user.uid) {
     return failure("Only the group creator can change the base currency.", {

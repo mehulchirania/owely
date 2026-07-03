@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections } from "@/lib/firebase/collections";
+import { FieldValue } from "firebase-admin/firestore";
 
 export async function GET(
   request: Request,
@@ -37,6 +38,11 @@ export async function GET(
     if (!guestUid) {
       return new NextResponse("Missing guest member reference", { status: 500 });
     }
+
+    await inviteRef.update({
+      status: "consumed",
+      consumedAt: FieldValue.serverTimestamp(),
+    });
 
     // Set a lightweight cookie tracking the guest identity
     const cookieStore = await cookies();

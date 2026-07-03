@@ -12,7 +12,7 @@ import {
 import { mapExpense } from "@/lib/firebase/mapping";
 import { computeSplits } from "@/lib/expense-splits";
 import { logActionError } from "@/lib/log";
-import { checkFreemiumLimit, incrementCounterInTx } from "@/lib/freemium";
+import { checkFreemiumLimit, incrementCounterInTx, decrementCounterInTx } from "@/lib/freemium";
 import { fetchUser } from "@/features/auth/queries";
 import { authorizeMember } from "@/features/auth/session";
 import { failure, success, type ActionResult } from "@/lib/result";
@@ -161,7 +161,7 @@ export async function deleteExpense(input: unknown): Promise<ActionResult<null>>
     await recomputeSimplified(
       groupId,
       auth.data.group.members,
-      recomputeMutations.deleteExpense(groupId, expenseId),
+      recomputeMutations.deleteExpense(groupId, expenseId, decrementCounterInTx(groupId)),
     );
     revalidatePath(`/groups/${groupId}`);
     return success(null);

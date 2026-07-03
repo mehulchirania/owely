@@ -137,7 +137,7 @@ export const AcceptInviteSchema = z.object({ inviteId: UidSchema });
 /** Raw phone strings (from a contact picker) to check for existing accounts.
  * Normalised + filtered in the action, so invalid entries are ignored there. */
 export const FindUsersSchema = z.object({
-  phones: z.array(z.string()).min(1, "No numbers to check.").max(500),
+  phones: z.array(z.string()).min(1, "No numbers to check.").max(50),
 });
 export type FindUsersInput = z.infer<typeof FindUsersSchema>;
 

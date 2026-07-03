@@ -281,7 +281,7 @@ export async function addMembersByPhone(
 
 export async function findRegisteredUsers(
   input: unknown,
-): Promise<ActionResult<Array<{ phone: string; uid: string; name: string; photoURL: string | null }>>> {
+): Promise<ActionResult<Array<{ phone: string; name: string; photoURL: string | null }>>> {
   const auth = await authorizeUser();
   if (!auth.ok) return auth;
   const parsed = parseInput(FindUsersSchema, input);
@@ -297,14 +297,13 @@ export async function findRegisteredUsers(
   const phones = [...normalized];
   try {
     const db = getAdminDb();
-    const out: Array<{ phone: string; uid: string; name: string; photoURL: string | null }> = [];
+    const out: Array<{ phone: string; name: string; photoURL: string | null }> = [];
     for (let i = 0; i < phones.length; i += 30) {
       const chunk = phones.slice(i, i + 30);
       const snap = await db.collection(Collections.users).where("phone", "in", chunk).get();
       for (const doc of snap.docs) {
         out.push({
           phone: doc.get("phone"),
-          uid: doc.id,
           name: doc.get("displayName") ?? "",
           photoURL: doc.get("photoURL") ?? null,
         });

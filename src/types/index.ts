@@ -27,6 +27,8 @@ export interface User {
   tier: "free" | "paid";
   /** The user's preferred display currency. */
   currency: CurrencyCode;
+  /** Timestamp when the Trip Pass expires, if purchased. */
+  tripPassExpiresAt?: number;
   createdAt: number;
 }
 

@@ -46,6 +46,12 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  # reCAPTCHA Enterprise site key for Firebase App Check.
+  # Set via: firebase apphosting:env:set NEXT_PUBLIC_RECAPTCHA_SITE_KEY=<key>
+  - variable: NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+    availability:
+      - BUILD
+      - RUNTIME
 
   # Secrets (do NOT inline). Create them once before deploying:
   #   firebase apphosting:secrets:set FIREBASE_SERVICE_ACCOUNT_KEY

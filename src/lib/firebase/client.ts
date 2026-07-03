@@ -18,6 +18,12 @@ import {
   persistentMultipleTabManager,
   type Firestore,
 } from "firebase/firestore";
+import {
+  initializeAppCheck,
+  ReCaptchaEnterpriseProvider,
+  CustomProvider,
+  type AppCheck,
+} from "firebase/app-check";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -47,6 +53,48 @@ export function getFirebaseApp(): FirebaseApp {
   if (getApps().length) return getApp();
   assertConfig();
   return initializeApp(firebaseConfig);
+}
+
+/**
+ * Initialize Firebase App Check. Must be called before any Auth or Firestore
+ * operation. Uses reCAPTCHA Enterprise in production and a debug token locally.
+ *
+ * To run locally:
+ *  1. Set NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN to any UUID in .env.local
+ *  2. Register that UUID as an allowed debug token in the Firebase console
+ *     (App Check → Apps → your web app → Debug tokens).
+ */
+let appCheckInstance: AppCheck | null = null;
+export function getAppCheck(): AppCheck {
+  if (appCheckInstance) return appCheckInstance;
+  const app = getFirebaseApp();
+  const debugToken = process.env.NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN;
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+  if (debugToken) {
+    // Debug mode: use a static token registered in the Firebase console.
+    // Never set this in production — the env var must be absent in prod builds.
+    (self as unknown as Record<string, unknown>).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
+    appCheckInstance = initializeAppCheck(app, {
+      provider: new CustomProvider({ getToken: async () => ({ token: debugToken, expireTimeMillis: Date.now() + 3_600_000 }) }),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } else if (siteKey) {
+    appCheckInstance = initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(siteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } else {
+    console.warn(
+      "[owely] App Check is not configured. Set NEXT_PUBLIC_RECAPTCHA_SITE_KEY " +
+        "(production) or NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN (local dev). " +
+        "Auth and Firestore will work but are unprotected.",
+    );
+    // Return a stub so callers don't need to null-check.
+    return {} as AppCheck;
+  }
+
+  return appCheckInstance;
 }
 
 export function getFirebaseAuth(): Auth {
