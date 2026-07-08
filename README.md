@@ -62,6 +62,7 @@ src/
     simplify-debts.ts       Net-balance + greedy min-cashflow engine (pure)
     upi.ts                  UPI deep-link builder (paise→rupees at the boundary)
     upi-links.ts            Higher-level settle links with VPA-priority rule
+    settlement-flow.ts      Client-safe settle QR/reminder message helpers
     parse-rupees.ts         Client-safe rupee→paise parser (mirrors rupeesToPaise)
     currency.ts             Supported paid display/base currency metadata
     receipt-ocr.ts          Receipt OCR hint extraction (pure, tested)
@@ -122,8 +123,9 @@ Firebase Auth authorized domains.
 
 Core app complete end-to-end (Phases 1-5): Google + Phone OTP sign-in, groups
 with phone invites, expenses with equal/unequal/percentage splits, live debt
-simplification, and UPI/cash settle-up with explicit method capture,
-over-settlement guards, payment-reference capture, and dispute. The
+simplification, and UPI/cash settle-up via a bottom pay sheet with GPay,
+PhonePe, generic UPI, desktop QR fallback, explicit method capture,
+over-settlement guards, payment-reference capture, manual reminders, and dispute. The
 `Owely.dc.html` design handoff has been applied to the remaining app surfaces,
 including forms, menus, settings, errors, settle-up, and a login screen styled
 like the post-login dashboard. Phase 6 is fully complete, supporting 1:1 People UI,

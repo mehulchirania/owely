@@ -15,7 +15,7 @@ import { InviteMemberForm } from "@/components/InviteMemberForm";
 import { ExpenseFeed } from "@/components/ExpenseFeed";
 import { memberAvatar } from "@/lib/avatar";
 import { DashboardTabs } from "@/components/DashboardTabs";
-import { SettlePanel, type SettleDebt, type SettlementRow } from "@/components/SettlePanel";
+import { SettlePanel, type ReminderDebt, type SettleDebt, type SettlementRow } from "@/components/SettlePanel";
 import { RecurringPanel } from "@/components/RecurringPanel";
 import { CategoryPicker } from "@/components/CategoryPicker";
 import type { Group } from "@/types";
@@ -107,6 +107,14 @@ export default async function GroupPage({
       toPhone: phoneOf(t.to),
       amount: t.amount,
       amountRupees: paiseToRupees(t.amount),
+    }));
+
+  const owedToMe: ReminderDebt[] = transfers
+    .filter((t) => t.to === user.uid)
+    .map((t) => ({
+      from: t.from,
+      fromName: nameOf(group, t.from),
+      amount: t.amount,
     }));
 
   const history: SettlementRow[] = settlements
@@ -436,6 +444,7 @@ export default async function GroupPage({
                 groupId={groupId}
                 groupName={group.name}
                 myDebts={myDebts}
+                owedToMe={owedToMe}
                 history={history}
               />
             </div>

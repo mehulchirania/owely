@@ -4,6 +4,24 @@ Prepend a new dated entry at the top after every change. Newest first.
 
 ---
 
+## 2026-07-08 — Fable Phase 3: Smooth transactions
+
+- Rebuilt `SettlePanel.tsx` around a bottom pay sheet launched from each active debt row.
+- The sheet pre-fills editable rupee amounts via shared `parseRupees`, blocks over-settlement client-side, and still relies on the existing `settleUp` Server Action for authoritative validation/write/recompute.
+- Added GPay, PhonePe, and generic UPI 56px app rows using `buildSettleLinks` from `lib/upi.ts`; after tapping a link the sheet enters an awaiting-payment state and refocuses on `visibilitychange`.
+- Added explicit confirmation flow: "I've paid" → optional UTR/cash note → `settleUp` → optimistic history row + success state; "I didn't pay" resets the sheet.
+- Added cash confirmation as the only non-UPI method.
+- Added desktop QR fallback using the generic `upi://pay` payload and the `qrcode` package.
+- Added "Owed to you" reminder rows on both settle entry points; reminders use Web Share when available and fall back to `https://wa.me/?text=...`.
+- Created `src/lib/settlement-flow.ts` with tested QR payload and share-message helpers; added `src/lib/settlement-flow.test.ts`.
+
+**Verification:** typecheck ✅ · tests passing ✅ · lint 0 errors 0 warnings ✅ · build clean ✅
+**Screenshots:** `screenshots/phase3-mobile-375-pay-sheet-viewport.png`,
+`screenshots/phase3-desktop-1280-pay-sheet-viewport.png`, and
+`screenshots/phase3-mobile-375-awaiting-payment.png`.
+
+---
+
 ## 2026-07-08 — Fable Phase 2.1 & 2.2: App Shell & Speed Primitives
 
 **2.1 — App Shell**

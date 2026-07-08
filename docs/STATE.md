@@ -2,11 +2,15 @@
 
 India-first freemium expense-splitting app. Android + Web.
 
-_Last updated: 2026-07-08 (Fable Phase 2.1 & 2.2 complete — see `FABLE_INSTRUCTIONS.md`)_
+_Last updated: 2026-07-08 (Fable Phase 3 complete — see `FABLE_INSTRUCTIONS.md`)_
 
 > **Fable overhaul (2026-07-08):** `FABLE_INSTRUCTIONS.md` is the active
 > six-phase execution plan. **Phase 1 ✅** — known fixes landed.
-> **Phase 2.1 & 2.2 ✅** — App shell (BottomNav scroll/hide, QuickActionSheet, PullToRefresh, Page transitions) & Perceived Speed (Skeletons, Toast system) landed. Phases 2.3–6 pending.
+> **Phase 2.1 & 2.2 ✅** — App shell (BottomNav scroll/hide, QuickActionSheet, PullToRefresh, Page transitions) & Perceived Speed (Skeletons, Toast system) landed.
+> **Phase 3 ✅** — settle-up now uses a bottom pay sheet with GPay, PhonePe,
+> generic UPI, desktop QR fallback, explicit awaiting-payment confirmation,
+> cash confirmation, optimistic history, and manual Web Share/WhatsApp reminders.
+> Phase 2.3 and Phases 4–6 remain pending.
 
 > **Audit status (2026-07-03):** `docs/AUDIT.md` records the full issue list.
 > **P0 (S1–S3) ✅** Admin HMAC auth, single-use read-only guests, Trip Pass expiry.
@@ -44,6 +48,7 @@ src/
     simplify-debts.ts(+test) Net balances + greedy min-cashflow; simplifyFromNet,
                              netWithSettlements, netPositionFromSettlements
     upi.ts (+test)           UPI deep-link builder (paise→rupees at boundary)
+    settlement-flow.ts(+test) QR payload + manual reminder/share helpers
     currency.ts              Supported display/base currency metadata
     receipt-ocr.ts (+test)   Receipt OCR hint extraction
     vision-ocr.ts            Server-only Google Vision OCR client

@@ -4,7 +4,7 @@ import { requireSession } from "@/features/auth/session";
 import { fetchGroup } from "@/features/groups/queries";
 import { fetchSettlements } from "@/features/settlements/queries";
 import { fetchUser } from "@/features/auth/queries";
-import { SettlePanel, type SettleDebt, type SettlementRow } from "@/components/SettlePanel";
+import { SettlePanel, type ReminderDebt, type SettleDebt, type SettlementRow } from "@/components/SettlePanel";
 
 export default async function SettlePage({
   params,
@@ -33,6 +33,14 @@ export default async function SettlePage({
       toPhone: phoneOf(t.to),
       amount: t.amount,
       amountRupees: (t.amount / 100).toFixed(2),
+    }));
+
+  const owedToMe: ReminderDebt[] = group.simplifiedDebts
+    .filter((t) => t.to === user.uid)
+    .map((t) => ({
+      from: t.from,
+      fromName: nameOf(t.from),
+      amount: t.amount,
     }));
 
   const settlements = await fetchSettlements(groupId);
@@ -73,6 +81,7 @@ export default async function SettlePage({
       <SettlePanel
         groupId={groupId}
         myDebts={myDebts}
+        owedToMe={owedToMe}
         history={history}
         groupName={group.name}
       />
