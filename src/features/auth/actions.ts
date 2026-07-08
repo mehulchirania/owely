@@ -211,3 +211,65 @@ export async function updateProfile(input: unknown): Promise<ActionResult<User>>
     return failure("Could not save your profile.");
   }
 }
+
+export async function deleteAccount(): Promise<ActionResult<void>> {
+  const auth = await authorizeUser();
+  if (!auth.ok) return auth;
+  const uid = auth.data.uid;
+
+  try {
+    const db = getAdminDb();
+    const { getAuth } = await import("firebase-admin/auth");
+    
+    // 1. Tombstone in all groups (standard and direct)
+    const groupsQuery = await db.collection(Collections.groups)
+      .where(`members.${uid}.role`, "in", ["owner", "admin", "member", "guest"])
+      .get();
+      
+    const batch = db.batch();
+    for (const doc of groupsQuery.docs) {
+      batch.update(doc.ref, {
+        [`members.${uid}.name`]: "Deleted User",
+        [`members.${uid}.photoURL`]: FieldValue.delete(),
+        [`members.${uid}.phone`]: FieldValue.delete(),
+      });
+    }
+    
+    // 2. Delete templates
+    const templatesQuery = await db.collection(Collections.templates)
+      .where("ownerUid", "==", uid)
+      .get();
+    for (const doc of templatesQuery.docs) {
+      batch.delete(doc.ref);
+    }
+    
+    // 3. Delete own expenses
+    const ownExpensesQuery = await db.collection(paths.ownExpenses(uid)).get();
+    for (const doc of ownExpensesQuery.docs) {
+      batch.delete(doc.ref);
+    }
+    
+    // 4. Delete categories
+    const categoriesQuery = await db.collection(Collections.categories)
+      .where("ownerUid", "==", uid)
+      .get();
+    for (const doc of categoriesQuery.docs) {
+      batch.delete(doc.ref);
+    }
+    
+    await batch.commit();
+
+    // 5. Recursively delete the user document (which includes contacts subcollection)
+    await db.recursiveDelete(db.doc(paths.user(uid)));
+
+    // 6. Delete auth user and revoke sessions
+    const adminAuth = getAuth();
+    await adminAuth.revokeRefreshTokens(uid);
+    await adminAuth.deleteUser(uid);
+    
+    return success(undefined);
+  } catch (error) {
+    logActionError("deleteAccount", error);
+    return failure("Could not delete your account. Please try again or contact support.");
+  }
+}

@@ -3,6 +3,8 @@ import { Space_Grotesk, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { FirebaseInit } from "@/components/FirebaseInit";
 
+import { InstallPromptProvider } from "@/components/InstallPromptProvider";
+
 const grotesk = Space_Grotesk({
   variable: "--font-grotesk",
   subsets: ["latin"],
@@ -33,8 +35,28 @@ export default function RootLayout({
       className={`${grotesk.variable} ${jakarta.variable} h-full`}
     >
       <body className="min-h-full flex flex-col bg-ink text-hi">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(
+                    function(registration) {
+                      console.log('ServiceWorker registration successful');
+                    },
+                    function(err) {
+                      console.log('ServiceWorker registration failed: ', err);
+                    }
+                  );
+                });
+              }
+            `,
+          }}
+        />
         <FirebaseInit />
-        {children}
+        <InstallPromptProvider>
+          {children}
+        </InstallPromptProvider>
       </body>
     </html>
   );

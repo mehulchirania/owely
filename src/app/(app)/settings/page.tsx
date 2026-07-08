@@ -9,6 +9,7 @@ import { DisplayCurrencyForm } from "@/components/DisplayCurrencyForm";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { SignOutButton } from "@/components/SignOutButton";
 import { ClearImportedContactsButton } from "@/components/ClearImportedContactsButton";
+import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 
 export const metadata: Metadata = { title: "Me — Owely" };
 
@@ -120,13 +121,7 @@ export default async function SettingsPage() {
         <p className="mb-4 text-[12px] text-coral-soft">
           Deleting your account is permanent. All personal data will be removed.
         </p>
-        <button
-          type="button"
-          onClick={() => {}}
-          className="flex h-[38px] items-center justify-center rounded-[10px] border border-coral/20 bg-coral/10 px-4 text-[13px] font-bold text-coral transition-colors hover:bg-coral/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
-        >
-          Delete account
-        </button>
+        <DeleteAccountButton />
       </section>
     </div>
   );

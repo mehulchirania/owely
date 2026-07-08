@@ -10,6 +10,7 @@ import {
 import { formatPaise } from "@/lib/money";
 import { netPositionFromSettlements } from "@/lib/simplify-debts";
 import { HomeActions } from "@/components/HomeActions";
+import { InstallBanner } from "@/components/InstallBanner";
 
 export const metadata: Metadata = { title: "Home — Owely" };
 
@@ -84,6 +85,9 @@ export default async function HomePage() {
           {initial}
         </Link>
       </div>
+
+      {/* PWA Install Banner */}
+      <InstallBanner />
 
       {/* Net balance hero card */}
       <div

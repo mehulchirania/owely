@@ -14,5 +14,21 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add expense",
+      "short_name": "Expense",
+      "description": "Add a new expense",
+      "url": "/groups?action=add-expense",
+      "icons": [{ "src": "/icon.png", "sizes": "512x512" }]
+    },
+    {
+      "name": "Settle up",
+      "short_name": "Settle",
+      "description": "View balances and settle up",
+      "url": "/home?action=settle",
+      "icons": [{ "src": "/icon.png", "sizes": "512x512" }]
+    }
   ]
 }

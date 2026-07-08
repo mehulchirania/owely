@@ -24,3 +24,4 @@
   121 |             .map((g) => ({ {
   digest: '3908774611'
 }
+⚠ Fast Refresh had to perform a full reload when ./src/components/InstallPromptProvider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
