@@ -200,7 +200,7 @@ export default async function GroupPage({
       </div>
 
       {/* Inline Tabs switcher */}
-      <DashboardTabs tabs={GROUP_TABS} activeTab={activeTab} />
+      <DashboardTabs tabs={GROUP_TABS} activeTab={activeTab} className="sticky top-0 z-10 bg-[#0d0a14]/95 backdrop-blur-md pt-2" />
 
       {/* Tab Content */}
       <div className="mt-2">
@@ -315,7 +315,13 @@ export default async function GroupPage({
                 </div>
 
                 {/* Transfer cards */}
-                {transfers.map((t) => {
+                {transfers.sort((a, b) => {
+                  const aIsMe = a.from === user.uid || a.to === user.uid;
+                  const bIsMe = b.from === user.uid || b.to === user.uid;
+                  if (aIsMe && !bIsMe) return -1;
+                  if (!aIsMe && bIsMe) return 1;
+                  return b.amount - a.amount;
+                }).map((t) => {
                   const iOwe = t.from === user.uid;
                   const isToMe = t.to === user.uid;
                   const fromAvatar = memberAvatar(t.from);

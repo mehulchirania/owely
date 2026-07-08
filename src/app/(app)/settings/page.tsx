@@ -54,10 +54,14 @@ export default async function SettingsPage() {
           {email && (
             <p className="mt-0.5 truncate text-[12px] text-dim">{email}</p>
           )}
-          {upiId && (
+          {upiId ? (
             <p className="mt-0.5 truncate text-[11.5px] font-medium text-accent">
               {upiId}
             </p>
+          ) : (
+            <a href="#edit-profile" className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-accent transition-colors hover:bg-accent/25">
+              + Add UPI ID
+            </a>
           )}
         </div>
         <a
@@ -98,6 +102,21 @@ export default async function SettingsPage() {
       <div className="flex justify-center pt-2 pb-4">
         <SignOutButton />
       </div>
+
+      {/* Danger Zone */}
+      <section className="rounded-[14px] border border-coral/10 bg-coral/5 p-[18px]">
+        <p className="mb-1 text-[13.5px] font-semibold text-coral">Danger Zone</p>
+        <p className="mb-4 text-[12px] text-coral-soft">
+          Deleting your account is permanent. All personal data will be removed.
+        </p>
+        <button
+          type="button"
+          onClick={() => {}}
+          className="flex h-[38px] items-center justify-center rounded-[10px] border border-coral/20 bg-coral/10 px-4 text-[13px] font-bold text-coral transition-colors hover:bg-coral/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
+        >
+          Delete account
+        </button>
+      </section>
     </div>
   );
 }

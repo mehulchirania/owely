@@ -66,7 +66,7 @@ export function BatchInviteForm({ groupId }: { groupId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-9 items-center gap-1.5 rounded-xl border border-white/8 bg-card px-3 text-[12.5px] font-medium text-muted transition-colors hover:bg-elevated hover:text-strong"
+        className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-white/8 bg-card px-3 text-[12.5px] font-medium text-muted transition-colors hover:bg-elevated hover:text-strong"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -92,7 +92,7 @@ export function BatchInviteForm({ groupId }: { groupId: string }) {
             <span className="text-accent font-semibold">{result.invited} invited</span>
             {result.skipped > 0 && <span className="text-dim">{result.skipped} skipped</span>}
           </div>
-          <button type="button" onClick={reset} className="h-9 rounded-xl border border-white/8 text-sm font-medium text-strong hover:bg-elevated">
+          <button type="button" onClick={reset} className="min-h-[44px] rounded-xl border border-white/8 text-sm font-medium text-strong hover:bg-elevated px-4">
             Done
           </button>
         </div>

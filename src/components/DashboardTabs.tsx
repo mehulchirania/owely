@@ -10,9 +10,10 @@ interface TabOption {
 interface DashboardTabsProps {
   tabs: readonly TabOption[];
   activeTab: string;
+  className?: string;
 }
 
-export function DashboardTabs({ tabs, activeTab }: DashboardTabsProps) {
+export function DashboardTabs({ tabs, activeTab, className = "" }: DashboardTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -24,8 +25,8 @@ export function DashboardTabs({ tabs, activeTab }: DashboardTabsProps) {
   }
 
   return (
-    <div className="-mx-4 overflow-x-auto border-b border-white/6 px-4 pb-px">
-      <nav className="flex min-w-max gap-5 sm:gap-6" aria-label="Tabs">
+    <div className={`-mx-4 overflow-x-auto border-b border-white/6 px-4 pb-px scrollbar-hide ${className}`}>
+      <nav className="flex min-w-max gap-5 sm:gap-6 pt-2" aria-label="Tabs">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTab;
           return (

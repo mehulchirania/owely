@@ -45,7 +45,7 @@ export function DisplayCurrencyForm({ current, isPaid }: Props) {
             onChange={(e) => handleChange(e.target.value as CurrencyCode)}
             disabled={pending}
             aria-label="Display currency"
-            className="h-9 rounded-[10px] border border-white/8 bg-card px-3 text-[13px] text-hi outline-none focus:border-accent/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent [&>option]:bg-surface"
+            className="min-h-[44px] rounded-[10px] border border-white/8 bg-card px-3 text-[13px] text-hi outline-none focus:border-accent/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent [&>option]:bg-surface"
           >
             {SUPPORTED_CURRENCY_CODES.map((c) => (
               <option key={c} value={c}>{c} — {currencyLabel(c)}</option>

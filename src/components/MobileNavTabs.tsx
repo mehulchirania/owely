@@ -20,7 +20,7 @@ export function MobileNavTabs() {
           <Link
             key={href}
             href={href}
-            className={`flex h-9 flex-1 items-center justify-center rounded-[9px] text-[12.5px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+            className={`flex min-h-[44px] flex-1 items-center justify-center rounded-[9px] text-[12.5px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
               active ? "bg-accent/10 text-hi" : "bg-card text-muted hover:bg-elevated"
             }`}
           >

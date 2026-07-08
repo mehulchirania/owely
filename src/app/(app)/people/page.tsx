@@ -120,51 +120,48 @@ export default async function PeoplePage() {
               <li key={c.uid}>
                 <Link
                   href={href}
-                  className="flex items-center gap-3 rounded-[18px] border border-white/7 bg-card px-4 py-[13px] transition-all hover:border-white/12 hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="flex items-center gap-3.5 rounded-[20px] border border-white/6 bg-card px-[16px] py-[15px] transition-all hover:border-white/10 hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   {/* Avatar */}
                   <span
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-display text-base font-bold ${c.avatarBg} ${c.avatarFg}`}
+                    className={`flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full font-display text-[18px] font-bold shadow-sm ${c.avatarBg} ${c.avatarFg}`}
                   >
                     {c.name.charAt(0).toUpperCase()}
                   </span>
 
-                  {/* Name + groups */}
+                  {/* Name + Net */}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13.5px] font-semibold text-hi">
-                      {c.name}
-                    </p>
-                    <p className="truncate text-[11px] text-dim">
-                      {c.sharedGroups.slice(0, 2).join(", ")}
-                      {c.sharedGroups.length > 2 &&
-                        ` +${c.sharedGroups.length - 2} more`}
-                    </p>
-                  </div>
-
-                  {/* Net balance */}
-                  {c.net !== 0 ? (
-                    <div className="shrink-0 text-right">
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className="truncate text-[15px] font-semibold text-hi">
+                        {c.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <p
-                        className={`font-display text-[15px] font-semibold ${
-                          c.net > 0 ? "text-mint" : "text-coral"
+                        className={`font-display text-[15px] font-bold ${
+                          c.net > 0 ? "text-mint" : c.net < 0 ? "text-coral" : "text-dim"
                         }`}
                       >
-                        {c.net > 0 ? "+" : "−"}
+                        {c.net > 0 ? "+" : c.net < 0 ? "−" : ""}
                         {formatPaise(Math.abs(c.net))}
                       </p>
-                      <p
-                        className={`text-[10px] ${
-                          c.net > 0 ? "text-mint-soft" : "text-coral-soft"
-                        }`}
-                      >
-                        {c.net > 0 ? "owes you" : "you owe"}
-                      </p>
+                      <span className={`text-[11px] font-medium ${c.net > 0 ? "text-mint-soft" : c.net < 0 ? "text-coral-soft" : "text-faint"}`}>
+                        {c.net > 0 ? "owes you" : c.net < 0 ? "you owe" : "settled"}
+                      </span>
                     </div>
-                  ) : (
-                    <span className="shrink-0 text-[12px] font-semibold text-mint">
-                      settled
+                  </div>
+
+                  {/* Shared Groups */}
+                  <div className="flex shrink-0 flex-col items-end gap-1 max-w-[90px]">
+                    <span className="truncate text-right text-[11px] font-medium text-dim w-full">
+                      {c.sharedGroups[0]}
                     </span>
-                  )}
+                    {c.sharedGroups.length > 1 && (
+                      <span className="text-[10px] text-faint">
+                        +{c.sharedGroups.length - 1} more
+                      </span>
+                    )}
+                  </div>
                 </Link>
               </li>
             );

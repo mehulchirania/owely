@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { QuickActionSheet } from "./QuickActionSheet";
 
 export function BottomNav() {
@@ -23,6 +24,7 @@ export function BottomNav() {
   const fabHref = groupId ? `/groups/${groupId}/expenses/new` : undefined;
 
   const { scrollDir, isScrolled } = useScrollDirection(15);
+  const reducedMotion = useReducedMotion();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const item = (active: boolean) =>
@@ -35,9 +37,11 @@ export function BottomNav() {
 
   return (
     <nav
-      className={`fixed bottom-0 left-0 right-0 z-40 flex h-[68px] items-stretch bg-ink lg:hidden transition-transform duration-300 ease-out border-t ${
+      className={`fixed bottom-0 left-0 right-0 z-40 flex h-[68px] items-stretch bg-ink lg:hidden border-t ${
+        reducedMotion ? "" : "transition-transform duration-300 ease-out"
+      } ${
         isScrolled ? "border-white/6 shadow-[0_-4px_24px_-4px_rgba(0,0,0,0.5)]" : "border-transparent"
-      } ${scrollDir === "down" ? "translate-y-[120%]" : "translate-y-0"}`}
+      } ${reducedMotion ? "translate-y-0" : scrollDir === "down" ? "translate-y-[120%]" : "translate-y-0"}`}
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Primary navigation"
     >

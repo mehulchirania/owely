@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /**
  * Motion shell for the marketing landing page.
@@ -12,13 +13,11 @@ import { useEffect, type ReactNode } from "react";
  * everything renders static and no listeners or rAF loop are installed.
  */
 export default function LandingMotion({ children }: { children: ReactNode }) {
+  const reduced = useReducedMotion();
+
   useEffect(() => {
     const root = document.getElementById("owely-landing");
     if (!root) return;
-
-    const reduced =
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const cleanups: Array<() => void> = [];
 
@@ -235,7 +234,7 @@ export default function LandingMotion({ children }: { children: ReactNode }) {
     }
 
     return () => cleanups.forEach((fn) => fn());
-  }, []);
+  }, [reduced]);
 
   return (
     <div

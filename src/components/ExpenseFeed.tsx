@@ -106,66 +106,97 @@ export function ExpenseFeed({ groupId, currentUid, memberNames, initialExpenses 
     );
   }
 
+  function formatDayHeader(ms: number) {
+    const d = new Date(ms);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    
+    if (d.toDateString() === today.toDateString()) return "Today";
+    if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+    
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: d.getFullYear() !== today.getFullYear() ? "numeric" : undefined });
+  }
+
+  const grouped: Record<string, Expense[]> = {};
+  for (const e of expenses) {
+    const day = formatDayHeader(e.createdAt);
+    if (!grouped[day]) grouped[day] = [];
+    grouped[day].push(e);
+  }
+
   return (
-    <ul className="flex flex-col gap-1">
-      {expenses.map((e) => {
-        const myShare = e.splits[currentUid] ?? 0;
-        const iPaid = e.paidBy === currentUid;
-        const lent = e.amount - myShare;
-        const cat = categoryStyle(e.category);
-        return (
-          <li key={e.id} className="group flex items-center gap-3 rounded-2xl px-2 py-2.5 transition-colors hover:bg-card">
-            <span
-              className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[13px] text-xl ${cat.tile}`}
-              role="img"
-              aria-hidden
-            >
-              {cat.emoji}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold text-hi">{e.title}</p>
-              <p className="text-xs text-dim">
-                {nameOf(e.paidBy)} paid · {formatPaise(e.amount)}
-              </p>
-            </div>
-            <div className="shrink-0 text-right">
-              {iPaid && lent > 0 ? (
-                <>
-                  <div className="text-[11px] text-mint-soft">you lent</div>
-                  <div className="font-display text-sm font-semibold text-mint">{formatPaise(lent)}</div>
-                </>
-              ) : !iPaid && myShare > 0 ? (
-                <>
-                  <div className="text-[11px] text-coral-soft">you owe</div>
-                  <div className="font-display text-sm font-semibold text-coral">{formatPaise(myShare)}</div>
-                </>
-              ) : (
-                <div className="text-[11px] text-faint">not involved</div>
-              )}
-            </div>
-            {!currentUid.startsWith("guest_") && (
-              <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                <a
-                  href={`/groups/${groupId}/expenses/${e.id}/edit`}
-                  aria-label={`Edit ${e.title}`}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-dim hover:bg-elevated hover:text-strong focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                >
-                  ✎
-                </a>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(e.id)}
-                  disabled={pendingId === e.id}
-                  aria-label={`Delete ${e.title}`}
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-dim hover:bg-coral/10 hover:text-coral focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50"
-                >
-                  {pendingId === e.id ? "…" : "🗑"}
-                </button>
-              </div>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <div className="flex flex-col gap-6">
+      {Object.entries(grouped).map(([day, dayExpenses]) => (
+        <div key={day} className="flex flex-col gap-2.5">
+          <h3 className="px-1 text-[11px] font-bold uppercase tracking-[0.08em] text-faint">
+            {day}
+          </h3>
+          <ul className="flex flex-col gap-1.5">
+            {dayExpenses.map((e) => {
+              const myShare = e.splits[currentUid] ?? 0;
+              const iPaid = e.paidBy === currentUid;
+              const lent = e.amount - myShare;
+              const cat = categoryStyle(e.category);
+              
+              let phrasing = `${nameOf(e.paidBy)} paid ${formatPaise(e.amount)}`;
+              if (iPaid && lent > 0) phrasing += ` · you lent ${formatPaise(lent)}`;
+              else if (!iPaid && myShare > 0) phrasing += ` · you owe ${formatPaise(myShare)}`;
+              else if (!iPaid && myShare === 0) phrasing += ` · not involved`;
+
+              return (
+                <li key={e.id} className="group relative flex items-center gap-3.5 rounded-2xl border border-white/4 bg-card px-3 py-3 transition-colors hover:bg-elevated">
+                  <span
+                    className={`flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-[14px] text-[20px] shadow-sm ${cat.tile}`}
+                    role="img"
+                    aria-hidden
+                  >
+                    {cat.emoji}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-semibold text-hi">{e.title}</p>
+                    <p className="truncate text-[12px] font-medium text-dim">
+                      {phrasing}
+                    </p>
+                  </div>
+                  
+                  {/* Amount / net effect visual right side */}
+                  <div className="shrink-0 text-right pr-1">
+                    {iPaid && lent > 0 ? (
+                      <span className="font-display text-[15px] font-bold text-mint">+{formatPaise(lent)}</span>
+                    ) : !iPaid && myShare > 0 ? (
+                      <span className="font-display text-[15px] font-bold text-coral">−{formatPaise(myShare)}</span>
+                    ) : (
+                      <span className="font-display text-[15px] font-semibold text-faint">{formatPaise(e.amount)}</span>
+                    )}
+                  </div>
+
+                  {!currentUid.startsWith("guest_") && (
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-elevated/90 px-2 py-1.5 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 focus-within:opacity-100 rounded-xl border border-white/10 shadow-sm">
+                      <a
+                        href={`/groups/${groupId}/expenses/${e.id}/edit`}
+                        aria-label={`Edit ${e.title}`}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-dim hover:bg-surface hover:text-strong focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      >
+                        ✎
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(e.id)}
+                        disabled={pendingId === e.id}
+                        aria-label={`Delete ${e.title}`}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-dim hover:bg-coral/15 hover:text-coral focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50"
+                      >
+                        {pendingId === e.id ? "…" : "🗑"}
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }

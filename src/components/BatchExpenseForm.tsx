@@ -245,10 +245,10 @@ export function BatchExpenseForm({ groupId, members, currentUid }: Props) {
                       key={m.uid}
                       type="button"
                       onClick={() => toggleParticipant(index, m.uid)}
-                      className={`h-9 px-3 rounded-xl border text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                      className={`min-h-[44px] px-3 rounded-xl border text-[13px] font-semibold transition-colors flex items-center gap-1.5 ${
                         isChecked
-                          ? "border-accent bg-accent/10 text-accent"
-                          : "border-white/8 bg-surface text-dim hover:bg-elevated"
+                          ? "border-accent bg-accent/15 text-ink"
+                          : "border-white/8 bg-card text-muted"
                       }`}
                     >
                       {isChecked && (

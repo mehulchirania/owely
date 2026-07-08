@@ -77,11 +77,11 @@ export function FilteredGroupsList({ groups, userId, customCategories }: Props) 
 
       {/* Category filter chips */}
       {(applicablePredefined.length > 0 || applicableCustom.length > 0) && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 pt-1 snap-x scrollbar-hide">
           <button
             type="button"
             onClick={() => setSelectedCatId("all")}
-            className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+            className={`shrink-0 snap-start rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
               selectedCatId === "all"
                 ? "bg-accent text-ink"
                 : "border border-white/8 bg-card text-muted hover:bg-elevated"
@@ -94,7 +94,7 @@ export function FilteredGroupsList({ groups, userId, customCategories }: Props) 
               key={c.id}
               type="button"
               onClick={() => setSelectedCatId(c.id)}
-              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+              className={`shrink-0 snap-start inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
                 selectedCatId === c.id
                   ? "bg-accent text-ink"
                   : "border border-white/8 bg-card text-muted hover:bg-elevated"
@@ -116,9 +116,7 @@ export function FilteredGroupsList({ groups, userId, customCategories }: Props) 
           {filtered.map((group) => {
             const net = netPositionFromSettlements(group.simplifiedDebts, userId);
             const tile = tileFor(group.id);
-            const activeCategory =
-              PREDEFINED_RELATIONSHIP_CATEGORIES.find((c) => c.id === group.categoryId) ||
-              customCategories.find((c) => c.id === group.categoryId);
+
             const visibleMembers = group.members.slice(0, 4);
             const extraCount = group.members.length - 4;
 
@@ -126,77 +124,67 @@ export function FilteredGroupsList({ groups, userId, customCategories }: Props) 
               <li key={group.id}>
                 <Link
                   href={`/groups/${group.id}`}
-                  className="flex items-center gap-3 rounded-[18px] border border-white/7 bg-card px-[15px] py-[14px] transition-all hover:border-white/12 hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="flex items-center gap-3.5 rounded-[20px] border border-white/6 bg-card px-[16px] py-[15px] transition-all hover:border-white/10 hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   {/* Emoji tile */}
                   <span
-                    className={`flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] text-[22px] ${tile.tile}`}
+                    className={`flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-[15px] text-[22px] shadow-sm ${tile.tile}`}
                     role="img"
                     aria-hidden
                   >
                     {tile.emoji}
                   </span>
 
-                  {/* Name + members */}
+                  {/* Name + net */}
                   <div className="min-w-0 flex-1">
-                    <div className="mb-1 flex items-center gap-1.5">
-                      <span className="truncate text-[14px] font-semibold text-hi">
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className="truncate text-[15px] font-semibold text-hi">
                         {group.name}
                       </span>
-                      {activeCategory && (
-                        <span className="shrink-0 rounded-full bg-elevated px-[6px] py-[1.5px] text-[9.5px] font-semibold text-dim">
-                          {activeCategory.name}
-                        </span>
-                      )}
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex">
-                        {visibleMembers.map((uid, i) => {
-                          const a = memberAvatar(uid);
-                          const name = group.memberDetails[uid]?.name ?? "?";
-                          return (
-                            <span
-                              key={uid}
-                              className={`flex h-[18px] w-[18px] items-center justify-center rounded-full border-[1.5px] border-card font-display text-[8px] font-bold ${a.bg} ${a.fg} ${i > 0 ? "-ml-1" : ""}`}
-                              style={{ zIndex: 4 - i, position: "relative" }}
-                            >
-                              {name.charAt(0).toUpperCase()}
-                            </span>
-                          );
-                        })}
-                        {extraCount > 0 && (
-                          <span
-                            className="-ml-1 flex h-[18px] w-[18px] items-center justify-center rounded-full border-[1.5px] border-card bg-elevated font-display text-[7.5px] font-semibold text-dim"
-                            style={{ zIndex: 0, position: "relative" }}
-                          >
-                            +{extraCount}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[11px] text-dim">
-                        {group.members.length}{" "}
-                        {group.members.length === 1 ? "member" : "members"}
+                    <div className="flex items-center gap-2">
+                      <p
+                        className={`font-display text-[15px] font-bold ${
+                          net > 0 ? "text-mint" : net < 0 ? "text-coral" : "text-dim"
+                        }`}
+                      >
+                        {net > 0 ? "+" : net < 0 ? "−" : ""}
+                        {formatPaise(Math.abs(net))}
+                      </p>
+                      <span className={`text-[11px] font-medium ${net > 0 ? "text-mint-soft" : net < 0 ? "text-coral-soft" : "text-faint"}`}>
+                        {net > 0 ? "owed to you" : net < 0 ? "you owe" : "settled"}
                       </span>
                     </div>
                   </div>
 
-                  {/* Balance */}
-                  <div className="shrink-0 text-right">
-                    <p
-                      className={`font-display text-[16px] font-bold ${
-                        net > 0 ? "text-mint" : net < 0 ? "text-coral" : "text-faint"
-                      }`}
-                    >
-                      {net > 0 ? "+" : net < 0 ? "−" : ""}
-                      {formatPaise(Math.abs(net))}
-                    </p>
-                    <p
-                      className={`text-[10px] ${
-                        net > 0 ? "text-mint-soft" : net < 0 ? "text-coral-soft" : "text-faint"
-                      }`}
-                    >
-                      {net > 0 ? "owed to you" : net < 0 ? "you owe" : "settled"}
-                    </p>
+                  {/* Avatars */}
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <div className="flex">
+                      {visibleMembers.map((uid, i) => {
+                        const a = memberAvatar(uid);
+                        const name = group.memberDetails[uid]?.name ?? "?";
+                        return (
+                          <span
+                            key={uid}
+                            className={`flex h-[24px] w-[24px] items-center justify-center rounded-full border-2 border-card font-display text-[10px] font-bold ${a.bg} ${a.fg} ${i > 0 ? "-ml-2" : ""}`}
+                            style={{ zIndex: 4 - i, position: "relative" }}
+                          >
+                            {name.charAt(0).toUpperCase()}
+                          </span>
+                        );
+                      })}
+                      {extraCount > 0 && (
+                        <span
+                          className="-ml-2 flex h-[24px] w-[24px] items-center justify-center rounded-full border-2 border-card bg-elevated font-display text-[9px] font-semibold text-dim"
+                          style={{ zIndex: 0, position: "relative" }}
+                        >
+                          +{extraCount}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-medium text-faint">
+                      {group.members.length} {group.members.length === 1 ? "member" : "members"}
+                    </span>
                   </div>
                 </Link>
               </li>

@@ -59,7 +59,7 @@ export function AdminUserRow({ user }: UserRowProps) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={pending}
-            className="w-full h-9 rounded-lg border border-white/8 bg-surface px-2 text-sm text-hi outline-none focus:border-accent"
+            className="w-full min-h-[44px] rounded-lg border border-white/8 bg-surface px-2 text-sm text-hi outline-none focus:border-accent"
           />
           {error && <span className="text-[10px] text-coral-soft block mt-1">{error}</span>}
         </td>
@@ -70,7 +70,7 @@ export function AdminUserRow({ user }: UserRowProps) {
             onChange={(e) => setPhone(e.target.value)}
             disabled={pending}
             placeholder="e.g. +919876543210"
-            className="w-full h-9 rounded-lg border border-white/8 bg-surface px-2 text-sm text-hi outline-none focus:border-accent"
+            className="w-full min-h-[44px] rounded-lg border border-white/8 bg-surface px-2 text-sm text-hi outline-none focus:border-accent"
           />
         </td>
         <td className="px-4 py-3 text-sm">
@@ -78,7 +78,7 @@ export function AdminUserRow({ user }: UserRowProps) {
             value={tier}
             onChange={(e) => setTier(e.target.value as "free" | "paid")}
             disabled={pending}
-            className="h-9 rounded-lg border border-white/8 bg-surface px-2 text-sm text-hi outline-none focus:border-accent"
+            className="min-h-[44px] rounded-lg border border-white/8 bg-surface px-2 text-sm text-hi outline-none focus:border-accent"
           >
             <option value="free">free</option>
             <option value="paid">paid</option>

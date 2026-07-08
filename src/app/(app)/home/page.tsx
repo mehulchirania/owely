@@ -9,7 +9,6 @@ import {
 } from "@/features/groups/queries";
 import { formatPaise } from "@/lib/money";
 import { netPositionFromSettlements } from "@/lib/simplify-debts";
-import { memberAvatar } from "@/lib/avatar";
 
 export const metadata: Metadata = { title: "Home — Owely" };
 
@@ -44,22 +43,15 @@ export default async function HomePage() {
   const owed = nets.reduce((a, b) => (b > 0 ? a + b : a), 0);
   const owe = nets.reduce((a, b) => (b < 0 ? a - b : a), 0);
 
-  // All debts where I owe someone, sorted by amount desc, top 3
-  const debts = allGroups
-    .flatMap((g) =>
-      g.simplifiedDebts
-        .filter((t) => t.from === user.uid)
-        .map((t) => ({
-          id: t.id,
-          groupId: g.id,
-          groupName: g.name,
-          toUid: t.to,
-          toName: g.memberDetails[t.to]?.name ?? "Someone",
-          amount: t.amount,
-        }))
-    )
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 3);
+  // Group balances for horizontal chips
+  const groupBalances = allGroups
+    .map((g) => ({
+      id: g.id,
+      name: g.name,
+      net: netPositionFromSettlements(g.simplifiedDebts, user.uid),
+    }))
+    .filter((g) => g.net !== 0)
+    .sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
 
   const firstName = (user.name ?? profile?.displayName ?? "there").split(" ")[0];
   const initial = (user.name ?? profile?.displayName ?? "Y").charAt(0).toUpperCase();
@@ -70,21 +62,21 @@ export default async function HomePage() {
   const isPaid = profile?.tier === "paid";
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       {/* Header: greeting + avatar */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[13px] text-dim">
+          <p className="text-[13.5px] font-medium text-dim">
             {greeting} 👋
           </p>
-          <h1 className="font-display text-[22px] font-bold tracking-tight text-hi">
+          <h1 className="font-display text-[24px] font-bold tracking-tight text-hi">
             {firstName}
           </h1>
         </div>
         <Link
           href="/settings"
           aria-label="Profile & settings"
-          className={`flex h-10 w-10 items-center justify-center rounded-full bg-accent font-display text-base font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+          className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-accent font-display text-base font-bold text-white transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
             isPaid ? "shadow-[0_0_0_2.5px_rgba(139,123,255,.4)]" : ""
           }`}
         >
@@ -92,107 +84,107 @@ export default async function HomePage() {
         </Link>
       </div>
 
-      {/* Net balance card */}
+      {/* Net balance hero card */}
       <div
-        className={`rounded-[18px] border px-4 py-[14px] ${
+        className={`flex flex-col rounded-[22px] border px-5 py-5 ${
           overall < 0
-            ? "border-coral/18 bg-coral/6"
+            ? "border-coral/15 bg-coral/5"
             : overall > 0
-            ? "border-mint/18 bg-mint/6"
+            ? "border-mint/15 bg-mint/5"
             : "border-white/8 bg-surface"
         }`}
       >
-        <p className="mb-1 text-[10.5px] text-muted">Net balance</p>
+        <p className="mb-1 text-[11.5px] font-medium text-muted uppercase tracking-[0.04em]">Net position</p>
         <p
-          className={`font-display text-[38px] font-bold leading-none ${
-            overall < 0 ? "text-coral" : overall > 0 ? "text-mint" : "text-dim"
+          className={`font-display text-[42px] font-extrabold leading-none tracking-tight ${
+            overall < 0 ? "text-coral" : overall > 0 ? "text-mint" : "text-hi"
           }`}
         >
           {overall > 0 ? "+" : overall < 0 ? "−" : ""}
           {formatPaise(Math.abs(overall))}
         </p>
         {(owed > 0 || owe > 0) && (
-          <p className="mt-1 text-[11.5px] text-muted">
-            {owe > 0 && `you owe ${formatPaise(owe)}`}
-            {owe > 0 && owed > 0 && " · "}
-            {owed > 0 && `owed to you ${formatPaise(owed)}`}
+          <p className="mt-2 flex items-center gap-2 text-[12.5px] font-medium text-dim">
+            {owe > 0 && <span className="text-coral-soft">you owe {formatPaise(owe)}</span>}
+            {owe > 0 && owed > 0 && <span className="text-white/10">•</span>}
+            {owed > 0 && <span className="text-mint-soft">owed to you {formatPaise(owed)}</span>}
           </p>
         )}
         {overall === 0 && owed === 0 && owe === 0 && (
-          <p className="mt-1 text-[11.5px] text-muted">all settled up 🎉</p>
+          <p className="mt-2 text-[12.5px] font-medium text-dim">all settled up 🎉</p>
         )}
-      </div>
 
-      {/* Settle up section */}
-      {debts.length > 0 && (
-        <div>
-          <div className="mb-[10px] flex items-center justify-between">
-            <span className="text-[12.5px] font-bold text-hi">Settle up</span>
+        {/* Primary CTA */}
+        <div className="mt-5 flex gap-3">
+          {owe > 0 ? (
             <Link
               href="/groups"
-              className="text-[11px] font-semibold text-accent"
+              className="flex h-12 flex-1 items-center justify-center rounded-xl bg-accent text-[14px] font-bold text-white shadow-[0_6px_20px_-6px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              Settle up
+            </Link>
+          ) : (
+            <Link
+              href="/groups"
+              className="flex h-12 flex-1 items-center justify-center rounded-xl bg-accent text-[14px] font-bold text-white shadow-[0_6px_20px_-6px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              Add expense
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* Per-group balance chips */}
+      {groupBalances.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[13.5px] font-bold text-hi">Your balances</span>
+            <Link
+              href="/groups"
+              className="text-[12px] font-semibold text-accent transition-colors hover:text-accent-hover"
             >
               See all
             </Link>
           </div>
-          <div className="flex flex-col gap-2">
-            {debts.map((debt) => {
-              const av = memberAvatar(debt.toUid);
-              return (
-                <div
-                  key={debt.id}
-                  className="flex items-center gap-[10px] rounded-[14px] border border-white/7 bg-card px-[13px] py-[11px]"
-                >
-                  <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-display text-[15px] font-bold ${av.bg} ${av.fg}`}
-                  >
-                    {debt.toName.charAt(0).toUpperCase()}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold text-hi">
-                      {debt.toName}
-                    </p>
-                    <p className="text-[10.5px] text-dim">{debt.groupName}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="mb-1 font-display text-[14px] font-bold text-coral">
-                      {formatPaise(debt.amount)}
-                    </p>
-                    <Link
-                      href={`/groups/${debt.groupId}?tab=balances`}
-                      className="flex h-[26px] items-center rounded-[7px] bg-accent px-[10px] text-[10.5px] font-bold text-white shadow-[0_4px_12px_-4px_rgba(139,123,255,.6)]"
-                    >
-                      Settle
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
+          {/* Horizontal scroll container breaking out of padding for full-bleed scroll */}
+          <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-3 pt-1 snap-x scrollbar-hide">
+            {groupBalances.map((gb) => (
+              <Link
+                key={gb.id}
+                href={`/groups/${gb.id}?tab=balances`}
+                className="flex min-w-[140px] max-w-[200px] shrink-0 snap-start flex-col gap-1 rounded-[16px] border border-white/8 bg-card p-3.5 transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                <span className="truncate text-[13px] font-semibold text-strong">{gb.name}</span>
+                <span className={`font-display text-[16px] font-bold ${gb.net > 0 ? "text-mint" : "text-coral"}`}>
+                  {gb.net > 0 ? "+" : "−"}{formatPaise(Math.abs(gb.net))}
+                </span>
+              </Link>
+            ))}
           </div>
         </div>
       )}
 
       {/* Recent activity */}
-      <div>
-        <div className="mb-[10px] flex items-center justify-between">
-          <span className="text-[12.5px] font-bold text-hi">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[13.5px] font-bold text-hi">
             Recent activity
           </span>
           <Link
             href="/groups"
-            className="text-[11px] font-semibold text-accent"
+            className="text-[12px] font-semibold text-accent transition-colors hover:text-accent-hover"
           >
             All
           </Link>
         </div>
 
         {activity.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 rounded-[18px] border border-dashed border-white/10 px-6 py-10 text-center">
-            <span className="text-3xl" role="img" aria-label="empty">
+          <div className="flex flex-col items-center gap-2 rounded-[20px] border border-dashed border-white/10 px-6 py-12 text-center">
+            <span className="text-[32px]" role="img" aria-label="empty">
               🪹
             </span>
-            <p className="text-sm font-medium text-strong">No activity yet</p>
-            <p className="text-[12.5px] text-dim">
+            <p className="mt-1 text-[14px] font-semibold text-strong">No activity yet</p>
+            <p className="text-[13px] text-dim">
               Add an expense to get started.
             </p>
           </div>
@@ -203,10 +195,10 @@ export default async function HomePage() {
               return (
                 <li
                   key={item.id}
-                  className="flex items-start gap-[10px] border-b border-white/4 py-[10px] last:border-0"
+                  className="flex items-start gap-3 border-b border-white/5 py-3 last:border-0"
                 >
                   <span
-                    className={`mt-0.5 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full font-display text-xs font-bold ${
+                    className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] font-display text-[15px] font-bold ${
                       isExpense ? "bg-accent/15 text-accent" : "bg-mint/15 text-mint"
                     }`}
                     role="img"
@@ -215,7 +207,7 @@ export default async function HomePage() {
                     {isExpense ? "🧾" : "💸"}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[12.5px] leading-snug text-strong">
+                    <p className="text-[13px] leading-[1.4] text-strong">
                       {isExpense ? (
                         <>
                           <span className="font-semibold text-hi">
@@ -232,20 +224,20 @@ export default async function HomePage() {
                         </>
                       )}
                     </p>
-                    <div className="mt-0.5 flex items-center justify-between">
+                    <div className="mt-1 flex items-center justify-between">
                       <Link
                         href={`/groups/${item.groupId}`}
-                        className="text-[10.5px] text-faint hover:text-accent"
+                        className="truncate text-[11.5px] text-faint transition-colors hover:text-accent"
                       >
                         {item.groupName}
                       </Link>
-                      <span className="text-[10px] text-faint">
+                      <span className="shrink-0 text-[10.5px] font-medium text-faint">
                         {relativeTime(item.createdAt)}
                       </span>
                     </div>
                   </div>
                   {isExpense && (
-                    <span className="shrink-0 font-display text-[13px] font-semibold text-hi">
+                    <span className="shrink-0 font-display text-[14px] font-bold text-hi">
                       {formatPaise(item.amount)}
                     </span>
                   )}
@@ -258,3 +250,4 @@ export default async function HomePage() {
     </div>
   );
 }
+

@@ -45,8 +45,13 @@ export function ProfileForm({ displayName, upiId }: Props) {
           className="h-12 rounded-xl border border-white/8 bg-card px-3 text-hi outline-none focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="upi" className="text-sm font-medium text-strong">UPI ID</label>
+      <div className="flex flex-col gap-2 rounded-[16px] border border-accent/20 bg-accent/5 p-4">
+        <div className="flex items-center justify-between">
+          <label htmlFor="upi" className="text-[13.5px] font-semibold text-accent">UPI ID</label>
+          <span className="rounded-full bg-accent/20 px-2 py-[2px] text-[10px] font-bold uppercase tracking-wider text-accent">
+            Recommended
+          </span>
+        </div>
         <input
           id="upi"
           value={upi}
@@ -55,9 +60,11 @@ export function ProfileForm({ displayName, upiId }: Props) {
           autoCapitalize="none"
           autoCorrect="off"
           disabled={pending}
-          className="h-12 rounded-xl border border-white/8 bg-card px-3 text-hi outline-none placeholder:text-faint focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+          className="h-[46px] rounded-xl border border-accent/20 bg-card px-3 text-[15px] font-medium text-hi outline-none placeholder:text-faint focus:border-accent/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
         />
-        <p className="text-xs text-dim">Others use this to pay you back over UPI. Leave blank to remove it.</p>
+        <p className="text-[12px] leading-snug text-accent/80">
+          Allows friends to settle up with you instantly via any UPI app.
+        </p>
       </div>
       {error && <p role="alert" className="text-sm text-coral-soft">{error}</p>}
       {saved && <p className="text-sm text-mint">Saved.</p>}

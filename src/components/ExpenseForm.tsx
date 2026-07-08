@@ -415,13 +415,13 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial, t
                 onClick={() => setPaidBy(m.uid)}
                 disabled={pending}
                 aria-pressed={on}
-                className={`flex items-center gap-1.5 rounded-full py-1.5 pr-3 pl-1.5 text-[13px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                className={`flex min-h-[44px] items-center gap-2 rounded-full py-2 pr-4 pl-2 text-[14px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   on
                     ? "border-[1.5px] border-accent bg-accent/15 font-semibold text-ink"
                     : "border border-white/6 bg-card text-muted"
                 }`}
               >
-                <span className={`flex h-6 w-6 items-center justify-center rounded-full font-display text-xs font-semibold ${a.bg} ${a.fg}`}>
+                <span className={`flex h-7 w-7 items-center justify-center rounded-full font-display text-[13px] font-semibold ${a.bg} ${a.fg}`}>
                   {(m.uid === currentUid ? "Y" : m.name).charAt(0).toUpperCase()}
                 </span>
                 {m.uid === currentUid ? "You" : m.name}
@@ -442,9 +442,9 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial, t
                   type="button"
                   onClick={() => applyTemplate(t)}
                   disabled={pending}
-                  className="flex items-center gap-1.5 py-1.5 pl-3 pr-2 text-[12.5px] font-medium text-strong transition-colors hover:text-hi focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="flex min-h-[44px] items-center gap-2 py-2 pl-4 pr-3 text-[13.5px] font-medium text-strong transition-colors hover:text-hi focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
-                  <span className="text-[10px] text-dim">{t.splitType === "equal" ? "=" : "%"}</span>
+                  <span className="text-[11px] text-dim">{t.splitType === "equal" ? "=" : "%"}</span>
                   {t.name}
                 </button>
                 <button
@@ -452,9 +452,9 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial, t
                   onClick={() => void handleDeleteTemplate(t.id)}
                   disabled={pending}
                   aria-label={`Delete template ${t.name}`}
-                  className="flex h-7 w-6 items-center justify-center rounded-r-full text-faint opacity-0 transition-opacity hover:text-coral group-hover:opacity-100 focus-visible:opacity-100"
+                  className="flex min-h-[44px] w-11 items-center justify-center rounded-r-full text-faint opacity-0 transition-opacity hover:text-coral group-hover:opacity-100 focus-visible:opacity-100"
                 >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
                     <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
                 </button>
@@ -475,7 +475,7 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial, t
               aria-selected={splitType === tab.value}
               onClick={() => setSplitType(tab.value)}
               disabled={pending}
-              className={`h-9 flex-1 rounded-xl text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+              className={`min-h-[44px] flex-1 rounded-xl text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                 splitType === tab.value
                   ? "bg-accent text-ink"
                   : "text-dim hover:text-muted"
@@ -494,7 +494,7 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial, t
               ? splitEqual(amount ?? 0, selected.map((s) => s.uid))[m.uid]
               : null;
             return (
-              <li key={m.uid} className={`flex items-center gap-3 px-0.5 py-1 ${isOn ? "" : "opacity-45"}`}>
+              <li key={m.uid} className={`flex min-h-[52px] items-center justify-between gap-3 px-0.5 py-2 ${isOn ? "" : "opacity-45"}`}>
                 <button
                   type="button"
                   onClick={() => toggle(m.uid)}
@@ -502,55 +502,60 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial, t
                   role="checkbox"
                   aria-checked={isOn}
                   aria-label={`Include ${m.uid === currentUid ? "you" : m.name}`}
-                  className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                    isOn ? "bg-accent" : "border-[1.5px] border-faint"
-                  }`}
+                  className="flex flex-1 items-center gap-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent rounded-lg"
                 >
-                  {isOn && (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d="M5 12.5l4.5 4.5L19 7" />
-                    </svg>
-                  )}
-                </button>
-                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-display text-xs font-semibold ${a.bg} ${a.fg}`}>
-                  {(m.uid === currentUid ? "Y" : m.name).charAt(0).toUpperCase()}
-                </span>
-                <span className="flex-1 text-sm text-hi">{m.uid === currentUid ? "You" : m.name}</span>
-                {!isOn ? (
-                  <span className="text-[13px] text-faint">—</span>
-                ) : splitType === "unequal" ? (
-                  <div className="flex items-center gap-1 rounded-lg border border-white/8 bg-card px-2">
-                    <span className="text-dim">₹</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={splitValues[m.uid] ?? ""}
-                      onChange={(e) => setValue(m.uid, e.target.value)}
-                      placeholder="0.00"
-                      disabled={pending}
-                      aria-label={`Amount for ${m.name}`}
-                      className="h-9 w-20 bg-transparent text-right text-hi outline-none"
-                    />
+                  <div className={`flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-md transition-colors ${
+                    isOn ? "bg-accent" : "border-[1.5px] border-faint"
+                  }`}>
+                    {isOn && (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M5 12.5l4.5 4.5L19 7" />
+                      </svg>
+                    )}
                   </div>
-                ) : splitType === "percentage" ? (
-                  <div className="flex items-center gap-1 rounded-lg border border-white/8 bg-card px-2">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={splitValues[m.uid] ?? ""}
-                      onChange={(e) => setValue(m.uid, e.target.value)}
-                      placeholder="0"
-                      disabled={pending}
-                      aria-label={`Percentage for ${m.name}`}
-                      className="h-9 w-12 bg-transparent text-right text-hi outline-none"
-                    />
-                    <span className="text-dim">%</span>
-                  </div>
-                ) : (
-                  <span className="font-display text-sm font-semibold text-strong">
-                    {each !== null ? formatPaise(each) : "—"}
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-[13px] font-semibold ${a.bg} ${a.fg}`}>
+                    {(m.uid === currentUid ? "Y" : m.name).charAt(0).toUpperCase()}
                   </span>
-                )}
+                  <span className="flex-1 text-[15px] font-medium text-hi">{m.uid === currentUid ? "You" : m.name}</span>
+                </button>
+                
+                <div className="shrink-0 flex items-center justify-end">
+                  {!isOn ? (
+                    <span className="text-[13px] text-faint pr-2">—</span>
+                  ) : splitType === "unequal" ? (
+                    <div className="flex items-center gap-1 rounded-xl border border-white/8 bg-card px-3">
+                      <span className="text-dim">₹</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={splitValues[m.uid] ?? ""}
+                        onChange={(e) => setValue(m.uid, e.target.value)}
+                        placeholder="0.00"
+                        disabled={pending}
+                        aria-label={`Amount for ${m.name}`}
+                        className="h-10 w-20 bg-transparent text-right text-[15px] font-semibold text-hi outline-none"
+                      />
+                    </div>
+                  ) : splitType === "percentage" ? (
+                    <div className="flex items-center gap-1 rounded-xl border border-white/8 bg-card px-3">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={splitValues[m.uid] ?? ""}
+                        onChange={(e) => setValue(m.uid, e.target.value)}
+                        placeholder="0"
+                        disabled={pending}
+                        aria-label={`Percentage for ${m.name}`}
+                        className="h-10 w-12 bg-transparent text-right text-[15px] font-semibold text-hi outline-none"
+                      />
+                      <span className="text-dim">%</span>
+                    </div>
+                  ) : (
+                    <span className="font-display text-[15px] font-bold text-strong pr-2">
+                      {each !== null ? formatPaise(each) : "—"}
+                    </span>
+                  )}
+                </div>
               </li>
             );
           })}
@@ -581,19 +586,19 @@ export function ExpenseForm({ groupId, members, currentUid, userTier, initial, t
                 maxLength={40}
                 autoFocus
                 disabled={savingTemplate}
-                className="h-9 flex-1 rounded-xl border border-white/8 bg-card px-3 text-[13px] text-hi outline-none placeholder:text-faint focus:border-accent/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+                className="h-11 flex-1 rounded-xl border border-white/8 bg-card px-3 text-[13px] text-hi outline-none placeholder:text-faint focus:border-accent/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
               />
               <button
                 type="submit"
                 disabled={savingTemplate || !saveTemplateName.trim()}
-                className="h-9 rounded-xl bg-accent px-3 text-[12.5px] font-semibold text-ink disabled:opacity-60"
+                className="h-11 rounded-xl bg-accent px-3 text-[12.5px] font-semibold text-ink disabled:opacity-60"
               >
                 {savingTemplate ? "Saving…" : "Save"}
               </button>
               <button
                 type="button"
                 onClick={() => { setShowSaveForm(false); setSaveTemplateName(""); }}
-                className="h-9 rounded-xl border border-white/8 px-3 text-[12.5px] text-muted hover:bg-elevated"
+                className="h-11 rounded-xl border border-white/8 px-3 text-[12.5px] text-muted hover:bg-elevated"
               >
                 Cancel
               </button>

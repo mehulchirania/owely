@@ -21,9 +21,9 @@
   /* Text — descending emphasis. */
   --color-hi: #f4f2fa;
   --color-strong: #d9d6e4;
-  --color-muted: #a7a3b8;
-  --color-dim: #807c92;
-  --color-faint: #56536a;
+  --color-muted: #b5b1c5;
+  --color-dim: #9995ad;
+  --color-faint: #79768f;
 
   /* Brand + semantic. */
   --color-accent: #8b7bff;
@@ -55,6 +55,15 @@ body {
   color: var(--color-hi);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Global focus-visible for accessibility */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-accent) !important;
+  outline-offset: 2px !important;
 }
 
 /* Hide scrollbars to match the app-like prototype, keep scrolling. */
