@@ -4,6 +4,21 @@ Prepend a new dated entry at the top after every change. Newest first.
 
 ---
 
+## 2026-07-08 — Fable Phase 4: Contacts integration
+
+- Added `ImportedContact` type, Firestore path helpers for `users/{uid}/contacts/{contactId}` and contact sync counters, plus owner-scoped contact read rules with client writes denied.
+- Created `src/lib/contacts.ts` with E.164 normalization, SHA-256 `phoneHash`, deterministic `contactId`, and Asia/Kolkata daily quota keys; added `contacts.test.ts`.
+- Added `src/features/contacts/actions.ts`: `syncContacts` verifies session, accepts up to 50 contacts, enforces a 500-number/day per-user quota, matches existing users by phone without returning UIDs, and upserts contact docs. `clearImportedContacts` deletes the owner’s imported contacts.
+- Added `src/features/contacts/queries.ts` for imported contact counts/listing.
+- Created `ContactImportPanel.tsx`: Contact Picker-ready flow with manual fallback, Web/desktop-safe manual rows, On Owely badges, group add/invite actions, and direct person add/link actions.
+- Wired contact import into group Members, People, and onboarding. Settings now shows imported contact count and a destructive clear control.
+- Updated README and `docs/STATE.md`.
+
+**Verification:** typecheck ✅ · tests passing ✅ · lint 0 errors 0 warnings ✅ · build clean ✅
+**External gate still needed:** Android Chrome/TWA Contact Picker manual test and Firestore rules emulator test for cross-user contact reads.
+
+---
+
 ## 2026-07-08 — Fable Phase 3: Smooth transactions
 
 - Rebuilt `SettlePanel.tsx` around a bottom pay sheet launched from each active debt row.

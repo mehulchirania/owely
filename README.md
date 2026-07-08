@@ -63,6 +63,7 @@ src/
     upi.ts                  UPI deep-link builder (paise→rupees at the boundary)
     upi-links.ts            Higher-level settle links with VPA-priority rule
     settlement-flow.ts      Client-safe settle QR/reminder message helpers
+    contacts.ts             Contact import normalization, hashes, quota keys
     parse-rupees.ts         Client-safe rupee→paise parser (mirrors rupeesToPaise)
     currency.ts             Supported paid display/base currency metadata
     receipt-ocr.ts          Receipt OCR hint extraction (pure, tested)
@@ -75,6 +76,7 @@ src/
   features/                 Domain-organized Server Actions + queries
     auth/                   Session, sign-in, profile
     groups/                 Group CRUD, direct links, invites, guest merge, categories, closures
+    contacts/               Contact sync, matching, quota, retention controls
     expenses/               Add/edit/delete, batch, splits
     settlements/            Settle-up, dispute, guest settle
     recurring/              Monthly recurring definitions
@@ -157,6 +159,7 @@ Phase B differentiators are fully implemented:
 - **Zero-friction Guest Ledger**: Invite links seed guest_uuid members immediately. Guests access group details read-only and record settlements using secure session cookies.
 - **Guest-to-User Merge**: Automatic merging of guest ledger history, balances, and settlements to actual authenticated user account upon sign-up.
 - **Fairness Insights**: Visual dashboard tracking contributor ratios and round-robin payee recommendations.
+- **Contacts Integration**: Contact Picker-ready import with manual fallback, owner-scoped contact store, On Owely matching, per-user sync quota, group/direct add actions, and Settings retention controls.
 
 **Landing Page UI Polish**:
 - Removed the "Start for free" and "See how it works" buttons to streamline onboarding, and renamed the navigation link from "Open app" to "Login".

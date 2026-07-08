@@ -2,6 +2,7 @@ import { Timestamp } from "firebase-admin/firestore";
 import type {
   Expense,
   Group,
+  ImportedContact,
   MonthlyClosure,
   OwnExpense,
   RecurringExpense,
@@ -44,6 +45,21 @@ export function mapUser(uid: string, d: DocData): User {
     tier: d.tier ?? "free",
     currency: d.currency ?? "INR",
     createdAt: toMillis(d.createdAt),
+  };
+}
+
+export function mapImportedContact(id: string, d: DocData): ImportedContact {
+  return {
+    id,
+    ownerUid: d.ownerUid,
+    name: d.name ?? "",
+    phone: d.phone ?? "",
+    phoneHash: d.phoneHash ?? "",
+    onOwely: d.onOwely ?? false,
+    matchedName: d.matchedName,
+    matchedPhotoURL: d.matchedPhotoURL ?? null,
+    createdAt: toMillis(d.createdAt),
+    lastSyncedAt: toMillis(d.lastSyncedAt),
   };
 }
 

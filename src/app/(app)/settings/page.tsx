@@ -2,19 +2,22 @@ import type { Metadata } from "next";
 import { requireSession } from "@/features/auth/session";
 import { fetchUser } from "@/features/auth/queries";
 import { fetchRelationshipCategories } from "@/features/groups/category-queries";
+import { countImportedContacts } from "@/features/contacts/queries";
 import { ProfileForm } from "@/components/ProfileForm";
 import { CustomCategoriesManager } from "@/components/CustomCategoriesManager";
 import { DisplayCurrencyForm } from "@/components/DisplayCurrencyForm";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { SignOutButton } from "@/components/SignOutButton";
+import { ClearImportedContactsButton } from "@/components/ClearImportedContactsButton";
 
 export const metadata: Metadata = { title: "Me — Owely" };
 
 export default async function SettingsPage() {
   const session = await requireSession();
-  const [user, categories] = await Promise.all([
+  const [user, categories, importedContactCount] = await Promise.all([
     fetchUser(session.uid),
     fetchRelationshipCategories(session.uid),
+    countImportedContacts(session.uid),
   ]);
   const isPaid = user?.tier === "paid";
   const initial = (user?.displayName ?? session.name ?? "Y").charAt(0).toUpperCase();
@@ -97,6 +100,14 @@ export default async function SettingsPage() {
 
       {/* Custom categories */}
       <CustomCategoriesManager initialCategories={categories} />
+
+      <section className="rounded-[14px] border border-white/7 bg-surface p-[18px]">
+        <p className="mb-1 text-[13.5px] font-semibold text-hi">Imported contacts</p>
+        <p className="mb-4 text-[12px] leading-5 text-dim">
+          Owely stores only contacts you choose through import, so matching works across groups and people.
+        </p>
+        <ClearImportedContactsButton count={importedContactCount} />
+      </section>
 
       {/* Sign out */}
       <div className="flex justify-center pt-2 pb-4">

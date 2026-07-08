@@ -32,6 +32,19 @@ export interface User {
   createdAt: number;
 }
 
+export interface ImportedContact {
+  id: string;
+  ownerUid: Uid;
+  name: string;
+  phone: string;
+  phoneHash: string;
+  onOwely: boolean;
+  matchedName?: string;
+  matchedPhotoURL?: string | null;
+  createdAt: number;
+  lastSyncedAt: number;
+}
+
 /** A member's denormalised profile snapshot stored on the group. */
 export interface MemberDetail {
   name: string;
@@ -250,4 +263,3 @@ export interface MonthlyClosure {
   closedBy: Uid;
   closedAt: number;
 }
-

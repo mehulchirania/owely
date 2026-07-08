@@ -27,6 +27,7 @@ import { CopyButton } from "@/components/CopyButton";
 import { FairnessInsights } from "@/components/FairnessInsights";
 import { GroupCurrencyForm } from "@/components/GroupCurrencyForm";
 import { BatchInviteForm } from "@/components/BatchInviteForm";
+import { ContactImportPanel } from "@/components/ContactImportPanel";
 
 function nameOf(group: Group, uid: string): string {
   return group.memberDetails[uid]?.name ?? "Someone";
@@ -472,7 +473,12 @@ export default async function GroupPage({
               {!isDirect && <InviteMemberForm groupId={group.id} />}
             </div>
 
-            {!isDirect && <BatchInviteForm groupId={group.id} />}
+            {!isDirect && (
+              <div className="flex flex-col gap-3">
+                <ContactImportPanel kind="group" groupId={group.id} compact />
+                <BatchInviteForm groupId={group.id} />
+              </div>
+            )}
 
             {!isDirect && (
               <GroupCurrencyForm

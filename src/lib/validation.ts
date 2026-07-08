@@ -141,6 +141,19 @@ export const FindUsersSchema = z.object({
 });
 export type FindUsersInput = z.infer<typeof FindUsersSchema>;
 
+export const SyncContactsSchema = z.object({
+  contacts: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(60),
+        phone: z.string().trim().min(1).max(24),
+      }),
+    )
+    .min(1, "Pick at least one contact.")
+    .max(50, "Sync up to 50 contacts at a time."),
+});
+export type SyncContactsInput = z.infer<typeof SyncContactsSchema>;
+
 /** Batch add people to a group by name + phone (registered → joined now;
  * unregistered → pending invite). */
 export const AddMembersSchema = z.object({

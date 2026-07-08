@@ -28,6 +28,15 @@ service cloud.firestore {
         allow read: if signedIn() && request.auth.uid == uid;
         allow write: if false;
       }
+
+      match /contacts/{contactId} {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow write: if false;
+      }
+
+      match /contactSyncCounters/{dayKey} {
+        allow read, write: if false;
+      }
     }
 
     match /groups/{groupId} {

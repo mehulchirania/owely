@@ -9,6 +9,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateProfile } from "@/features/auth/actions";
+import { ContactImportPanel } from "@/components/ContactImportPanel";
 
 export function OnboardingForm({ next }: { next: string }) {
   const router = useRouter();
@@ -59,8 +60,12 @@ export function OnboardingForm({ next }: { next: string }) {
         <div className="flex flex-col gap-2">
           <h2 className="font-display text-2xl font-bold text-hi">You&apos;re all set!</h2>
           <p className="text-[14px] text-dim">
-            Create your first group to start splitting expenses.
+            Create your first group or add someone you split with often.
           </p>
+        </div>
+
+        <div className="w-full">
+          <ContactImportPanel kind="people" />
         </div>
         
         <div className="flex w-full flex-col gap-3">

@@ -2,7 +2,7 @@
 
 India-first freemium expense-splitting app. Android + Web.
 
-_Last updated: 2026-07-08 (Fable Phase 3 complete — see `FABLE_INSTRUCTIONS.md`)_
+_Last updated: 2026-07-08 (Fable Phase 4 code complete — see `FABLE_INSTRUCTIONS.md`)_
 
 > **Fable overhaul (2026-07-08):** `FABLE_INSTRUCTIONS.md` is the active
 > six-phase execution plan. **Phase 1 ✅** — known fixes landed.
@@ -10,7 +10,11 @@ _Last updated: 2026-07-08 (Fable Phase 3 complete — see `FABLE_INSTRUCTIONS.md
 > **Phase 3 ✅** — settle-up now uses a bottom pay sheet with GPay, PhonePe,
 > generic UPI, desktop QR fallback, explicit awaiting-payment confirmation,
 > cash confirmation, optimistic history, and manual Web Share/WhatsApp reminders.
-> Phase 2.3 and Phases 4–6 remain pending.
+> **Phase 4 code ✅** — contact import store/actions/UI landed: Contact
+> Picker-ready client flow with manual fallback, `users/{uid}/contacts`, daily
+> sync quota, On Owely matching, group/direct add actions, and Settings clear.
+> Android Contact Picker/manual device verification remains an external gate.
+> Phase 2.3 and Phases 5–6 remain pending.
 
 > **Audit status (2026-07-03):** `docs/AUDIT.md` records the full issue list.
 > **P0 (S1–S3) ✅** Admin HMAC auth, single-use read-only guests, Trip Pass expiry.
@@ -49,6 +53,7 @@ src/
                              netWithSettlements, netPositionFromSettlements
     upi.ts (+test)           UPI deep-link builder (paise→rupees at boundary)
     settlement-flow.ts(+test) QR payload + manual reminder/share helpers
+    contacts.ts(+test)       Contact normalization, SHA-256 hashes, quota keys
     currency.ts              Supported display/base currency metadata
     receipt-ocr.ts (+test)   Receipt OCR hint extraction
     vision-ocr.ts            Server-only Google Vision OCR client
@@ -66,6 +71,7 @@ src/
   features/           Domain-organized Server Actions + queries
     auth/             Session, sign-in, profile, user queries
     groups/           Group CRUD, direct links, invites, guest merge, categories, closures, queries
+    contacts/         Contact sync/matching actions and owner-scoped queries
     expenses/         Add/edit/delete, batch, splits, queries
     settlements/      Settle-up, dispute, guest settle, queries
     recurring/        Monthly recurring definitions + queries

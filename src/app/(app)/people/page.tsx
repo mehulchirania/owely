@@ -6,6 +6,7 @@ import { formatPaise } from "@/lib/money";
 import { netPositionFromSettlements } from "@/lib/simplify-debts";
 import { memberAvatar } from "@/lib/avatar";
 import { CreateDirectRelationshipForm } from "@/components/CreateDirectRelationshipForm";
+import { ContactImportPanel } from "@/components/ContactImportPanel";
 import type { Group } from "@/types";
 
 export const metadata: Metadata = { title: "People — Owely" };
@@ -78,6 +79,8 @@ export default async function PeoplePage() {
         <CreateDirectRelationshipForm />
       </div>
 
+      <ContactImportPanel kind="people" compact />
+
       {/* Balance strip */}
       {(owed > 0 || owe > 0) && (
         <div className="grid grid-cols-2 gap-3">
@@ -108,6 +111,9 @@ export default async function PeoplePage() {
           </p>
           <div className="mt-2">
             <CreateDirectRelationshipForm />
+          </div>
+          <div className="mt-2 w-full">
+            <ContactImportPanel kind="people" />
           </div>
         </div>
       ) : (
