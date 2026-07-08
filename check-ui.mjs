@@ -3,7 +3,6 @@
  * using the locally installed Chrome.
  */
 import { chromium } from "playwright";
-import { writeFileSync } from "fs";
 import { join } from "path";
 
 const BASE = "http://localhost:3333";

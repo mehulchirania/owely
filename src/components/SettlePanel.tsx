@@ -9,7 +9,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatPaise } from "@/lib/money";
 import { memberAvatar } from "@/lib/avatar";
-import { cleanPhone } from "@/lib/upi";
+import { parseRupees } from "@/lib/parse-rupees";
+import { buildSettleLinks } from "@/lib/upi-links";
 import { disputeSettlement, settleUp } from "@/features/settlements/actions";
 import type { SettlementMethod, SettlementStatus } from "@/types";
 
@@ -86,31 +87,23 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
   const [pending, startTransition] = useTransition();
   const avatar = memberAvatar(debt.to);
 
-  const parsedPaise = Math.round(parseFloat(amountRupees || "0") * 100);
-  const isValid = !isNaN(parsedPaise) && parsedPaise > 0;
-  const amountTooHigh = isValid && parsedPaise > debt.amount;
+  const parsedPaise = parseRupees(amountRupees);
+  const isValid = parsedPaise !== null;
+  const amountTooHigh = isValid && parsedPaise! > debt.amount;
 
-  const payeeName = debt.toName;
   const note = `Owely - ${groupName}`;
-  const amountStr = isValid ? (parsedPaise / 100).toFixed(2) : "0.00";
 
-  // GPay target: if upiId exists, use it. Otherwise use phone@upi
-  const gpayVpa = debt.toUpiId || (debt.toPhone ? `${cleanPhone(debt.toPhone)}@upi` : null);
-  const gpayLink = isValid && gpayVpa
-    ? `intent://upi/pay?pa=${encodeURIComponent(gpayVpa)}&pn=${encodeURIComponent(payeeName)}&am=${amountStr}&cu=INR${note ? `&tn=${encodeURIComponent(note)}` : ""}#Intent;scheme=tez;package=com.google.android.apps.nbu.paisa.user;end`
-    : null;
-
-  // PhonePe target: if upiId exists, use it. Otherwise use phone@ybl
-  const phonepeVpa = debt.toUpiId || (debt.toPhone ? `${cleanPhone(debt.toPhone)}@ybl` : null);
-  const phonepeLink = isValid && phonepeVpa
-    ? `intent://pay?pa=${encodeURIComponent(phonepeVpa)}&pn=${encodeURIComponent(payeeName)}&am=${amountStr}&cu=INR${note ? `&tn=${encodeURIComponent(note)}` : ""}#Intent;scheme=phonepe;package=com.phonepe.app;end`
-    : null;
-
-  // Generic UPI: if upiId exists, use it. Otherwise use phone
-  const genericVpa = debt.toUpiId || (debt.toPhone ? cleanPhone(debt.toPhone) : null);
-  const genericLink = isValid && genericVpa
-    ? `upi://pay?pa=${encodeURIComponent(genericVpa)}&pn=${encodeURIComponent(payeeName)}&am=${amountStr}&cu=INR${note ? `&tn=${encodeURIComponent(note)}` : ""}`
-    : null;
+  // Build UPI links via shared helper (VPA-priority rule)
+  const linkPaise = isValid && !amountTooHigh ? parsedPaise! : null;
+  const { gpay: gpayLink, phonepe: phonepeLink, generic: genericLink } = linkPaise
+    ? buildSettleLinks({
+        upiId: debt.toUpiId,
+        phone: debt.toPhone,
+        payeeName: debt.toName,
+        paise: linkPaise,
+        note,
+      })
+    : { gpay: null, phonepe: null, generic: null };
 
   function confirmPaid(): void {
     if (!isValid) {

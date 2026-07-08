@@ -4,7 +4,7 @@
  * On subsequent runs: reuses the saved session automatically.
  */
 import { chromium } from "playwright";
-import { mkdirSync, existsSync } from "fs";
+import { mkdirSync } from "fs";
 import { join } from "path";
 
 const BASE = "http://localhost:3333";

@@ -15,7 +15,6 @@ import { revalidatePath } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { paths } from "@/lib/firebase/collections";
 import { fetchUser } from "@/features/auth/queries";
-import { fetchGroup } from "@/features/groups/queries";
 import {
   recomputeSimplified,
   recomputeMutations,
@@ -23,13 +22,11 @@ import {
 import { authorizeMember } from "@/features/auth/session";
 import { logActionError } from "@/lib/log";
 import { rupeesToPaise } from "@/lib/money";
-import { cookies } from "next/headers";
 import { failure, success, type ActionResult } from "@/lib/result";
 import {
   DisputeSettlementSchema,
   parseInput,
   SettleUpSchema,
-  GuestSettleUpSchema,
 } from "@/lib/validation";
 import type { Group } from "@/types";
 import { isMonthClosed } from "@/features/groups/closures";
@@ -149,7 +146,7 @@ export async function disputeSettlement(input: unknown): Promise<ActionResult<nu
 }
 
 export async function guestSettleUp(
-  input: unknown,
+  _input: unknown,
 ): Promise<ActionResult<{ settlementId: string }>> {
   return failure("Guest users cannot record settlements. Please ask a registered member to record this payment, or sign up to claim your account.", { code: "forbidden" });
 }

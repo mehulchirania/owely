@@ -106,3 +106,43 @@ export function buildPhoneUpiLink({ phone, payeeName, paise, note }: PhoneUpiPar
   return `upi://pay?${parts.join("&")}`;
 }
 
+/**
+ * GPay intent link using the payee's actual VPA (not a phone-derived handle).
+ * Use when the payee has a registered `upiId`.
+ */
+export function buildGpayVpaLink({ upiId, payeeName, paise, note }: UpiLinkParams): string {
+  if (!upiId) throw new Error("buildGpayVpaLink: missing payee UPI ID");
+  if (!Number.isInteger(paise) || paise <= 0) {
+    throw new Error(`buildGpayVpaLink: amount must be positive integer paise, got ${paise}`);
+  }
+  const amount = (paise / 100).toFixed(2);
+  const parts = [
+    `pa=${encodeURIComponent(upiId)}`,
+    `pn=${encodeURIComponent(payeeName)}`,
+    `am=${amount}`,
+    "cu=INR",
+  ];
+  if (note) parts.push(`tn=${encodeURIComponent(note)}`);
+  return `intent://upi/pay?${parts.join("&")}#Intent;scheme=tez;package=com.google.android.apps.nbu.paisa.user;end`;
+}
+
+/**
+ * PhonePe intent link using the payee's actual VPA (not a phone-derived handle).
+ * Use when the payee has a registered `upiId`.
+ */
+export function buildPhonepeVpaLink({ upiId, payeeName, paise, note }: UpiLinkParams): string {
+  if (!upiId) throw new Error("buildPhonepeVpaLink: missing payee UPI ID");
+  if (!Number.isInteger(paise) || paise <= 0) {
+    throw new Error(`buildPhonepeVpaLink: amount must be positive integer paise, got ${paise}`);
+  }
+  const amount = (paise / 100).toFixed(2);
+  const parts = [
+    `pa=${encodeURIComponent(upiId)}`,
+    `pn=${encodeURIComponent(payeeName)}`,
+    `am=${amount}`,
+    "cu=INR",
+  ];
+  if (note) parts.push(`tn=${encodeURIComponent(note)}`);
+  return `intent://pay?${parts.join("&")}#Intent;scheme=phonepe;package=com.phonepe.app;end`;
+}
+

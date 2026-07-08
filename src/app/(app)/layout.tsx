@@ -10,6 +10,8 @@ import { fetchUser } from "@/features/auth/queries";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SidebarNav } from "@/components/SidebarNav";
 import { BottomNav } from "@/components/BottomNav";
+import { ToastProvider } from "@/components/ToastProvider";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 export default async function AppLayout({
   children,
@@ -25,7 +27,8 @@ export default async function AppLayout({
   const email = profile?.email ?? profile?.phone ?? "";
 
   return (
-    <div className="relative flex min-h-full flex-col lg:flex-row">
+    <ToastProvider>
+      <div className="relative flex min-h-full flex-col lg:flex-row">
       {/* ambient brand glow */}
       <div
         aria-hidden
@@ -95,7 +98,10 @@ export default async function AppLayout({
       {/* Main Wrapper */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Mobile Header */}
-        <header className="sticky top-0 z-10 border-b border-white/6 bg-ink/80 backdrop-blur lg:hidden">
+        <header 
+          className="sticky top-0 z-10 border-b border-white/6 bg-ink/80 backdrop-blur lg:hidden"
+          style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+        >
           <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-2 px-4 py-3">
             <Link
               href="/home"
@@ -132,11 +138,14 @@ export default async function AppLayout({
 
         {/* Main Content Area */}
         <main className="relative mx-auto w-full max-w-2xl lg:max-w-5xl flex-1 px-4 py-6 pb-24 lg:pb-6">
-          {children}
+          <PullToRefresh>
+            {children}
+          </PullToRefresh>
         </main>
       </div>
 
       <BottomNav />
-    </div>
+      </div>
+    </ToastProvider>
   );
 }

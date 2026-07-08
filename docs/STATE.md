@@ -2,7 +2,11 @@
 
 India-first freemium expense-splitting app. Android + Web.
 
-_Last updated: 2026-07-03 (full architecture + security audit — see `docs/AUDIT.md`)_
+_Last updated: 2026-07-08 (Fable Phase 2.1 & 2.2 complete — see `FABLE_INSTRUCTIONS.md`)_
+
+> **Fable overhaul (2026-07-08):** `FABLE_INSTRUCTIONS.md` is the active
+> six-phase execution plan. **Phase 1 ✅** — known fixes landed.
+> **Phase 2.1 & 2.2 ✅** — App shell (BottomNav scroll/hide, QuickActionSheet, PullToRefresh, Page transitions) & Perceived Speed (Skeletons, Toast system) landed. Phases 2.3–6 pending.
 
 > **Audit status (2026-07-03):** `docs/AUDIT.md` records the full issue list.
 > **P0 (S1–S3) ✅** Admin HMAC auth, single-use read-only guests, Trip Pass expiry.
@@ -10,7 +14,16 @@ _Last updated: 2026-07-03 (full architecture + security audit — see `docs/AUDI
 > **P2 (S7–S9, §4) ✅** Phone-enum rate-limit, atomic guest merge, App Check wired, freemium counter symmetric on delete.
 > **P3 ✅** UPI links consolidated to `upi.ts`, client money parsing aligned with `rupeesToPaise`, touch targets 44px, `Group.expenseCount` stale field was already absent.
 > **P4 ✅** `freemium.test.ts` (10 tests) covering counter cap, batch size, IST month key, paid bypass.
-> **One console action remaining:** Firebase App Check enforcement — see [`docs/APP_CHECK_SETUP.md`](docs/APP_CHECK_SETUP.md).
+
+## Ops checklist (console actions — Phase 1.3 / Phase 6.5)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Firebase App Check enforcement | ⚠️ Wired, not enforced | Code in `client.ts` + `FirebaseInit.tsx`. Console steps in [`docs/APP_CHECK_SETUP.md`](docs/APP_CHECK_SETUP.md). Enforce only after testing with debug token. |
+| Cloud Scheduler → `/api/cron/recurring` | ❓ Unverified | Endpoint exists and is `CRON_SECRET`-gated. Scheduler job must be provisioned in Cloud Console. |
+| Vision API enabled | ❓ Unverified | Required for paid receipt OCR (`POST /api/receipts/ocr`). Must be enabled on the `owely-c6c51` project. |
+| Razorpay live keys + webhook URL | ❓ Not configured | Payment gateway integration pending. |
+| Firebase Auth authorized domains | ✅ Done | `*.hosted.app` domain authorized. |
 
 ## Stack (as scaffolded)
 

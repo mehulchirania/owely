@@ -134,7 +134,7 @@ function FreePlanCard() {
               Unlock Owely Pro
             </p>
             <p className="mb-4 mt-1 text-[12.5px] leading-relaxed text-muted">
-              Unlimited expenses · AI receipt scanner · PDF export · recurring splits · multi-currency
+              Unlimited expenses · AI receipt scanner · PDF export · recurring splits · display currency
             </p>
             <div className="flex flex-wrap gap-2.5">
               <CheckoutButton
@@ -161,7 +161,7 @@ const PRO_FEATURES = [
   "PDF export",
   "Recurring expenses",
   "Split templates",
-  "Multi-currency",
+  "Display currency",
 ];
 
 function ProPlanCard() {

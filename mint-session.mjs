@@ -7,7 +7,7 @@
  *   4. Playwright: load cookie, screenshot all pages
  */
 
-import { readFileSync, mkdirSync, writeFileSync } from "fs";
+import { readFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { chromium } from "playwright";
 

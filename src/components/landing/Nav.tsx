@@ -13,7 +13,7 @@ export default function Nav() {
       data-nav
       className="fixed inset-x-0 top-0 z-[150] flex items-center gap-[18px] border-b border-transparent px-5 py-4 transition-[background,border-color] duration-300 sm:px-10"
     >
-      <a href="/" className="flex items-center gap-[11px] text-inherit no-underline">
+      <Link href="/" className="flex items-center gap-[11px] text-inherit no-underline">
         <span
           className="flex h-[38px] w-[38px] items-center justify-center rounded-xl bg-accent text-[21px]"
           style={{ boxShadow: "0 8px 22px -6px var(--color-accent)" }}
@@ -21,7 +21,7 @@ export default function Nav() {
           🦉
         </span>
         <span className="font-display text-[21px] font-bold tracking-[-0.01em]">owely</span>
-      </a>
+      </Link>
       <div className="ml-auto flex items-center gap-5 sm:gap-[30px]">
         {LINKS.map((l) => (
           <a

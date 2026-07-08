@@ -4,6 +4,90 @@ Prepend a new dated entry at the top after every change. Newest first.
 
 ---
 
+## 2026-07-08 — Fable Phase 2.1 & 2.2: App Shell & Speed Primitives
+
+**2.1 — App Shell**
+- Added `useScrollDirection` hook to track scroll state.
+- Updated `BottomNav.tsx`: Hides on scroll down, shows on scroll up, adds a top hairline shadow when scrolled.
+- Changed the `BottomNav` FAB on Home and Groups pages to open a new `QuickActionSheet.tsx` (bottom sheet menu for Add expense, Settle up, New group) instead of navigating directly.
+- Added `template.tsx` with `animate-fade-in-up` for lightweight, reduced-motion-respecting page transitions.
+- Created `PullToRefresh.tsx` wrapper handling touch events to trigger `router.refresh()` and applied it to the main content area in `layout.tsx`.
+- Applied safe-area padding to the mobile header.
+
+**2.2 — Loading + Perceived Speed**
+- Created structural `loading.tsx` skeleton screens for `/home`, `/groups`, `/people`, `/groups/[groupId]`, and `/settings` to replace blank loading states.
+- Created a centralized Toast system (`ToastProvider.tsx` and `use-toast.ts`) injected into the app layout.
+
+**Verification:** typecheck ✅ · tests passing ✅ · lint 0 errors 0 warnings ✅ · build clean ✅
+
+---
+
+## 2026-07-08 — Fable Phase 1 complete: known fixes
+
+**1.1 — SettlePanel money parsing + UPI link consolidation**
+
+- Created `src/lib/parse-rupees.ts`: shared client-safe `parseRupees` validator
+  mirroring `rupeesToPaise` semantics (rejects sub-paise, non-numeric, zero/negative).
+  Returns `null` instead of throwing for form validation use.
+- Added `buildGpayVpaLink` and `buildPhonepeVpaLink` to `src/lib/upi.ts`: GPay/PhonePe
+  intent links using the payee's actual VPA (not a phone-derived `@upi`/`@ybl` handle).
+- Created `src/lib/upi-links.ts`: `buildSettleLinks` helper encapsulating the
+  VPA-priority rule — if payee has `upiId`, all three app buttons target the real VPA;
+  phone fallback only when no VPA exists.
+- Migrated `SettlePanel.tsx`: replaced `Math.round(parseFloat(...) * 100)` with shared
+  `parseRupees`, deleted 25 lines of inline UPI template strings, uses `buildSettleLinks`.
+- Migrated `GuestSettlePanel.tsx`: removed inline `parseRupees` function (was 15 lines),
+  replaced incorrect `buildGpayLink({ phone: upiId.split("@")[0], ... })` pattern
+  with `buildSettleLinks`. Removed unused `groupId` from `DebtCard` props.
+
+**1.2 — Lint cleanup + multi-currency honesty**
+
+- Drove lint from 1 error + 8 warnings → 0 errors + 0 warnings.
+- `Nav.tsx`: `<a href="/">` → `<Link href="/">` (Next.js routing).
+- `settlements/actions.ts`: removed unused `fetchGroup`, `cookies`, `GuestSettleUpSchema`
+  imports; prefixed stub `_input` param.
+- Removed unused imports from `check-ui-auth.mjs`, `check-ui.mjs`, `mint-session.mjs`.
+- Added `argsIgnorePattern: "^_"` / `varsIgnorePattern: "^_"` to ESLint config for
+  standard underscore-prefixed unused variable convention.
+- Settings page: changed "multi-currency" → "display currency" in Pro feature copy
+  (upgrade CTA + `PRO_FEATURES` list). The feature only stores a display preference,
+  no FX conversion exists.
+
+**1.3 — Ops status verification**
+
+- Added ops checklist table to `docs/STATE.md`: App Check (wired, not enforced),
+  Cloud Scheduler (unverified), Vision API (unverified), Razorpay (not configured),
+  Auth domains (done).
+
+**Tests:** `src/lib/parse-rupees.test.ts` — 10 tests covering valid amounts,
+sub-paise rejection, non-numeric, empty, zero/negative, whitespace, leading zeros,
+multiple decimals, Infinity/NaN.
+
+**Verification:** typecheck ✅ · 56 tests passing ✅ · lint 0 errors 0 warnings ✅ · build clean ✅
+
+---
+
+## 2026-07-08 — Release-overhaul plan authored (`FABLE_INSTRUCTIONS.md`)
+
+Planning-only pass — no code changed. Created `FABLE_INSTRUCTIONS.md`: a
+six-phase, gate-verified execution plan to take Owely to release readiness.
+Phases: (1) known fixes — notably `SettlePanel.tsx` still uses
+`Math.round(parseFloat(...)*100)` and inline UPI intent strings (the 2026-07-03
+P3 fix only reached `GuestSettlePanel`), plus audit P3 leftovers; (2)
+mobile-first UI/UX overhaul (app shell, skeletons, optimistic UI, 8-screen
+375px pass); (3) settle-flow pay sheet with GPay/PhonePe deep links via
+`lib/upi.ts`, desktop UPI QR fallback, WhatsApp/share reminders; (4) Contact
+Picker API + `users/{uid}/contacts` subcollection with `syncContacts` action,
+consent, and enumeration quota; (5) activity feed, search, insights,
+settle-all, CSV export; (6) PWA completion, TWA groundwork
+(`assetlinks.json`, `docs/ANDROID.md`), Play-compliance items (account
+deletion — needs design confirmation before coding — privacy/ToS pages),
+audit-P4 integration tests, and console ops checklist.
+
+State: docs-only change; `npm run typecheck` / `npm test` untouched.
+
+---
+
 ## 2026-07-03 — P3 Polish + P4 Tests
 
 - **GuestSettlePanel:** UPI deep-links now route through `buildGpayLink`, `buildPhonepeLink`, `buildPhoneUpiLink`, `buildUpiLink` in `upi.ts`. No more inline link construction.

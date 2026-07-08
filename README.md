@@ -14,7 +14,7 @@ Firebase project: `owely-c6c51`.
 | **Monetization** | Fair usage limits for heavy users (Freemium) | Gating basic usability (ads, charts) |
 | **Settlement** | UPI deep links + cash recording | Manual copy-pasting |
 | **User Experience** | Clean, dashboard-app feel, ad-free | Cluttered, heavy advertising |
-| **Paid Features** | Unlimited expenses, multi-currency, OCR, PDF export | Often bundled awkwardly |
+| **Paid Features** | Unlimited expenses, display currency, OCR, PDF export | Often bundled awkwardly |
 
 ## Quick start
 
@@ -61,13 +61,15 @@ src/
     money.ts                Paise math — splits always reconcile to the total
     simplify-debts.ts       Net-balance + greedy min-cashflow engine (pure)
     upi.ts                  UPI deep-link builder (paise→rupees at the boundary)
+    upi-links.ts            Higher-level settle links with VPA-priority rule
+    parse-rupees.ts         Client-safe rupee→paise parser (mirrors rupeesToPaise)
     currency.ts             Supported paid display/base currency metadata
     receipt-ocr.ts          Receipt OCR hint extraction (pure, tested)
     vision-ocr.ts           Server-only Google Vision OCR client
     entitlements.ts         Server-side paid feature guards
     relationship-categories.ts  Predefined group/direct categories
     result.ts validation.ts session.ts read-model.ts recompute.ts
-    *.test.ts               Vitest specs (money · debts · UPI)
+    *.test.ts               Vitest specs (money · debts · UPI · parseRupees)
     firebase/               client (reads+Auth) · admin (writes) · collections
   features/                 Domain-organized Server Actions + queries
     auth/                   Session, sign-in, profile
@@ -86,6 +88,7 @@ src/
   proxy.ts                  Route gate (Next 16 Middleware → Proxy)
 docs/STATE.md               Living status doc
 DESIGN.md                   Living design system + product surface guide
+FABLE_INSTRUCTIONS.md       Release-overhaul execution plan (phased, gated)
 ```
 
 **Principles**

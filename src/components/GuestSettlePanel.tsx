@@ -3,12 +3,8 @@
 import { useState } from "react";
 import { formatPaise } from "@/lib/money";
 import { memberAvatar } from "@/lib/avatar";
-import {
-  buildGpayLink,
-  buildPhonepeLink,
-  buildPhoneUpiLink,
-  buildUpiLink,
-} from "@/lib/upi";
+import { parseRupees } from "@/lib/parse-rupees";
+import { buildSettleLinks } from "@/lib/upi-links";
 import type { SettlementMethod, SettlementStatus } from "@/types";
 
 export interface GuestSettleDebt {
@@ -41,7 +37,7 @@ interface Props {
 }
 
 
-export function GuestSettlePanel({ groupId, groupName, myDebts, history }: Props) {
+export function GuestSettlePanel({ groupId: _groupId, groupName, myDebts, history }: Props) {
   return (
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-4">
@@ -55,7 +51,7 @@ export function GuestSettlePanel({ groupId, groupName, myDebts, history }: Props
           </div>
         ) : (
           myDebts.map((debt) => (
-            <DebtCard key={debt.to} groupId={groupId} groupName={groupName} debt={debt} />
+            <DebtCard key={debt.to} groupName={groupName} debt={debt} />
           ))
         )}
       </section>
@@ -74,62 +70,30 @@ export function GuestSettlePanel({ groupId, groupName, myDebts, history }: Props
   );
 }
 
-function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: string; debt: GuestSettleDebt }) {
+function DebtCard({ groupName, debt }: { groupName: string; debt: GuestSettleDebt }) {
   const [open, setOpen] = useState(false);
   const [method, setMethod] = useState<SettlementMethod>("upi");
   const [ref, setRef] = useState("");
   const avatar = memberAvatar(debt.to);
-
-  /** Parse a rupee string the same way rupeesToPaise does on the server:
-   *  - Split on ".", take up to 2 decimal places
-   *  - Reject sub-paise (more than 2 decimal places)
-   *  - Returns null for non-numeric or empty input
-   */
-  function parseRupees(raw: string): number | null {
-    const trimmed = raw.trim();
-    if (!trimmed) return null;
-    const parts = trimmed.split(".");
-    if (parts.length > 2) return null;
-    if (parts[1] !== undefined && parts[1].length > 2) return null; // sub-paise
-    const rupees = parseFloat(trimmed);
-    if (!isFinite(rupees) || rupees <= 0) return null;
-    return Math.round(rupees * 100);
-  }
 
   const [amountRupees, setAmountRupees] = useState(debt.amountRupees);
   const parsedPaise = parseRupees(amountRupees);
   const isValid = parsedPaise !== null;
   const amountTooHigh = isValid && parsedPaise! > debt.amount;
 
-  const payeeName = debt.toName;
   const note = `Owely - ${groupName}`;
 
-  // Build UPI links via upi.ts (single source of truth)
+  // Build UPI links via shared helper (VPA-priority rule)
   const linkPaise = isValid && !amountTooHigh ? parsedPaise! : null;
-
-  const gpayLink = linkPaise
-    ? debt.toUpiId
-      ? buildGpayLink({ phone: debt.toUpiId.split("@")[0], payeeName, paise: linkPaise, note })
-      : debt.toPhone
-        ? buildGpayLink({ phone: debt.toPhone, payeeName, paise: linkPaise, note })
-        : null
-    : null;
-
-  const phonepeLink = linkPaise
-    ? debt.toUpiId
-      ? buildPhonepeLink({ phone: debt.toUpiId.split("@")[0], payeeName, paise: linkPaise, note })
-      : debt.toPhone
-        ? buildPhonepeLink({ phone: debt.toPhone, payeeName, paise: linkPaise, note })
-        : null
-    : null;
-
-  const genericLink = linkPaise
-    ? debt.toUpiId
-      ? buildUpiLink({ upiId: debt.toUpiId, payeeName, paise: linkPaise, note })
-      : debt.toPhone
-        ? buildPhoneUpiLink({ phone: debt.toPhone, payeeName, paise: linkPaise, note })
-        : null
-    : null;
+  const links = linkPaise
+    ? buildSettleLinks({
+        upiId: debt.toUpiId,
+        phone: debt.toPhone,
+        payeeName: debt.toName,
+        paise: linkPaise,
+        note,
+      })
+    : { gpay: null, phonepe: null, generic: null, hasAny: false };
 
   const hasUpiOption = !!(debt.toUpiId || debt.toPhone);
 
@@ -206,25 +170,25 @@ function DebtCard({ groupId, groupName, debt }: { groupId: string; groupName: st
                     </p>
                   ) : (
                     <div className="grid grid-cols-3 gap-2">
-                      {gpayLink && (
+                      {links.gpay && (
                         <a
-                          href={gpayLink}
+                          href={links.gpay}
                           className="flex h-11 items-center justify-center rounded-lg border border-white/8 bg-surface text-[11px] font-semibold hover:bg-elevated transition-colors"
                         >
                           GPay
                         </a>
                       )}
-                      {phonepeLink && (
+                      {links.phonepe && (
                         <a
-                          href={phonepeLink}
+                          href={links.phonepe}
                           className="flex h-11 items-center justify-center rounded-lg border border-white/8 bg-surface text-[11px] font-semibold hover:bg-elevated transition-colors"
                         >
                           PhonePe
                         </a>
                       )}
-                      {genericLink && (
+                      {links.generic && (
                         <a
-                          href={genericLink}
+                          href={links.generic}
                           className="flex h-11 items-center justify-center rounded-lg border border-white/8 bg-surface text-[11px] font-semibold hover:bg-elevated transition-colors"
                         >
                           Generic

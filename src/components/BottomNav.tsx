@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useScrollDirection } from "@/hooks/use-scroll-direction";
+import { QuickActionSheet } from "./QuickActionSheet";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -17,7 +20,10 @@ export function BottomNav() {
   // When on a group detail page, FAB goes directly to add expense.
   const groupMatch = pathname.match(/^\/groups\/([^/]+)/);
   const groupId = groupMatch?.[1];
-  const fabHref = groupId ? `/groups/${groupId}/expenses/new` : "/groups";
+  const fabHref = groupId ? `/groups/${groupId}/expenses/new` : undefined;
+
+  const { scrollDir, isScrolled } = useScrollDirection(15);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const item = (active: boolean) =>
     `flex flex-1 flex-col items-center justify-center gap-[3px] transition-colors min-w-0 ${
@@ -29,7 +35,9 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 flex h-[68px] items-stretch border-t border-white/6 bg-ink lg:hidden"
+      className={`fixed bottom-0 left-0 right-0 z-40 flex h-[68px] items-stretch bg-ink lg:hidden transition-transform duration-300 ease-out border-t ${
+        isScrolled ? "border-white/6 shadow-[0_-4px_24px_-4px_rgba(0,0,0,0.5)]" : "border-transparent"
+      } ${scrollDir === "down" ? "translate-y-[120%]" : "translate-y-0"}`}
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Primary navigation"
     >
@@ -133,25 +141,30 @@ export function BottomNav() {
       </Link>
 
       {/* Floating Action Button */}
-      <Link
-        href={fabHref}
-        aria-label="Add expense"
-        className="absolute bottom-[8px] left-1/2 flex h-[52px] w-[52px] -translate-x-1/2 items-center justify-center rounded-full bg-accent shadow-[0_8px_24px_-6px_rgba(139,123,255,.85)] transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
-      >
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
+      {fabHref ? (
+        <Link
+          href={fabHref}
+          aria-label="Add expense"
+          className="absolute bottom-[8px] left-1/2 flex h-[52px] w-[52px] -translate-x-1/2 items-center justify-center rounded-full bg-accent shadow-[0_8px_24px_-6px_rgba(139,123,255,.85)] transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
         >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-      </Link>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </Link>
+      ) : (
+        <button
+          onClick={() => setSheetOpen(true)}
+          aria-label="Quick actions"
+          className="absolute bottom-[8px] left-1/2 flex h-[52px] w-[52px] -translate-x-1/2 items-center justify-center rounded-full bg-accent shadow-[0_8px_24px_-6px_rgba(139,123,255,.85)] transition-transform hover:scale-105 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+      )}
+
+      {/* Sheet renders outside the nav layout flow but inside the component for state management */}
+      <QuickActionSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </nav>
   );
 }
