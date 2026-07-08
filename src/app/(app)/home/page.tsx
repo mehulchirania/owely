@@ -9,6 +9,7 @@ import {
 } from "@/features/groups/queries";
 import { formatPaise } from "@/lib/money";
 import { netPositionFromSettlements } from "@/lib/simplify-debts";
+import { HomeActions } from "@/components/HomeActions";
 
 export const metadata: Metadata = { title: "Home — Owely" };
 
@@ -115,23 +116,16 @@ export default async function HomePage() {
         )}
 
         {/* Primary CTA */}
-        <div className="mt-5 flex gap-3">
-          {owe > 0 ? (
-            <Link
-              href="/groups"
-              className="flex h-12 flex-1 items-center justify-center rounded-xl bg-accent text-[14px] font-bold text-white shadow-[0_6px_20px_-6px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              Settle up
-            </Link>
-          ) : (
-            <Link
-              href="/groups"
-              className="flex h-12 flex-1 items-center justify-center rounded-xl bg-accent text-[14px] font-bold text-white shadow-[0_6px_20px_-6px_var(--color-accent)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              Add expense
-            </Link>
-          )}
-        </div>
+        <HomeActions
+          owe={owe}
+          debts={allGroups
+            .map((g) => ({
+              id: g.id,
+              name: g.name,
+              amount: Math.abs(Math.min(0, netPositionFromSettlements(g.simplifiedDebts, user.uid))),
+            }))
+            .filter((d) => d.amount > 0)}
+        />
       </div>
 
       {/* Per-group balance chips */}

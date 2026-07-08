@@ -3,6 +3,7 @@ import { requireSession } from "@/features/auth/session";
 import { fetchUser } from "@/features/auth/queries";
 import { fetchOwnExpenses } from "@/features/personal-ledger/queries";
 import { fetchOwnedRecurring } from "@/features/recurring/queries";
+import { aggregateOwnInsights } from "@/features/insights/queries";
 
 import { OwnExpenseManager } from "@/components/OwnExpenseManager";
 
@@ -16,6 +17,8 @@ export default async function OwnPage() {
     fetchOwnedRecurring(session.uid),
     fetchUser(session.uid),
   ]);
+
+  const insights = aggregateOwnInsights(ownExpenses);
 
   return (
     <div className="flex flex-col gap-6">
@@ -33,6 +36,7 @@ export default async function OwnPage() {
         initialExpenses={ownExpenses}
         initialRecurring={recurring.filter((item) => item.scope === "own")}
         userTier={user?.tier ?? "free"}
+        initialInsights={insights}
       />
     </div>
   );

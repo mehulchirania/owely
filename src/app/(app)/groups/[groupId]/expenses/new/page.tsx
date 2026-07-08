@@ -4,19 +4,25 @@ import { requireSession } from "@/features/auth/session";
 import { fetchGroup } from "@/features/groups/queries";
 import { fetchUser } from "@/features/auth/queries";
 import { fetchGroupTemplates } from "@/features/templates/queries";
-import { ExpenseForm } from "@/components/ExpenseForm";
+import { fetchExpense } from "@/features/expenses/queries";
+import { ExpenseForm, ExpenseFormInitial } from "@/components/ExpenseForm";
 
 export default async function NewExpensePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ groupId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { groupId } = await params;
+  const { duplicateId } = await searchParams;
   const user = await requireSession();
+  
   const [group, profile] = await Promise.all([
     fetchGroup(groupId),
     fetchUser(user.uid),
   ]);
+  
   const isPaid = profile?.tier === "paid";
   const templates = isPaid ? await fetchGroupTemplates(user.uid, groupId) : [];
   if (!group || !group.members.includes(user.uid)) notFound();
@@ -25,6 +31,28 @@ export default async function NewExpensePage({
     uid,
     name: group.memberDetails[uid]?.name ?? "Someone",
   }));
+
+  let initial: ExpenseFormInitial | undefined;
+  if (typeof duplicateId === "string") {
+    const dup = await fetchExpense(groupId, duplicateId);
+    if (dup) {
+      initial = {
+        expenseId: "", // Empty to ensure it creates a new one
+        title: dup.title,
+        amountRupees: (dup.amount / 100).toString(),
+        paidBy: dup.paidBy,
+        category: dup.category,
+        splitType: "unequal",
+        participants: Object.keys(dup.splits),
+        splitValues: Object.fromEntries(
+          Object.entries(dup.splits).map(([k, v]) => [
+            k,
+            (v / 100).toString(),
+          ])
+        ),
+      };
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -49,8 +77,9 @@ export default async function NewExpensePage({
         groupId={groupId}
         members={members}
         currentUid={user.uid}
-        userTier={profile?.tier ?? "free"}
+        userTier={isPaid ? "paid" : "free"}
         templates={templates}
+        initial={initial}
       />
     </div>
   );

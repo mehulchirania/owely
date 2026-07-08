@@ -25,6 +25,8 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { Collections } from "@/lib/firebase/collections";
 import { CopyButton } from "@/components/CopyButton";
 import { FairnessInsights } from "@/components/FairnessInsights";
+import { InsightsPanel } from "@/components/InsightsPanel";
+import { aggregateInsights } from "@/features/insights/queries";
 import { GroupCurrencyForm } from "@/components/GroupCurrencyForm";
 import { BatchInviteForm } from "@/components/BatchInviteForm";
 import { ContactImportPanel } from "@/components/ContactImportPanel";
@@ -39,6 +41,7 @@ const GROUP_TABS = [
   { id: "closures", label: "Closures" },
   { id: "members", label: "Members" },
   { id: "recurring", label: "Recurring" },
+  { id: "insights", label: "Insights" },
 ] as const;
 
 export default async function GroupPage({
@@ -217,6 +220,15 @@ export default async function GroupPage({
           <div className="flex flex-col gap-4">
             {/* action bar */}
             <div className="flex justify-end gap-2">
+              <a
+                href={`/api/groups/${group.id}/export/csv`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-[34px] items-center justify-center gap-1.5 rounded-[9px] border border-white/8 bg-card px-3 text-[12.5px] font-semibold text-strong transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                aria-label="Export group CSV"
+              >
+                CSV
+              </a>
               {isPaid ? (
                 <a
                   href={`/api/groups/${group.id}/export/pdf`}
@@ -229,7 +241,7 @@ export default async function GroupPage({
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <path d="M14 2v6h6" /><path d="M9 15h6" /><path d="M9 18h4" />
                   </svg>
-                  Export
+                  PDF
                 </a>
               ) : (
                 <Link
@@ -548,6 +560,28 @@ export default async function GroupPage({
             userTier={isPaid ? "paid" : "free"}
             recurring={recurring}
           />
+        )}
+
+        {activeTab === "insights" && (
+          <div className="flex flex-col gap-4">
+            {isPaid ? (
+              <InsightsPanel insights={aggregateInsights(expenses)} />
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-3xl border border-white/8 bg-surface p-8 text-center">
+                <span className="text-[32px] mb-2">📊</span>
+                <h3 className="font-display text-xl font-bold text-hi mb-2">Detailed spending insights</h3>
+                <p className="text-[14px] text-dim mb-5 max-w-sm">
+                  Upgrade to Pro to see monthly breakdowns, category charts, and spending trends for this group.
+                </p>
+                <Link
+                  href="/settings"
+                  className="rounded-xl bg-accent px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-accent/90"
+                >
+                  Upgrade to Pro
+                </Link>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

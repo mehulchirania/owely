@@ -138,6 +138,7 @@ export interface Expense {
   /** Paise owed per participant. Keys are participants only. Sums to `amount`. */
   splits: Record<Uid, Paise>;
   category: ExpenseCategory;
+  notes?: string;
   receiptURL?: string;
   /**
    * Client-generated idempotency key. Used as the document ID so an expense

@@ -1,0 +1,26 @@
+[browser] [owely] App Check is not configured. Set NEXT_PUBLIC_RECAPTCHA_SITE_KEY (production) or NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN (local dev). Auth and Firestore will work but are unprotected. (src/lib/firebase/client.ts:88:13)
+[browser] [owely] App Check is not configured. Set NEXT_PUBLIC_RECAPTCHA_SITE_KEY (production) or NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN (local dev). Auth and Firestore will work but are unprotected. (src/lib/firebase/client.ts:88:13)
+[browser] [owely] App Check is not configured. Set NEXT_PUBLIC_RECAPTCHA_SITE_KEY (production) or NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN (local dev). Auth and Firestore will work but are unprotected. (src/lib/firebase/client.ts:88:13)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+⨯ ReferenceError: HomeActions is not defined
+    at HomePage (src\app\(app)\home\page.tsx:118:10)
+  116 |
+  117 |         {/* Primary CTA */}
+> 118 |         <HomeActions
+      |          ^
+  119 |           owe={owe}
+  120 |           debts={allGroups
+  121 |             .map((g) => ({ {
+  digest: '3908774611'
+}
+⨯ ReferenceError: HomeActions is not defined
+    at HomePage (src\app\(app)\home\page.tsx:118:10)
+  116 |
+  117 |         {/* Primary CTA */}
+> 118 |         <HomeActions
+      |          ^
+  119 |           owe={owe}
+  120 |           debts={allGroups
+  121 |             .map((g) => ({ {
+  digest: '3908774611'
+}

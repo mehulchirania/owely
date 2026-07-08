@@ -12,11 +12,14 @@ import {
 import { formatPaise } from "@/lib/money";
 import { categoryStyle } from "@/lib/categories";
 import type { OwnExpense, ExpenseCategory, RecurringExpense } from "@/types";
+import type { MonthlyInsight } from "@/features/insights/queries";
+import { InsightsPanel } from "@/components/InsightsPanel";
 
 interface Props {
   initialExpenses: OwnExpense[];
   initialRecurring: RecurringExpense[];
   userTier: "free" | "paid";
+  initialInsights?: MonthlyInsight[];
 }
 
 const CATEGORIES: ExpenseCategory[] = [
@@ -28,6 +31,7 @@ export function OwnExpenseManager({
   initialExpenses,
   initialRecurring,
   userTier,
+  initialInsights,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -181,22 +185,34 @@ export function OwnExpenseManager({
   return (
     <div className="flex flex-col gap-6">
       {/* Monthly summary banner */}
-      <div className="rounded-2xl border border-white/6 bg-card p-5">
-        <div className="flex justify-between items-center">
-          <div>
-            <span className="text-xs text-muted font-medium uppercase tracking-[0.08em]">Spent This Month</span>
-            <div className="mt-1 font-display text-2xl font-bold text-mint">
-              {formatPaise(monthlyTotal)}
+      {isPaid && initialInsights ? (
+        <InsightsPanel insights={initialInsights} />
+      ) : (
+        <div className="rounded-2xl border border-white/6 bg-card p-5">
+          <div className="flex justify-between items-center">
+            <div>
+              <span className="text-xs text-muted font-medium uppercase tracking-[0.08em]">Spent This Month</span>
+              <div className="mt-1 font-display text-2xl font-bold text-mint">
+                {formatPaise(monthlyTotal)}
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-xs text-muted font-medium uppercase tracking-[0.08em]">Total Items</span>
+              <div className="mt-1 font-display text-xl font-bold text-hi">
+                {initialExpenses.length}
+              </div>
             </div>
           </div>
-          <div className="text-right">
-            <span className="text-xs text-muted font-medium uppercase tracking-[0.08em]">Total Items</span>
-            <div className="mt-1 font-display text-xl font-bold text-hi">
-              {initialExpenses.length}
+          {!isPaid && (
+            <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
+              <span className="text-[13px] text-dim">Want category breakdown and charts?</span>
+              <Link href="/settings" className="text-[13px] font-semibold text-accent hover:underline">
+                Upgrade to Pro
+              </Link>
             </div>
-          </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Add form */}
       <form onSubmit={handleAdd} className="rounded-2xl border border-white/6 bg-surface p-4 flex flex-col gap-3">

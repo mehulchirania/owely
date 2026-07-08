@@ -8,7 +8,7 @@
  * Server Action.
  */
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   collection,
@@ -78,9 +78,27 @@ export function ExpenseFeed({ groupId, currentUid, memberNames, initialExpenses 
     return unsub;
   }, [groupId]);
 
-  function nameOf(uid: string): string {
+  const nameOf = useCallback((uid: string): string => {
     return uid === currentUid ? "You" : (memberNames[uid] ?? "Someone");
-  }
+  }, [currentUid, memberNames]);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const filteredExpenses = useMemo(() => {
+    if (!searchQuery.trim()) return expenses;
+    const q = searchQuery.toLowerCase();
+    return expenses.filter(e => {
+      const payerName = nameOf(e.paidBy).toLowerCase();
+      const amountStr = (e.amount / 100).toString();
+      return (
+        e.title.toLowerCase().includes(q) ||
+        e.category.toLowerCase().includes(q) ||
+        payerName.includes(q) ||
+        amountStr.includes(q)
+      );
+    });
+  }, [expenses, searchQuery, nameOf]);
 
   function handleDelete(expenseId: string): void {
     if (!confirm("Delete this expense? Balances will be recalculated.")) return;
@@ -119,7 +137,7 @@ export function ExpenseFeed({ groupId, currentUid, memberNames, initialExpenses 
   }
 
   const grouped: Record<string, Expense[]> = {};
-  for (const e of expenses) {
+  for (const e of filteredExpenses) {
     const day = formatDayHeader(e.createdAt);
     if (!grouped[day]) grouped[day] = [];
     grouped[day].push(e);
@@ -127,6 +145,26 @@ export function ExpenseFeed({ groupId, currentUid, memberNames, initialExpenses 
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Search Bar */}
+      {expenses.length > 0 && (
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-dim" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search expenses..."
+            className="w-full min-h-[44px] rounded-[14px] border border-white/8 bg-surface pl-10 pr-4 text-[13.5px] text-hi placeholder:text-dim outline-none transition-colors focus:border-accent/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+          />
+        </div>
+      )}
+
+      {Object.entries(grouped).length === 0 && searchQuery && (
+        <div className="text-center py-8 text-[13px] text-dim">No expenses match your search.</div>
+      )}
+
       {Object.entries(grouped).map(([day, dayExpenses]) => (
         <div key={day} className="flex flex-col gap-2.5">
           <h3 className="px-1 text-[11px] font-bold uppercase tracking-[0.08em] text-faint">
@@ -138,6 +176,7 @@ export function ExpenseFeed({ groupId, currentUid, memberNames, initialExpenses 
               const iPaid = e.paidBy === currentUid;
               const lent = e.amount - myShare;
               const cat = categoryStyle(e.category);
+              const isExpanded = expandedId === e.id;
               
               let phrasing = `${nameOf(e.paidBy)} paid ${formatPaise(e.amount)}`;
               if (iPaid && lent > 0) phrasing += ` · you lent ${formatPaise(lent)}`;
@@ -145,34 +184,40 @@ export function ExpenseFeed({ groupId, currentUid, memberNames, initialExpenses 
               else if (!iPaid && myShare === 0) phrasing += ` · not involved`;
 
               return (
-                <li key={e.id} className="group relative flex items-center gap-3.5 rounded-2xl border border-white/4 bg-card px-3 py-3 transition-colors hover:bg-elevated">
-                  <span
-                    className={`flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-[14px] text-[20px] shadow-sm ${cat.tile}`}
-                    role="img"
-                    aria-hidden
+                <li key={e.id} className="group relative flex flex-col rounded-2xl border border-white/4 bg-card transition-colors hover:bg-elevated">
+                  <button 
+                    type="button"
+                    onClick={() => setExpandedId(isExpanded ? null : e.id)}
+                    className="flex items-center gap-3.5 px-3 py-3 w-full text-left min-h-[44px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent rounded-2xl"
                   >
-                    {cat.emoji}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-semibold text-hi">{e.title}</p>
-                    <p className="truncate text-[12px] font-medium text-dim">
-                      {phrasing}
-                    </p>
-                  </div>
-                  
-                  {/* Amount / net effect visual right side */}
-                  <div className="shrink-0 text-right pr-1">
-                    {iPaid && lent > 0 ? (
-                      <span className="font-display text-[15px] font-bold text-mint">+{formatPaise(lent)}</span>
-                    ) : !iPaid && myShare > 0 ? (
-                      <span className="font-display text-[15px] font-bold text-coral">−{formatPaise(myShare)}</span>
-                    ) : (
-                      <span className="font-display text-[15px] font-semibold text-faint">{formatPaise(e.amount)}</span>
-                    )}
-                  </div>
+                    <span
+                      className={`flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-[14px] text-[20px] shadow-sm ${cat.tile}`}
+                      role="img"
+                      aria-hidden
+                    >
+                      {cat.emoji}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold text-hi">{e.title}</p>
+                      <p className="truncate text-[12px] font-medium text-dim">
+                        {phrasing}
+                      </p>
+                    </div>
+                    
+                    {/* Amount / net effect visual right side */}
+                    <div className="shrink-0 text-right pr-1">
+                      {iPaid && lent > 0 ? (
+                        <span className="font-display text-[15px] font-bold text-mint">+{formatPaise(lent)}</span>
+                      ) : !iPaid && myShare > 0 ? (
+                        <span className="font-display text-[15px] font-bold text-coral">−{formatPaise(myShare)}</span>
+                      ) : (
+                        <span className="font-display text-[15px] font-semibold text-faint">{formatPaise(e.amount)}</span>
+                      )}
+                    </div>
+                  </button>
 
                   {!currentUid.startsWith("guest_") && (
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-elevated/90 px-2 py-1.5 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 focus-within:opacity-100 rounded-xl border border-white/10 shadow-sm">
+                    <div className={`absolute right-2 top-3 flex items-center gap-1 bg-elevated/90 px-2 py-1.5 backdrop-blur-sm transition-opacity rounded-xl border border-white/10 shadow-sm ${isExpanded ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'}`}>
                       <a
                         href={`/groups/${groupId}/expenses/${e.id}/edit`}
                         aria-label={`Edit ${e.title}`}
@@ -182,13 +227,35 @@ export function ExpenseFeed({ groupId, currentUid, memberNames, initialExpenses 
                       </a>
                       <button
                         type="button"
-                        onClick={() => handleDelete(e.id)}
+                        onClick={(ev) => { ev.stopPropagation(); handleDelete(e.id); }}
                         disabled={pendingId === e.id}
                         aria-label={`Delete ${e.title}`}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-dim hover:bg-coral/15 hover:text-coral focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50"
                       >
                         {pendingId === e.id ? "…" : "🗑"}
                       </button>
+                    </div>
+                  )}
+
+                  {isExpanded && (
+                    <div className="px-[59px] pb-4 pt-1 animate-fade-in-up">
+                      {e.notes && (
+                        <p className="text-[13px] text-muted mb-3 whitespace-pre-wrap">{e.notes}</p>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`/groups/${groupId}/expenses/${e.id}/edit`}
+                          className="flex min-h-[36px] items-center justify-center rounded-xl bg-surface px-4 text-[12.5px] font-semibold text-strong transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        >
+                          Edit
+                        </a>
+                        <a
+                          href={`/groups/${groupId}/expenses/new?duplicateId=${e.id}`}
+                          className="flex min-h-[36px] items-center justify-center rounded-xl bg-surface px-4 text-[12.5px] font-semibold text-strong transition-colors hover:bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        >
+                          Duplicate
+                        </a>
+                      </div>
                     </div>
                   )}
                 </li>
